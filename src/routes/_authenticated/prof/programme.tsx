@@ -74,6 +74,7 @@ function TeacherProgram() {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [formTab, setFormTab] = useState<"seance" | "bareme">("seance");
 
   async function handleScaleUpload(file: File) {
     if (!file.type.startsWith("image/")) {

@@ -101,20 +101,63 @@ export const getMyEngagement = createServerFn({ method: "GET" }).handler(
   },
 );
 
-/** Lecture seule : points forts sélectionnés par l'enseignant pour l'élève connecté. */
-export const getMyStrengths = createServerFn({ method: "GET" }).handler(
-  async (): Promise<string[]> => {
+/** Point fort personnel de l'élève connecté (choisi par lui-même). */
+export const getMyStrength = createServerFn({ method: "GET" }).handler(
+  async (): Promise<string | null> => {
     const { getStudentSession } = await import("./student-qr.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
-    if (!studentId) return [];
+    if (!studentId) return null;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin
-      .from("student_strengths")
+    const { data: row, error } = await supabaseAdmin
+      .from("student_strength_choices")
       .select("strength_code")
-      .eq("student_id", studentId);
+      .eq("student_id", studentId)
+      .maybeSingle();
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((row) => row.strength_code);
+    return row?.strength_code ?? null;
   },
 );
+
+/**
+ * Seule écriture autorisée à l'élève : son point fort personnel (un seul).
+ * L'élève est identifié par le cookie de session créé après validation du QR code,
+ * jamais par une donnée envoyée depuis le navigateur.
+ */
+export const setMyStrength = createServerFn({ method: "POST" })
+  .inputValidator((input: { strengthCode: string }) =>
+    z.object({ strengthCode: codeSchema }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { STRENGTHS } = await import("./engagement");
+    if (!STRENGTHS.some((s) => s.code === data.strengthCode)) {
+      throw new Error("Point fort inconnu");
+    }
+
+    const { getStudentSession } = await import("./student-qr.server");
+    const session = await getStudentSession();
+    const studentId = session.data.studentId;
+    if (!studentId) throw new Error("Session élève expirée");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from("students")
+      .select("teacher_id")
+      .eq("id", studentId)
+      .maybeSingle();
+    if (studentError) throw new Error(studentError.message);
+    if (!student) throw new Error("Élève introuvable");
+
+    const { error } = await supabaseAdmin.from("student_strength_choices").upsert(
+      {
+        student_id: studentId,
+        teacher_id: student.teacher_id,
+        strength_code: data.strengthCode,
+      },
+      { onConflict: "student_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { strengthCode: data.strengthCode };
+  });
+

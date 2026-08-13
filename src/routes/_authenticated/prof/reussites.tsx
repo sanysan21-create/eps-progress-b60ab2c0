@@ -13,6 +13,7 @@ import {
   listAchievements,
   listClassStudents,
 } from "@/lib/achievements.functions";
+import { MedalAssign } from "@/components/eps/MedalAssign";
 
 export const Route = createFileRoute("/_authenticated/prof/reussites")({
   head: () => ({
@@ -379,6 +380,8 @@ function TeacherAchievements() {
           )}
         </div>
       </section>
+
+      <MedalAssign />
 
       {confirming && chosenAchievement && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">

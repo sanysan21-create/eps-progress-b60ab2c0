@@ -151,7 +151,7 @@ function StudentProfile() {
             </div>
             <Link
               to="/eleve/objectifs"
-              className="mono-label relative mt-5 inline-flex items-center gap-1 rounded-full bg-background px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-background/90"
+              className="mono-label relative mt-5 inline-flex items-center gap-1 rounded-full bg-surface px-4 py-2 text-xs font-bold text-foreground hover:bg-surface/90"
             >
               Voir mes objectifs <ChevronRight className="size-4" />
             </Link>

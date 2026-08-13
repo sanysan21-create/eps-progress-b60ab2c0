@@ -165,6 +165,8 @@ function TeacherProgram() {
         </p>
       </header>
 
+      <SequencePlanner />
+
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
         <section className="space-y-4 rounded-2xl border border-border bg-surface p-5">
           <div className="flex items-center justify-between">

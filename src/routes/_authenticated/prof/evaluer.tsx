@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { classes, pupils, teacherActivities, LEVEL_LABELS, type Level } from "@/data/demo";
 
-export const Route = createFileRoute("/prof/evaluer")({
+export const Route = createFileRoute("/_authenticated/prof/evaluer")({
   head: () => ({
     meta: [
       { title: "Évaluation rapide — EPS Progress" },

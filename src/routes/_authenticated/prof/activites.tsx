@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { teacherActivities } from "@/data/demo";
 
-export const Route = createFileRoute("/prof/activites")({
+export const Route = createFileRoute("/_authenticated/prof/activites")({
   head: () => ({
     meta: [
       { title: "Activités et compétences — EPS Progress" },

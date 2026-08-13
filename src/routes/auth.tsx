@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { fetchTeacherProfile } from "@/lib/teacher-profile";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -29,8 +30,11 @@ function AuthPage() {
   const navigate = useNavigate();
   const [space, setSpace] = useState<"choice" | "teacher">("choice");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -41,19 +45,50 @@ function AuthPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "signup") {
+      if (!firstName.trim() || !lastName.trim()) {
+        toast.error("Le prénom et le nom sont obligatoires");
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error("Les deux mots de passe ne correspondent pas");
+        return;
+      }
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
           password,
-          options: { emailRedirectTo: `${window.location.origin}/prof` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/prof`,
+            data: { first_name: firstName.trim(), last_name: lastName.trim() },
+          },
         });
-        if (error) throw error;
+        if (error) {
+          throw new Error(
+            /already|exists|registered/i.test(error.message)
+              ? "Cette adresse e-mail possède déjà un compte."
+              : error.message,
+          );
+        }
+        if (!data.session) {
+          // Le profil enseignant n'est créé qu'une fois le compte réellement actif.
+          toast.success("Compte créé. Confirmez votre e-mail pour accéder à votre espace.");
+          setMode("signin");
+          return;
+        }
+        // Le profil est créé (ou complété) dès que la session existe.
+        await fetchTeacherProfile().catch(() => null);
         toast.success("Compte créé. Vous êtes connecté.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
         if (error) throw error;
+        await fetchTeacherProfile().catch(() => null);
       }
       navigate({ to: "/prof" });
     } catch (error) {
@@ -112,10 +147,42 @@ function AuthPage() {
 
         <div className={space === "teacher" ? "rounded-3xl border border-border bg-surface p-6" : "hidden"}>
           <h1 className="display-title text-2xl">
-            {mode === "signin" ? "Connexion" : "Créer un compte"}
+            {mode === "signin" ? "Connexion" : "Créer mon compte enseignant"}
           </h1>
 
           <form onSubmit={submit} className="mt-6 space-y-4">
+            {mode === "signup" && (
+              <>
+                <div>
+                  <label className="mono-label text-muted-foreground" htmlFor="firstName">
+                    Prénom
+                  </label>
+                  <input
+                    id="firstName"
+                    required
+                    maxLength={80}
+                    autoComplete="given-name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="mono-label text-muted-foreground" htmlFor="lastName">
+                    Nom
+                  </label>
+                  <input
+                    id="lastName"
+                    required
+                    maxLength={80}
+                    autoComplete="family-name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </>
+            )}
             <div>
               <label className="mono-label text-muted-foreground" htmlFor="email">
                 Email
@@ -145,6 +212,23 @@ function AuthPage() {
                 className="mt-1 w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm outline-none focus:border-primary"
               />
             </div>
+            {mode === "signup" && (
+              <div>
+                <label className="mono-label text-muted-foreground" htmlFor="confirmPassword">
+                  Confirmer le mot de passe
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm outline-none focus:border-primary"
+                />
+              </div>
+            )}
             <button
               type="submit"
               disabled={busy}

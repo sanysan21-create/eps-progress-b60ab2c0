@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LevelDots } from "@/components/eps/LevelDots";
+import { RankJourney } from "@/components/eps/RankJourney";
+import { AchievementBadges } from "@/components/eps/AchievementBadges";
 import { StrengthPicker } from "@/components/eps/StrengthPicker";
 import { GoalPicker } from "@/components/eps/GoalPicker";
+import { computeProgression, splitAchievements } from "@/lib/progression";
 import {
   ENGAGEMENT_INDICATORS,
   ENGAGEMENT_LEVEL_MAX,
@@ -93,6 +96,17 @@ function StudentProfile() {
   const marks = flattenActivities(activities);
   const progress = averageProgress(marks);
 
+  const strengths = myStrengths.data ?? [];
+  const goal = myGoal.data ?? null;
+  const progressionInput = {
+    marks,
+    engagement: engagement.data ?? [],
+    strengths,
+    goal,
+  };
+  const journey = computeProgression(progressionInput);
+  const { unlocked, locked } = splitAchievements(progressionInput);
+
   const engagementMarks = (engagement.data ?? [])
     .map((mark) => ({
       ...mark,
@@ -127,10 +141,20 @@ function StudentProfile() {
       </header>
 
       <p className="text-sm leading-relaxed text-foreground/80">
-        {progress === null
-          ? "Ton profil se construira au fil des séances. Chaque effort compte."
-          : "Continue à progresser, chaque effort compte."}
+        {journey.hasData
+          ? "Ton parcours se construit étape par étape : tu progresses par rapport à toi-même."
+          : "Ton parcours se construira au fil des séances. Chaque étape compte."}
       </p>
+
+      {/* Parcours de progression : étape personnelle, jamais un classement */}
+      <Section title="🚀 Mon parcours">
+        <RankJourney state={journey} />
+      </Section>
+
+      {/* Réussites personnelles */}
+      <Section title="🏅 Mes réussites">
+        <AchievementBadges unlocked={unlocked} locked={locked} />
+      </Section>
 
       {/* Progression */}
       <Section title="📈 Ma progression">
@@ -138,10 +162,7 @@ function StudentProfile() {
           <EmptyNote>Tes premières évaluations apparaîtront ici.</EmptyNote>
         ) : (
           <div className="rounded-2xl border border-border bg-surface p-5">
-            <div className="flex items-end justify-between">
-              <p className="text-sm text-muted-foreground">Niveaux atteints</p>
-              <p className="display-title text-3xl text-primary">{progress}%</p>
-            </div>
+            <p className="text-sm text-muted-foreground">Niveaux atteints dans tes compétences</p>
             <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-2">
               <div
                 className="h-full origin-left rounded-full bg-primary animate-bar-grow"
@@ -150,7 +171,7 @@ function StudentProfile() {
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Moyenne de tes niveaux sur {marks.length} compétence{marks.length > 1 ? "s" : ""}{" "}
-              évaluée{marks.length > 1 ? "s" : ""}.
+              évaluée{marks.length > 1 ? "s" : ""}. Ce repère te concerne uniquement toi.
             </p>
           </div>
         )}
@@ -226,12 +247,12 @@ function StudentProfile() {
 
       {/* Points forts : choisis par l'élève lui-même */}
       <Section title="⭐ Mes points forts">
-        <StrengthPicker current={myStrengths.data ?? []} />
+        <StrengthPicker current={strengths} />
       </Section>
 
       {/* Objectif : point à travailler choisi par l'élève lui-même */}
       <Section title="🚀 Mon objectif">
-        <GoalPicker current={myGoal.data ?? null} />
+        <GoalPicker current={goal} />
       </Section>
     </div>
   );

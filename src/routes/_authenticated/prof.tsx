@@ -7,6 +7,7 @@ import {
   ClipboardList,
   CalendarDays,
   Medal,
+  Info,
 } from "lucide-react";
 
 import { useTeacherProfile } from "@/hooks/use-teacher-profile";

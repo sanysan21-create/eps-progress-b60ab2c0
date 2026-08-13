@@ -222,6 +222,60 @@ export type Database = {
           },
         ]
       }
+      program_sequences: {
+        Row: {
+          activity_id: string | null
+          class_id: string | null
+          created_at: string
+          from_session: number | null
+          id: string
+          name: string
+          position: number
+          teacher_id: string
+          to_session: number | null
+          updated_at: string
+        }
+        Insert: {
+          activity_id?: string | null
+          class_id?: string | null
+          created_at?: string
+          from_session?: number | null
+          id?: string
+          name: string
+          position?: number
+          teacher_id: string
+          to_session?: number | null
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: string | null
+          class_id?: string | null
+          created_at?: string
+          from_session?: number | null
+          id?: string
+          name?: string
+          position?: number
+          teacher_id?: string
+          to_session?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_sequences_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_sequences_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       program_sessions: {
         Row: {
           activity_id: string | null

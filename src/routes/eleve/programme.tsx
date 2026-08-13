@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { getMyProgram } from "@/lib/program.functions";
 import { nextSession, sessionWhen, upcomingSessions } from "@/lib/program";
+import { getMyProgramSequences } from "@/lib/program-sequences.functions";
+import { sequenceRange } from "@/lib/program-sequences";
 import { activityEmoji } from "@/lib/activity-emoji";
 
 export const Route = createFileRoute("/eleve/programme")({

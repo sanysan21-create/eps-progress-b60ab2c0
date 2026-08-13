@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Search, Trash2, X } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { listActivities, listTeacherStudents } from "@/lib/competencies.functions";
@@ -17,12 +17,13 @@ export const Route = createFileRoute("/_authenticated/prof/notes")({
       {
         name: "description",
         content:
-          "Notez un élève sur une activité : choisissez la compétence de chaque AFL, saisissez les points, la note globale se calcule automatiquement.",
+          "Notez un élève sur une activité : sélectionnez sous AFL1, AFL2, AFL3 les compétences réellement évaluées, saisissez les points, la note globale se calcule automatiquement.",
       },
       { property: "og:title", content: "Attribuer les notes — EPS Progress" },
       {
         property: "og:description",
-        content: "Saisie rapide des notes AFL1, AFL2, AFL3 avec barème personnalisable.",
+        content:
+          "Saisie rapide des notes AFL1, AFL2, AFL3 à partir des compétences déjà créées dans l'onglet Compétences.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -31,20 +32,22 @@ export const Route = createFileRoute("/_authenticated/prof/notes")({
   component: TeacherGrades,
 });
 
-type FormItem = {
-  label: string;
-  competencyId: string | null;
-  points: string;
-  maxPoints: string;
-};
+type Score = { points: string; maxPoints: string };
+/** Par AFL : compétences cochées et points saisis. */
+type AflState = Record<string, Record<string, Score>>;
 
-function initialItems(): FormItem[] {
-  return DEFAULT_AFL_ITEMS.map((item) => ({
-    label: item.label,
-    competencyId: null,
-    points: "0",
-    maxPoints: String(item.maxPoints),
-  }));
+const AFL_LABELS = DEFAULT_AFL_ITEMS.map((item) => item.label);
+
+function initialAflState(): AflState {
+  return AFL_LABELS.reduce<AflState>((acc, label) => {
+    acc[label] = {};
+    return acc;
+  }, {});
+}
+
+function defaultMax(afl: string): string {
+  const found = DEFAULT_AFL_ITEMS.find((item) => item.label === afl);
+  return String(found?.maxPoints ?? 5);
 }
 
 function TeacherGrades() {
@@ -59,7 +62,8 @@ function TeacherGrades() {
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [studentId, setStudentId] = useState<string | null>(null);
   const [activityId, setActivityId] = useState("");
-  const [items, setItems] = useState<FormItem[]>(initialItems);
+  const [afl, setAfl] = useState<AflState>(initialAflState);
+  const [activeAfl, setActiveAfl] = useState<string>(AFL_LABELS[0] ?? "AFL1");
   const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -103,22 +107,44 @@ function TeacherGrades() {
       .slice(0, 80);
   }, [query, selectedClass, students.data]);
 
-  const totals = gradeTotals(
-    items.map((item) => ({
-      points: Number(item.points.replace(",", ".")) || 0,
-      max_points: Number(item.maxPoints.replace(",", ".")) || 0,
-    })),
+  const flatItems = useMemo(
+    () =>
+      AFL_LABELS.flatMap((label) =>
+        Object.entries(afl[label] ?? {}).map(([competencyId, score]) => ({
+          label,
+          competencyId,
+          points: Number(score.points.replace(",", ".")) || 0,
+          maxPoints: Number(score.maxPoints.replace(",", ".")) || 0,
+        })),
+      ),
+    [afl],
   );
 
-  function patchItem(index: number, patch: Partial<FormItem>) {
-    setItems((current) =>
-      current.map((item, i) => (i === index ? { ...item, ...patch } : item)),
-    );
+  const totals = gradeTotals(
+    flatItems.map((item) => ({ points: item.points, max_points: item.maxPoints })),
+  );
+
+  function toggleCompetency(aflLabel: string, competencyId: string) {
+    setAfl((current) => {
+      const group = { ...(current[aflLabel] ?? {}) };
+      if (group[competencyId]) delete group[competencyId];
+      else group[competencyId] = { points: "0", maxPoints: defaultMax(aflLabel) };
+      return { ...current, [aflLabel]: group };
+    });
+  }
+
+  function patchScore(aflLabel: string, competencyId: string, patch: Partial<Score>) {
+    setAfl((current) => {
+      const group = current[aflLabel] ?? {};
+      const score = group[competencyId];
+      if (!score) return current;
+      return { ...current, [aflLabel]: { ...group, [competencyId]: { ...score, ...patch } } };
+    });
   }
 
   function resetForm() {
     setActivityId("");
-    setItems(initialItems());
+    setAfl(initialAflState());
     setComment("");
   }
 
@@ -131,6 +157,14 @@ function TeacherGrades() {
       toast.error("Sélectionne une activité.");
       return;
     }
+    if (flatItems.length === 0) {
+      toast.error("Coche au moins une compétence évaluée sous un AFL.");
+      return;
+    }
+    if (flatItems.length > 10) {
+      toast.error("10 compétences évaluées maximum par activité.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -140,12 +174,7 @@ function TeacherGrades() {
           activityId,
           comment: comment.trim() || null,
           evaluatedOn: null,
-          items: items.map((item) => ({
-            label: item.label.trim() || "AFL",
-            competencyId: item.competencyId,
-            points: Number(item.points.replace(",", ".")) || 0,
-            maxPoints: Number(item.maxPoints.replace(",", ".")) || 0,
-          })),
+          items: flatItems,
         },
       });
       toast.success("Note enregistrée");
@@ -168,13 +197,15 @@ function TeacherGrades() {
     }
   }
 
+  const activeGroup = afl[activeAfl] ?? {};
+
   return (
     <div className="space-y-8 p-6 lg:p-10">
       <header className="space-y-1">
         <h1 className="display-title text-3xl italic tracking-tighter">Notes</h1>
         <p className="text-sm text-muted-foreground">
-          Élève → activité → AFL1 / AFL2 / AFL3 → points → enregistrer. Le total se calcule
-          automatiquement.
+          Élève → activité → AFL1 / AFL2 / AFL3 → coche les compétences évaluées (créées dans
+          « Compétences ») → points. Le total se calcule automatiquement.
         </p>
       </header>
 
@@ -225,7 +256,6 @@ function TeacherGrades() {
           </p>
 
           <ul className="max-h-72 space-y-1 overflow-y-auto">
-
             {filtered.map((row) => (
               <li key={row.id}>
                 <button
@@ -279,9 +309,7 @@ function TeacherGrades() {
                     value={activityId}
                     onChange={(event) => {
                       setActivityId(event.target.value);
-                      setItems((current) =>
-                        current.map((item) => ({ ...item, competencyId: null })),
-                      );
+                      setAfl(initialAflState());
                     }}
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   >
@@ -296,107 +324,118 @@ function TeacherGrades() {
 
                 {activityId && competencies.length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    Cette activité n'a pas encore de compétence cible. Ajoute-les dans « Activités
-                    & compétences ».
+                    Cette activité n'a pas encore de compétence enregistrée. Crée-les dans l'onglet
+                    « Compétences » (ou « Activités & compétences ») : elles apparaîtront ensuite
+                    ici.
                   </p>
                 )}
 
-                {activityId && (
-                  <ul className="space-y-4">
-                    {items.map((item, index) => (
-                      <li
-                        key={index}
-                        className="space-y-3 rounded-xl border border-border/70 bg-background p-4"
-                      >
-                        <div className="flex items-center gap-2">
-                          <input
-                            value={item.label}
-                            onChange={(event) => patchItem(index, { label: event.target.value })}
-                            aria-label={`Intitulé de l'AFL ${index + 1}`}
-                            className="w-24 rounded-lg border border-border bg-surface px-2 py-1 font-mono text-xs uppercase tracking-tight text-primary outline-none focus:border-primary"
-                          />
-                          {items.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setItems((current) => current.filter((_, i) => i !== index))
-                              }
-                              aria-label={`Supprimer ${item.label}`}
-                              className="ml-auto text-muted-foreground hover:text-destructive"
-                            >
-                              <X className="size-4" />
-                            </button>
-                          )}
-                        </div>
-
-                        <label className="block space-y-1">
-                          <span className="text-xs text-muted-foreground">
-                            Compétence de cette activité
-                          </span>
-                          <select
-                            value={item.competencyId ?? ""}
-                            onChange={(event) =>
-                              patchItem(index, { competencyId: event.target.value || null })
-                            }
-                            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+                {activityId && competencies.length > 0 && (
+                  <div className="space-y-4">
+                    <div
+                      role="tablist"
+                      aria-label="AFL"
+                      className="flex gap-2 rounded-xl border border-border bg-background p-1"
+                    >
+                      {AFL_LABELS.map((label) => {
+                        const count = Object.keys(afl[label] ?? {}).length;
+                        return (
+                          <button
+                            key={label}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeAfl === label}
+                            onClick={() => setActiveAfl(label)}
+                            className={`flex-1 rounded-lg px-3 py-2 font-mono text-xs uppercase tracking-tight transition-colors ${
+                              activeAfl === label
+                                ? "bg-primary font-bold text-primary-foreground"
+                                : "text-muted-foreground hover:bg-accent"
+                            }`}
                           >
-                            <option value="">Choisir une compétence…</option>
-                            {competencies.map((competency) => (
-                              <option key={competency.id} value={competency.id}>
-                                {competency.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                            {label}
+                            {count > 0 && <span className="ml-1 opacity-80">({count})</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                        <div className="flex items-end gap-3">
-                          <label className="block space-y-1">
-                            <span className="text-xs text-muted-foreground">Points obtenus</span>
-                            <input
-                              inputMode="decimal"
-                              value={item.points}
-                              onChange={(event) => patchItem(index, { points: event.target.value })}
-                              className="w-24 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-                            />
-                          </label>
-                          <span className="pb-2 text-muted-foreground">/</span>
-                          <label className="block space-y-1">
-                            <span className="text-xs text-muted-foreground">Barème</span>
-                            <input
-                              inputMode="decimal"
-                              value={item.maxPoints}
-                              onChange={(event) =>
-                                patchItem(index, { maxPoints: event.target.value })
-                              }
-                              className="w-24 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-                            />
-                          </label>
-                        </div>
-                      </li>
-                    ))}
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setItems((current) => [
-                            ...current,
-                            {
-                              label: `AFL${current.length + 1}`,
-                              competencyId: null,
-                              points: "0",
-                              maxPoints: "0",
-                            },
-                          ])
-                        }
-                        className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-medium uppercase hover:bg-accent"
-                      >
-                        <Plus className="size-4" /> Ajouter un AFL
-                      </button>
-                    </li>
-                  </ul>
+                    <div className="space-y-3 rounded-xl border border-border/70 bg-background p-4">
+                      <p className="mono-label text-muted-foreground">
+                        Compétences évaluées dans {activeAfl}
+                      </p>
+                      <ul className="space-y-2">
+                        {competencies.map((competency) => {
+                          const score = activeGroup[competency.id];
+                          const checked = Boolean(score);
+                          return (
+                            <li
+                              key={competency.id}
+                              className={`rounded-lg border px-3 py-2 transition-colors ${
+                                checked ? "border-primary/60 bg-surface" : "border-border/60"
+                              }`}
+                            >
+                              <label className="flex cursor-pointer items-center gap-3 text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleCompetency(activeAfl, competency.id)}
+                                  className="size-4 accent-primary"
+                                />
+                                <span className={checked ? "font-semibold" : ""}>
+                                  {competency.label}
+                                </span>
+                              </label>
+
+                              {score && (
+                                <div className="mt-3 flex items-end gap-3 pl-7">
+                                  <label className="block space-y-1">
+                                    <span className="text-xs text-muted-foreground">
+                                      Points obtenus
+                                    </span>
+                                    <input
+                                      inputMode="decimal"
+                                      value={score.points}
+                                      onChange={(event) =>
+                                        patchScore(activeAfl, competency.id, {
+                                          points: event.target.value,
+                                        })
+                                      }
+                                      aria-label={`Points ${activeAfl} — ${competency.label}`}
+                                      className="w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                                    />
+                                  </label>
+                                  <span className="pb-2 text-muted-foreground">/</span>
+                                  <label className="block space-y-1">
+                                    <span className="text-xs text-muted-foreground">Barème</span>
+                                    <input
+                                      inputMode="decimal"
+                                      value={score.maxPoints}
+                                      onChange={(event) =>
+                                        patchScore(activeAfl, competency.id, {
+                                          maxPoints: event.target.value,
+                                        })
+                                      }
+                                      aria-label={`Barème ${activeAfl} — ${competency.label}`}
+                                      className="w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                                    />
+                                  </label>
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {Object.keys(activeGroup).length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Coche les compétences réellement évaluées dans {activeAfl}. Une même
+                          compétence peut être sélectionnée dans plusieurs AFL.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 )}
 
-                {activityId && (
+                {activityId && competencies.length > 0 && (
                   <>
                     <label className="block space-y-1">
                       <span className="mono-label text-muted-foreground">

@@ -333,11 +333,34 @@ function ClassDetailPage() {
                   <p className="text-sm font-bold">
                     {student.first_name} {student.last_name}
                   </p>
-                  <p className="mono-label text-muted-foreground">{student.student_code}</p>
+                  <p className="mono-label flex flex-wrap items-center gap-2 text-muted-foreground">
+                    {student.student_code}
+                    <span
+                      className={
+                        (qrStatusByStudent.get(student.id) ?? "none") === "active"
+                          ? "rounded bg-surface-2 px-1.5 py-0.5 text-primary"
+                          : (qrStatusByStudent.get(student.id) ?? "none") === "revoked"
+                            ? "rounded bg-surface-2 px-1.5 py-0.5 text-destructive"
+                            : "rounded bg-surface-2 px-1.5 py-0.5 text-muted-foreground"
+                      }
+                    >
+                      {(qrStatusByStudent.get(student.id) ?? "none") === "active"
+                        ? "QR actif"
+                        : (qrStatusByStudent.get(student.id) ?? "none") === "revoked"
+                          ? "QR révoqué"
+                          : "QR non généré"}
+                    </span>
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setQrTarget(student)}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-[10px] font-bold uppercase"
+                >
+                  <QrCode className="size-3.5" /> QR Code
+                </button>
                 <button
                   onClick={() => setProfileTarget(student)}
                   className="rounded-lg border border-border px-3 py-2 text-[10px] font-bold uppercase"

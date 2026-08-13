@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { LevelDots } from "@/components/eps/LevelDots";
 import { RankJourney } from "@/components/eps/RankJourney";
-import { AchievementBadges } from "@/components/eps/AchievementBadges";
 import { StrengthPicker } from "@/components/eps/StrengthPicker";
 import { GoalPicker } from "@/components/eps/GoalPicker";
 import { computeProgression } from "@/lib/progression";

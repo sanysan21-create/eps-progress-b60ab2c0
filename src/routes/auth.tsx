@@ -174,10 +174,20 @@ function AuthPage() {
           >
             {mode === "signin" ? "Pas encore de compte ? S'inscrire" : "J'ai déjà un compte"}
           </button>
+
+          <button
+            onClick={() => setSpace("choice")}
+            className="mono-label mt-3 w-full text-center text-muted-foreground hover:text-primary"
+          >
+            ← Retour au choix de l'espace
+          </button>
         </div>
 
-        <Link to="/eleve" className="mono-label block text-center text-muted-foreground hover:text-primary">
-          → Espace élève
+        <Link
+          to="/acces-eleve"
+          className="mono-label block text-center text-muted-foreground hover:text-primary"
+        >
+          → Espace élève (QR code)
         </Link>
       </div>
     </main>

@@ -42,7 +42,7 @@ function TeacherLayout() {
             <Link to="/" className="display-title block text-3xl italic tracking-tighter text-primary">
               EPS Progress
             </Link>
-            <p className="mono-label mt-1 text-muted-foreground">Performance tracking · démo</p>
+            <p className="mono-label mt-1 text-muted-foreground">suivi des progrès</p>
           </div>
 
           <nav className="space-y-1">

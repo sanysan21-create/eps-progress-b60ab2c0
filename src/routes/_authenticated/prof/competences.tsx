@@ -78,9 +78,9 @@ function QuickCompetencies() {
     queryFn: () => fetchEngagement({ data: { studentId: soloId! } }),
     enabled: Boolean(soloId),
   });
-  const strengths = useQuery({
-    queryKey: ["student-strengths", soloId],
-    queryFn: () => fetchStrengths({ data: { studentId: soloId! } }),
+  const strengthChoice = useQuery({
+    queryKey: ["student-strength-choice", soloId],
+    queryFn: () => fetchStrengthChoice({ data: { studentId: soloId! } }),
     enabled: Boolean(soloId),
   });
 
@@ -90,7 +90,8 @@ function QuickCompetencies() {
     return map;
   }, [engagement.data]);
 
-  const strengthSet = useMemo(() => new Set(strengths.data ?? []), [strengths.data]);
+  const chosenStrength = strengthChoice.data ? findStrength(strengthChoice.data) : undefined;
+
 
   async function handleEngagementChange(indicatorCode: string, value: string) {
     if (!selected.length) {

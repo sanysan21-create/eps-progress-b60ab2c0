@@ -17,6 +17,7 @@ export type Database = {
       activities: {
         Row: {
           created_at: string
+          description: string | null
           id: string
           name: string
           teacher_id: string
@@ -24,6 +25,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
           name: string
           teacher_id?: string
@@ -31,50 +33,13 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
           name?: string
           teacher_id?: string
           updated_at?: string
         }
         Relationships: []
-      }
-      activity_levels: {
-        Row: {
-          activity_id: string
-          created_at: string
-          id: string
-          label: string
-          position: number
-          teacher_id: string
-          updated_at: string
-        }
-        Insert: {
-          activity_id: string
-          created_at?: string
-          id?: string
-          label: string
-          position?: number
-          teacher_id?: string
-          updated_at?: string
-        }
-        Update: {
-          activity_id?: string
-          created_at?: string
-          id?: string
-          label?: string
-          position?: number
-          teacher_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "activity_levels_activity_id_fkey"
-            columns: ["activity_id"]
-            isOneToOne: false
-            referencedRelation: "activities"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       class_students: {
         Row: {
@@ -145,50 +110,127 @@ export type Database = {
         }
         Relationships: []
       }
-      student_competencies: {
+      competencies: {
         Row: {
-          activity_id: string | null
+          activity_id: string
           created_at: string
           id: string
           label: string
-          level_label: string
-          level_position: number
+          position: number
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          id?: string
+          label: string
+          position?: number
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competencies_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competency_levels: {
+        Row: {
+          competency_id: string
+          created_at: string
+          id: string
+          label: string
+          position: number
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          competency_id: string
+          created_at?: string
+          id?: string
+          label: string
+          position?: number
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          competency_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competency_levels_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "competencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_competency_levels: {
+        Row: {
+          competency_id: string
+          created_at: string
+          id: string
+          level_id: string
           student_id: string
           teacher_id: string
           updated_at: string
         }
         Insert: {
-          activity_id?: string | null
+          competency_id: string
           created_at?: string
           id?: string
-          label: string
-          level_label: string
-          level_position?: number
+          level_id: string
           student_id: string
           teacher_id?: string
           updated_at?: string
         }
         Update: {
-          activity_id?: string | null
+          competency_id?: string
           created_at?: string
           id?: string
-          label?: string
-          level_label?: string
-          level_position?: number
+          level_id?: string
           student_id?: string
           teacher_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "student_competencies_activity_id_fkey"
-            columns: ["activity_id"]
+            foreignKeyName: "student_competency_levels_competency_id_fkey"
+            columns: ["competency_id"]
             isOneToOne: false
-            referencedRelation: "activities"
+            referencedRelation: "competencies"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "student_competencies_student_id_fkey"
+            foreignKeyName: "student_competency_levels_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "competency_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_competency_levels_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"

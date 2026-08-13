@@ -3,15 +3,13 @@ import { Waves, Dumbbell, Timer, Circle, ChevronRight, Target, Trophy, Flame } f
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { LevelBars } from "@/components/eps/LevelBars";
-import { getMyCompetencies } from "@/lib/competencies.functions";
+import { getMyProfileCompetencies } from "@/lib/competencies.functions";
 import {
   student,
-  studentActivities,
   studentObjectives,
   studentAchievements,
   LEVEL_LABELS,
   type Level,
-  type Activity,
 } from "@/data/demo";
 
 
@@ -34,15 +32,17 @@ export const Route = createFileRoute("/eleve/profil")({
   component: StudentProfile,
 });
 
-const activityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  natation: Waves,
-  basket: Circle,
-  athletisme: Timer,
-  gymnastique: Dumbbell,
-};
+const activityIcons: { match: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { match: "natation", icon: Waves },
+  { match: "basket", icon: Circle },
+  { match: "course", icon: Timer },
+  { match: "athl", icon: Timer },
+  { match: "gym", icon: Dumbbell },
+];
 
-function ActivityIcon({ activity }: { activity: Activity }) {
-  const Icon = activityIcons[activity.id] || Flame;
+function ActivityIcon({ name }: { name: string }) {
+  const normalized = name.toLowerCase();
+  const Icon = activityIcons.find((entry) => normalized.includes(entry.match))?.icon ?? Flame;
   return (
     <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
       <Icon className="size-6" />
@@ -53,11 +53,12 @@ function ActivityIcon({ activity }: { activity: Activity }) {
 function StudentProfile() {
   const nextObjective = studentObjectives.find((o) => !o.done);
   const unlockedAchievements = studentAchievements.filter((a) => a.unlocked).slice(0, 3);
-  const fetchCompetencies = useServerFn(getMyCompetencies);
-  const competencies = useQuery({
-    queryKey: ["my-competencies"],
-    queryFn: () => fetchCompetencies(),
+  const fetchProfile = useServerFn(getMyProfileCompetencies);
+  const profile = useQuery({
+    queryKey: ["my-profile-competencies"],
+    queryFn: () => fetchProfile(),
   });
+
 
 
   return (
@@ -94,79 +95,50 @@ function StudentProfile() {
         </div>
       </header>
 
-      {/* Mes compétences (renseignées par le professeur) */}
-      {(competencies.data ?? []).length > 0 && (
-        <section className="space-y-4">
-          <h2 className="display-title text-xl italic">Mes compétences</h2>
-          <div className="space-y-3">
-            {(competencies.data ?? []).map((c) => (
-              <article
-                key={c.id}
-                className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface p-4"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">{c.label}</p>
-                  {c.activity_name && (
-                    <p className="mono-label text-muted-foreground">{c.activity_name}</p>
-                  )}
-                </div>
-                <span className="mono-label shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-primary">
-                  {c.level_label}
-                </span>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-
-
-
-      {/* Mes activités */}
+      {/* Mes activités — configurées et évaluées par le professeur */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="display-title text-xl italic">Mes activités</h2>
-          <Link
-            to="/eleve/activites"
-            className="mono-label flex items-center gap-1 text-muted-foreground hover:text-primary"
-          >
-            Voir tout <ChevronRight className="size-4" />
-          </Link>
-        </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none]">
-          {studentActivities.map((a) => (
+        <h2 className="display-title text-xl italic">Mes activités</h2>
+
+        {profile.isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
+
+        {!profile.isLoading && (profile.data ?? []).length === 0 && (
+          <div className="rounded-3xl border border-border bg-surface p-6 text-center">
+            <Flame className="mx-auto size-8 text-primary" />
+            <p className="mt-3 font-bold">Aucune compétence n'a encore été évaluée.</p>
+            <p className="text-sm text-muted-foreground">
+              Ton professeur renseignera tes niveaux au fil des séances.
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {(profile.data ?? []).map((activity) => (
             <article
-              key={a.id}
-              className="group w-[260px] shrink-0 rounded-3xl border border-border bg-surface p-5 transition-colors hover:border-primary/50"
+              key={activity.activity_id}
+              className="space-y-3 rounded-3xl border border-border bg-surface p-5"
             >
-              <div className="mb-4 flex items-start justify-between">
-                <ActivityIcon activity={a} />
-                <LevelBars level={a.level} size="sm" />
+              <div className="flex items-center gap-3">
+                <ActivityIcon name={activity.activity_name} />
+                <h3 className="display-title text-xl italic">{activity.activity_name}</h3>
               </div>
-              <p className="mono-label text-primary">{a.cycle}</p>
-              <h3 className="display-title text-xl italic">{a.name}</h3>
-              <div className="mt-4 flex items-end justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    {a.competencies.length} compétences
-                  </p>
-                  <p className="mono-label mt-1 text-xs text-muted-foreground">
-                    {LEVEL_LABELS[a.level as Level]}
-                  </p>
-                </div>
-                <span className="display-title text-4xl text-surface-2 transition-colors group-hover:text-primary">
-                  {String(a.level).padStart(2, "0")}
-                </span>
-              </div>
-              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-surface-2">
-                <div
-                  className="animate-bar-grow h-full origin-left rounded-full bg-primary"
-                  style={{ width: `${(a.level / 5) * 100}%` }}
-                />
+              <div className="space-y-2">
+                {activity.competencies.map((competency) => (
+                  <div
+                    key={competency.id}
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-background/60 p-3"
+                  >
+                    <p className="min-w-0 text-sm font-semibold">{competency.label}</p>
+                    <span className="mono-label shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-primary">
+                      Niveau {competency.level_position} — {competency.level_label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </article>
           ))}
         </div>
       </section>
+
 
       {/* Mon prochain objectif */}
       <section className="space-y-4">

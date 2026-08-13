@@ -4,8 +4,19 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { DEFAULT_LEVELS } from "@/lib/levels";
 
-export type ActivityLevel = { id: string; label: string; position: number };
-export type ActivityWithLevels = { id: string; name: string; levels: ActivityLevel[] };
+export type CompetencyLevel = { id: string; label: string; position: number };
+export type Competency = {
+  id: string;
+  label: string;
+  position: number;
+  levels: CompetencyLevel[];
+};
+export type ActivityTree = {
+  id: string;
+  name: string;
+  description: string | null;
+  competencies: Competency[];
+};
 
 export type StudentPick = {
   id: string;
@@ -15,68 +26,94 @@ export type StudentPick = {
   class_names: string[];
 };
 
-export type CompetencyRow = {
-  id: string;
-  label: string;
-  level_label: string;
-  level_position: number;
-  activity_id: string | null;
-  activity_name: string | null;
+/** Niveau attribué à un élève pour une compétence cible. */
+export type StudentMark = { competency_id: string; level_id: string };
+
+export type StudentProfileActivity = {
+  activity_id: string;
+  activity_name: string;
+  competencies: { id: string; label: string; level_label: string; level_position: number }[];
 };
 
-const label = z.string().trim().min(1, "Champ requis").max(120);
+const labelSchema = z.string().trim().min(1, "Champ requis").max(200);
+
+function sortLevels(levels: CompetencyLevel[]) {
+  return levels.slice().sort((a, b) => a.position - b.position);
+}
 
 export const listActivities = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<ActivityWithLevels[]> => {
+  .handler(async ({ context }): Promise<ActivityTree[]> => {
     const { data, error } = await context.supabase
       .from("activities")
-      .select("id, name, activity_levels(id, label, position)")
+      .select(
+        "id, name, description, competencies(id, label, position, competency_levels(id, label, position))",
+      )
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
 
-    return (data ?? []).map((row) => ({
-      id: row.id,
-      name: row.name,
-      levels: ((row.activity_levels as unknown as ActivityLevel[]) ?? [])
+    return (data ?? []).map((activity) => ({
+      id: activity.id,
+      name: activity.name,
+      description: activity.description,
+      competencies: (
+        (activity.competencies as unknown as {
+          id: string;
+          label: string;
+          position: number;
+          competency_levels: CompetencyLevel[];
+        }[]) ?? []
+      )
         .slice()
-        .sort((a, b) => a.position - b.position),
+        .sort((a, b) => a.position - b.position)
+        .map((competency) => ({
+          id: competency.id,
+          label: competency.label,
+          position: competency.position,
+          levels: sortLevels(competency.competency_levels ?? []),
+        })),
     }));
   });
 
 export const createActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { name: string }) => z.object({ name: label }).parse(input))
+  .inputValidator((input: { name: string; description?: string | null }) =>
+    z
+      .object({ name: labelSchema, description: z.string().trim().max(1000).nullable().optional() })
+      .parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("activities")
-      .insert({ name: data.name, teacher_id: context.userId })
+      .insert({
+        name: data.name,
+        description: data.description ?? null,
+        teacher_id: context.userId,
+      })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-
-    const { error: levelError } = await context.supabase.from("activity_levels").insert(
-      DEFAULT_LEVELS.map((l, i) => ({
-        activity_id: row.id,
-        teacher_id: context.userId,
-        label: l,
-        position: i + 1,
-      })),
-    );
-    if (levelError) throw new Error(levelError.message);
     return { id: row.id };
   });
 
-export const renameActivity = createServerFn({ method: "POST" })
+export const updateActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string; name: string }) =>
-    z.object({ id: z.string().uuid(), name: label }).parse(input),
+  .inputValidator((input: { id: string; name?: string; description?: string | null }) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        name: labelSchema.optional(),
+        description: z.string().trim().max(1000).nullable().optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("activities")
-      .update({ name: data.name })
-      .eq("id", data.id);
+    const patch: { name?: string; description?: string | null } = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.description !== undefined) patch.description = data.description;
+    if (Object.keys(patch).length === 0) return { ok: true };
+
+    const { error } = await context.supabase.from("activities").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -90,51 +127,149 @@ export const deleteActivity = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const addActivityLevel = createServerFn({ method: "POST" })
+/** Crée une compétence cible avec ses propres niveaux (par défaut, personnalisables ensuite). */
+export const createCompetency = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { activityId: string; label: string }) =>
-    z.object({ activityId: z.string().uuid(), label }).parse(input),
+  .inputValidator((input: { activityId: string; label: string; levels?: string[] }) =>
+    z
+      .object({
+        activityId: z.string().uuid(),
+        label: labelSchema,
+        levels: z.array(z.string().trim().max(200)).max(20).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: existing, error: readError } = await context.supabase
-      .from("activity_levels")
+    const { data: last, error: readError } = await context.supabase
+      .from("competencies")
       .select("position")
       .eq("activity_id", data.activityId)
       .order("position", { ascending: false })
       .limit(1);
     if (readError) throw new Error(readError.message);
 
-    const next = (existing?.[0]?.position ?? 0) + 1;
-    const { error } = await context.supabase.from("activity_levels").insert({
-      activity_id: data.activityId,
-      teacher_id: context.userId,
-      label: data.label,
-      position: next,
-    });
+    const { data: row, error } = await context.supabase
+      .from("competencies")
+      .insert({
+        activity_id: data.activityId,
+        teacher_id: context.userId,
+        label: data.label,
+        position: (last?.[0]?.position ?? 0) + 1,
+      })
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
-    return { ok: true };
+
+    const labels = (data.levels ?? [...DEFAULT_LEVELS]).map((l) => l.trim()).filter(Boolean);
+    if (labels.length > 0) {
+      const { error: levelError } = await context.supabase.from("competency_levels").insert(
+        labels.map((label, index) => ({
+          competency_id: row.id,
+          teacher_id: context.userId,
+          label,
+          position: index + 1,
+        })),
+      );
+      if (levelError) throw new Error(levelError.message);
+    }
+    return { id: row.id };
   });
 
-export const updateActivityLevel = createServerFn({ method: "POST" })
+export const updateCompetency = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string; label: string }) =>
-    z.object({ id: z.string().uuid(), label }).parse(input),
+    z.object({ id: z.string().uuid(), label: labelSchema }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
-      .from("activity_levels")
+      .from("competencies")
       .update({ label: data.label })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
-export const deleteActivityLevel = createServerFn({ method: "POST" })
+export const deleteCompetency = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("activity_levels").delete().eq("id", data.id);
+    const { error } = await context.supabase.from("competencies").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const addCompetencyLevel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { competencyId: string; label: string }) =>
+    z.object({ competencyId: z.string().uuid(), label: labelSchema }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: last, error: readError } = await context.supabase
+      .from("competency_levels")
+      .select("position")
+      .eq("competency_id", data.competencyId)
+      .order("position", { ascending: false })
+      .limit(1);
+    if (readError) throw new Error(readError.message);
+
+    const { error } = await context.supabase.from("competency_levels").insert({
+      competency_id: data.competencyId,
+      teacher_id: context.userId,
+      label: data.label,
+      position: (last?.[0]?.position ?? 0) + 1,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const updateCompetencyLevel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string; label: string }) =>
+    z.object({ id: z.string().uuid(), label: labelSchema }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("competency_levels")
+      .update({ label: data.label })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteCompetencyLevel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("competency_levels").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Échange l'ordre de deux niveaux d'une même compétence cible. */
+export const swapCompetencyLevels = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { firstId: string; secondId: string }) =>
+    z.object({ firstId: z.string().uuid(), secondId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("competency_levels")
+      .select("id, position")
+      .in("id", [data.firstId, data.secondId]);
+    if (error) throw new Error(error.message);
+    if (!rows || rows.length !== 2) throw new Error("Niveaux introuvables");
+
+    const [a, b] = rows;
+    const { error: firstError } = await context.supabase
+      .from("competency_levels")
+      .update({ position: b!.position })
+      .eq("id", a!.id);
+    if (firstError) throw new Error(firstError.message);
+    const { error: secondError } = await context.supabase
+      .from("competency_levels")
+      .update({ position: a!.position })
+      .eq("id", b!.id);
+    if (secondError) throw new Error(secondError.message);
     return { ok: true };
   });
 
@@ -162,114 +297,70 @@ export const listTeacherStudents = createServerFn({ method: "GET" })
       );
   });
 
-export const listStudentCompetencies = createServerFn({ method: "GET" })
+export const listStudentMarks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data, context }): Promise<CompetencyRow[]> => {
+  .handler(async ({ data, context }): Promise<StudentMark[]> => {
     const { data: rows, error } = await context.supabase
-      .from("student_competencies")
-      .select("id, label, level_label, level_position, activity_id, activities(name)")
-      .eq("student_id", data.studentId)
-      .order("created_at", { ascending: true });
+      .from("student_competency_levels")
+      .select("competency_id, level_id")
+      .eq("student_id", data.studentId);
     if (error) throw new Error(error.message);
-
-    return (rows ?? []).map((row) => ({
-      id: row.id,
-      label: row.label,
-      level_label: row.level_label,
-      level_position: row.level_position,
-      activity_id: row.activity_id,
-      activity_name: (row.activities as unknown as { name: string } | null)?.name ?? null,
-    }));
+    return rows ?? [];
   });
 
-/** Enregistre une compétence + son niveau pour un ou plusieurs élèves en une seule action. */
-export const saveCompetency = createServerFn({ method: "POST" })
+/** Attribue un niveau précis à une compétence cible, pour un ou plusieurs élèves. */
+export const setStudentLevel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: {
-      studentIds: string[];
-      label: string;
-      levelLabel: string;
-      levelPosition: number;
-      activityId?: string | null;
-    }) =>
-      z
-        .object({
-          studentIds: z.array(z.string().uuid()).min(1).max(200),
-          label,
-          levelLabel: label,
-          levelPosition: z.number().int().min(1).max(20),
-          activityId: z.string().uuid().nullable().optional(),
-        })
-        .parse(input),
+  .inputValidator((input: { studentIds: string[]; competencyId: string; levelId: string }) =>
+    z
+      .object({
+        studentIds: z.array(z.string().uuid()).min(1).max(200),
+        competencyId: z.string().uuid(),
+        levelId: z.string().uuid(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("student_competencies").upsert(
+    const { error } = await context.supabase.from("student_competency_levels").upsert(
       data.studentIds.map((studentId) => ({
         student_id: studentId,
+        competency_id: data.competencyId,
+        level_id: data.levelId,
         teacher_id: context.userId,
-        activity_id: data.activityId ?? null,
-        label: data.label,
-        level_label: data.levelLabel,
-        level_position: data.levelPosition,
       })),
-      { onConflict: "student_id,label" },
+      { onConflict: "student_id,competency_id" },
     );
     if (error) throw new Error(error.message);
     return { saved: data.studentIds.length };
   });
 
-export const updateCompetency = createServerFn({ method: "POST" })
+/** Retire le niveau attribué (la compétence disparaît alors du profil élève). */
+export const clearStudentLevel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: { id: string; label?: string; levelLabel?: string; levelPosition?: number }) =>
-      z
-        .object({
-          id: z.string().uuid(),
-          label: label.optional(),
-          levelLabel: label.optional(),
-          levelPosition: z.number().int().min(1).max(20).optional(),
-        })
-        .parse(input),
+  .inputValidator((input: { studentIds: string[]; competencyId: string }) =>
+    z
+      .object({
+        studentIds: z.array(z.string().uuid()).min(1).max(200),
+        competencyId: z.string().uuid(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const patch: {
-      label?: string;
-      level_label?: string;
-      level_position?: number;
-    } = {};
-    if (data.label !== undefined) patch.label = data.label;
-    if (data.levelLabel !== undefined) patch.level_label = data.levelLabel;
-    if (data.levelPosition !== undefined) patch.level_position = data.levelPosition;
-    if (Object.keys(patch).length === 0) return { ok: true };
-
-
     const { error } = await context.supabase
-      .from("student_competencies")
-      .update(patch)
-      .eq("id", data.id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
-
-export const deleteCompetency = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("student_competencies")
+      .from("student_competency_levels")
       .delete()
-      .eq("id", data.id);
+      .eq("competency_id", data.competencyId)
+      .in("student_id", data.studentIds);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
-/** Lecture seule : compétences de l'élève identifié par son cookie de session. */
-export const getMyCompetencies = createServerFn({ method: "GET" }).handler(
-  async (): Promise<CompetencyRow[]> => {
+/** Lecture seule : niveaux effectivement attribués à l'élève identifié par son cookie de session. */
+export const getMyProfileCompetencies = createServerFn({ method: "GET" }).handler(
+  async (): Promise<StudentProfileActivity[]> => {
     const { getStudentSession } = await import("./student-qr.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
@@ -277,19 +368,44 @@ export const getMyCompetencies = createServerFn({ method: "GET" }).handler(
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
-      .from("student_competencies")
-      .select("id, label, level_label, level_position, activity_id, activities(name)")
-      .eq("student_id", studentId)
-      .order("created_at", { ascending: true });
+      .from("student_competency_levels")
+      .select(
+        "competency_id, competencies(id, label, position, activity_id, activities(id, name)), competency_levels(label, position)",
+      )
+      .eq("student_id", studentId);
     if (error) throw new Error(error.message);
 
-    return (rows ?? []).map((row) => ({
-      id: row.id,
-      label: row.label,
-      level_label: row.level_label,
-      level_position: row.level_position,
-      activity_id: row.activity_id,
-      activity_name: (row.activities as unknown as { name: string } | null)?.name ?? null,
-    }));
+    const grouped = new Map<string, StudentProfileActivity>();
+    for (const row of rows ?? []) {
+      const competency = row.competencies as unknown as {
+        id: string;
+        label: string;
+        position: number;
+        activities: { id: string; name: string } | null;
+      } | null;
+      const level = row.competency_levels as unknown as { label: string; position: number } | null;
+      if (!competency?.activities || !level) continue;
+
+      const activity = competency.activities;
+      const entry = grouped.get(activity.id) ?? {
+        activity_id: activity.id,
+        activity_name: activity.name,
+        competencies: [],
+      };
+      entry.competencies.push({
+        id: competency.id,
+        label: competency.label,
+        level_label: level.label,
+        level_position: level.position,
+      });
+      grouped.set(activity.id, entry);
+    }
+
+    return [...grouped.values()]
+      .map((activity) => ({
+        ...activity,
+        competencies: activity.competencies.sort((a, b) => a.label.localeCompare(b.label, "fr")),
+      }))
+      .sort((a, b) => a.activity_name.localeCompare(b.activity_name, "fr"));
   },
 );

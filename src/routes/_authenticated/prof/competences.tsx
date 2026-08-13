@@ -393,37 +393,33 @@ function QuickCompetencies() {
             </div>
           </section>
 
-          <section className="space-y-4 rounded-3xl border border-border bg-surface p-5">
+          <section className="space-y-3 rounded-3xl border border-border bg-surface p-5">
             <div>
-              <h2 className="text-sm font-bold uppercase">Points forts</h2>
+              <h2 className="text-sm font-bold uppercase">Point fort choisi par l'élève</h2>
               <p className="text-xs text-muted-foreground">
-                Coche uniquement ce qui correspond réellement à l'élève. Rien n'est attribué
-                automatiquement.
+                Consultation uniquement : c'est l'élève qui choisit son point fort depuis son
+                profil.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {STRENGTHS.map((item) => {
-                const isSelected = soloId ? strengthSet.has(item.code) : false;
-                return (
-                  <button
-                    key={item.code}
-                    onClick={() => void handleStrengthToggle(item.code, isSelected)}
-                    aria-pressed={isSelected}
-                    className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors ${
-                      isSelected
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border bg-background text-muted-foreground hover:border-primary/40"
-                    }`}
-                  >
-                    <span aria-hidden>{item.emoji}</span>
-                    {item.label}
-                    {isSelected && <Check className="size-3.5 text-primary" />}
-                  </button>
-                );
-              })}
-            </div>
+            {!soloId ? (
+              <p className="text-sm text-muted-foreground">
+                Sélectionne un seul élève pour voir son point fort.
+              </p>
+            ) : chosenStrength ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-4">
+                <span className="text-2xl" aria-hidden>
+                  {chosenStrength.emoji}
+                </span>
+                <p className="text-base font-semibold">{chosenStrength.label}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                L'élève n'a pas encore choisi son point fort.
+              </p>
+            )}
           </section>
+
 
 
           {selected.length > 1 && (

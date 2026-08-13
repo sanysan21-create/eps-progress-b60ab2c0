@@ -107,9 +107,8 @@ function StudentProfile() {
         ENGAGEMENT_INDICATORS.indexOf(a.indicator) - ENGAGEMENT_INDICATORS.indexOf(b.indicator),
     );
 
-  const strengthList = (strengths.data ?? [])
-    .map((code) => findStrength(code))
-    .filter((s): s is NonNullable<typeof s> => Boolean(s));
+
+
 
   return (
     <div className="animate-slide-up space-y-10 pb-4">

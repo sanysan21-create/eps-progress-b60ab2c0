@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Home, Dumbbell, TrendingUp, Target, Trophy } from "lucide-react";
+import { User, Dumbbell, TrendingUp, Target, Trophy } from "lucide-react";
 
 const items = [
-  { to: "/eleve", label: "Profil", icon: Home },
+  { to: "/eleve/profil", label: "Profil", icon: User },
   { to: "/eleve/activites", label: "Activités", icon: Dumbbell },
   { to: "/eleve/progression", label: "Progrès", icon: TrendingUp },
   { to: "/eleve/objectifs", label: "Objectifs", icon: Target },

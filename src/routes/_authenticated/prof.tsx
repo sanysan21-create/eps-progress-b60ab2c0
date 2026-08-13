@@ -1,5 +1,8 @@
 import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
-import { Users, Dumbbell, ListChecks } from "lucide-react";
+import { Users, Dumbbell, ListChecks, UserRound } from "lucide-react";
+
+import { useTeacherProfile } from "@/hooks/use-teacher-profile";
+import { teacherInitials } from "@/lib/teacher-profile";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,10 +14,13 @@ const nav = [
   { to: "/prof", label: "Gestion classes", icon: Users, exact: true },
   { to: "/prof/competences", label: "Évaluer compétences", icon: ListChecks, exact: false },
   { to: "/prof/activites", label: "Activités & compétences", icon: Dumbbell, exact: false },
+  { to: "/prof/profil", label: "Profil de l'enseignant", icon: UserRound, exact: false },
 ] as const;
 
 
 function TeacherLayout() {
+  const { data: profile } = useTeacherProfile();
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto grid min-h-screen max-w-[1440px] grid-cols-1 lg:grid-cols-[280px_1fr]">
@@ -55,15 +61,27 @@ function TeacherLayout() {
             >
               → Se déconnecter
             </button>
-            <div className="flex items-center gap-3 p-2">
-              <div className="grid size-10 place-items-center rounded-full bg-surface-2 ring-2 ring-primary/20">
-                <span className="display-title text-primary">ML</span>
+            <Link to="/prof/profil" className="flex items-center gap-3 rounded-xl p-2 hover:bg-accent">
+              {profile?.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={`Photo de profil de ${profile.firstName} ${profile.lastName}`}
+                  className="size-10 rounded-full object-cover ring-2 ring-primary/30"
+                />
+              ) : (
+                <div className="grid size-10 place-items-center rounded-full bg-surface-2 ring-2 ring-primary/20">
+                  <span className="display-title text-primary">
+                    {profile ? teacherInitials(profile) : "?"}
+                  </span>
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold">
+                  {profile ? `${profile.firstName} ${profile.lastName}`.trim() || profile.email : "Mon profil"}
+                </p>
+                <p className="mono-label truncate text-muted-foreground">Professeur EPS</p>
               </div>
-              <div>
-                <p className="text-xs font-bold">M. Lefebvre</p>
-                <p className="mono-label text-muted-foreground">Professeur EPS</p>
-              </div>
-            </div>
+            </Link>
           </div>
         </aside>
 

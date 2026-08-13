@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
 import { Users, ClipboardCheck, Dumbbell } from "lucide-react";
 
+import { supabase } from "@/integrations/supabase/client";
+
 export const Route = createFileRoute("/_authenticated/prof")({
   component: TeacherLayout,
 });

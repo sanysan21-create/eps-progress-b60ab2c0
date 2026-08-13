@@ -23,8 +23,10 @@ import {
   moveStudent,
   removeFromClass,
   deleteStudent,
+  setStudentAsMember,
   type StudentRow,
 } from "@/lib/classes.functions";
+import { Checkbox } from "@/components/ui/checkbox";
 import { listQrStatuses, generateMissingQrForClass } from "@/lib/student-qr.functions";
 import { StudentQrDialog } from "@/components/eps/StudentQrDialog";
 import {
@@ -52,6 +54,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+/** Dernière connexion réussie de l'élève, en langage naturel. */
+function formatLastLogin(value: string | null): string {
+  if (!value) return "Jamais connecté";
+  const date = new Date(value);
+  const time = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const today = new Date();
+  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  if (sameDay(date, today)) return `Aujourd'hui à ${time}`;
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (sameDay(date, yesterday)) return `Hier à ${time}`;
+  return `${date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })} à ${time}`;
+}
 
 export const Route = createFileRoute("/_authenticated/prof/classes/$classId")({
   head: () => ({
@@ -102,6 +118,7 @@ function ClassDetailPage() {
   const destroyOne = useServerFn(deleteStudent);
   const fetchQrStatuses = useServerFn(listQrStatuses);
   const generateMissing = useServerFn(generateMissingQrForClass);
+  const saveAsMember = useServerFn(setStudentAsMember);
 
   const detail = useQuery({
     queryKey: ["class", classId],
@@ -191,6 +208,18 @@ function ClassDetailPage() {
     onSuccess: () => {
       toast.success("Élève supprimé définitivement");
       setRemoveTarget(null);
+      refresh();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const asMemberMutation = useMutation({
+    mutationFn: (vars: { id: string; asMember: boolean }) => saveAsMember({ data: vars }),
+    onSuccess: (_r, vars) => {
+      toast.success(vars.asMember ? "Élève inscrit à l'AS" : "Inscription à l'AS retirée");
+      setProfileTarget((prev) =>
+        prev && prev.id === vars.id ? { ...prev, as_member: vars.asMember } : prev,
+      );
       refresh();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -534,7 +563,27 @@ function ClassDetailPage() {
                   : "—"}
               </dd>
             </div>
+            <div className="flex justify-between gap-4">
+              <dt className="mono-label text-muted-foreground">🕐 Dernière connexion</dt>
+              <dd className="text-right font-bold">
+                {formatLastLogin(profileTarget?.last_login_at ?? null)}
+              </dd>
+            </div>
           </dl>
+          <label className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 p-4">
+            <Checkbox
+              checked={Boolean(profileTarget?.as_member)}
+              disabled={asMemberMutation.isPending || !profileTarget}
+              onCheckedChange={(checked) =>
+                profileTarget &&
+                asMemberMutation.mutate({ id: profileTarget.id, asMember: checked === true })
+              }
+            />
+            <span className="text-sm font-semibold">🏃 Inscrit à l'AS</span>
+            <span className="ml-auto text-xs text-muted-foreground">
+              Badge AS visible sur le profil de l'élève
+            </span>
+          </label>
           <p className="rounded-xl border border-border bg-surface-2 p-4 text-xs text-muted-foreground">
             L'historique d'évaluations de cet élève s'affichera ici dès que des évaluations auront
             été enregistrées.

@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { getStudentSessionInfo } from "@/lib/student-access.functions";
+import { getMyEngagement, getMyStrengths } from "@/lib/engagement.functions";
 import {
   getMyProfileCompetencies,
   type StudentProfileActivity,
 } from "@/lib/competencies.functions";
+
 
 /**
  * Identité et données de l'élève réellement identifié par le cookie de session

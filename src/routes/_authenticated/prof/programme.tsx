@@ -15,6 +15,7 @@ import {
 import { sessionWhen } from "@/lib/program";
 import { activityEmoji } from "@/lib/activity-emoji";
 import { supabase } from "@/integrations/supabase/client";
+import { SequencePlanner } from "@/components/eps/SequencePlanner";
 
 export const Route = createFileRoute("/_authenticated/prof/programme")({
   head: () => ({

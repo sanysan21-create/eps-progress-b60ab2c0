@@ -228,24 +228,11 @@ function StudentProfile() {
         )}
       </Section>
 
-      {/* Points forts */}
-      <Section title="Mes points forts ⭐">
-        {strengthList.length === 0 ? (
-          <EmptyNote>Tes points forts apparaîtront ici.</EmptyNote>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {strengthList.map((item) => (
-              <li
-                key={item.code}
-                className="flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-sm"
-              >
-                <span aria-hidden>{item.emoji}</span>
-                <span className="font-medium">{item.label}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* Point fort personnel : choisi par l'élève lui-même */}
+      <Section title="Mon point fort ⭐">
+        <StrengthPicker current={myStrength.data ?? null} />
       </Section>
+
     </div>
   );
 }

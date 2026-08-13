@@ -64,22 +64,37 @@ export const clearStudentEngagement = createServerFn({ method: "POST" })
   });
 
 /**
- * Lecture seule pour l'enseignant : point fort choisi par l'élève lui-même.
- * L'enseignant ne peut jamais l'attribuer ni le modifier.
+ * Lecture seule pour l'enseignant : points forts choisis par l'élève lui-même.
+ * L'enseignant ne peut jamais les attribuer ni les modifier.
  */
-export const getStudentStrengthChoice = createServerFn({ method: "GET" })
+export const getStudentStrengthChoices = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { studentId: string }) =>
+    z.object({ studentId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<string[]> => {
+    const { data: rows, error } = await context.supabase
+      .from("student_strength_choices")
+      .select("strength_code")
+      .eq("student_id", data.studentId);
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((row) => row.strength_code);
+  });
+
+/** Lecture seule pour l'enseignant : objectif choisi par l'élève lui-même. */
+export const getStudentGoalChoice = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }): Promise<string | null> => {
     const { data: row, error } = await context.supabase
-      .from("student_strength_choices")
-      .select("strength_code")
+      .from("student_goal_choices")
+      .select("goal_code")
       .eq("student_id", data.studentId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return row?.strength_code ?? null;
+    return row?.goal_code ?? null;
   });
 
 /** Lecture seule : implication de l'élève identifié par son cookie de session QR. */
@@ -100,8 +115,26 @@ export const getMyEngagement = createServerFn({ method: "GET" }).handler(
   },
 );
 
-/** Point fort personnel de l'élève connecté (choisi par lui-même). */
-export const getMyStrength = createServerFn({ method: "GET" }).handler(
+/** Points forts personnels de l'élève connecté (choisis par lui-même). */
+export const getMyStrengths = createServerFn({ method: "GET" }).handler(
+  async (): Promise<string[]> => {
+    const { getStudentSession } = await import("./student-qr.server");
+    const session = await getStudentSession();
+    const studentId = session.data.studentId;
+    if (!studentId) return [];
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("student_strength_choices")
+      .select("strength_code")
+      .eq("student_id", studentId);
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((row) => row.strength_code);
+  },
+);
+
+/** Objectif personnel de l'élève connecté (choisi par lui-même). */
+export const getMyGoal = createServerFn({ method: "GET" }).handler(
   async (): Promise<string | null> => {
     const { getStudentSession } = await import("./student-qr.server");
     const session = await getStudentSession();
@@ -110,52 +143,70 @@ export const getMyStrength = createServerFn({ method: "GET" }).handler(
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
-      .from("student_strength_choices")
-      .select("strength_code")
+      .from("student_goal_choices")
+      .select("goal_code")
       .eq("student_id", studentId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return row?.strength_code ?? null;
+    return row?.goal_code ?? null;
   },
 );
 
 /**
- * Seule écriture autorisée à l'élève : son point fort personnel (un seul).
+ * Écriture réservée à l'élève : ses 3 points forts personnels.
  * L'élève est identifié par le cookie de session créé après validation du QR code,
  * jamais par une donnée envoyée depuis le navigateur.
  */
-export const setMyStrength = createServerFn({ method: "POST" })
-  .inputValidator((input: { strengthCode: string }) =>
-    z.object({ strengthCode: codeSchema }).parse(input),
+export const setMyStrengths = createServerFn({ method: "POST" })
+  .inputValidator((input: { strengthCodes: string[] }) =>
+    z.object({ strengthCodes: z.array(codeSchema).length(3) }).parse(input),
   )
   .handler(async ({ data }) => {
-    const { STRENGTHS } = await import("./engagement");
-    if (!STRENGTHS.some((s) => s.code === data.strengthCode)) {
+    const { STRENGTHS, MAX_STRENGTHS } = await import("./engagement");
+    const codes = Array.from(new Set(data.strengthCodes));
+    if (codes.length !== MAX_STRENGTHS) throw new Error("Choisis 3 points forts différents");
+    if (!codes.every((code) => STRENGTHS.some((s) => s.code === code))) {
       throw new Error("Point fort inconnu");
     }
 
-    const { getStudentSession } = await import("./student-qr.server");
-    const session = await getStudentSession();
-    const studentId = session.data.studentId;
-    if (!studentId) throw new Error("Session élève expirée");
+    const { resolveStudent } = await import("./student-choices.server");
+    const { studentId, teacherId } = await resolveStudent();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: student, error: studentError } = await supabaseAdmin
-      .from("students")
-      .select("teacher_id")
-      .eq("id", studentId)
-      .maybeSingle();
-    if (studentError) throw new Error(studentError.message);
-    if (!student) throw new Error("Élève introuvable");
+    const { error: deleteError } = await supabaseAdmin
+      .from("student_strength_choices")
+      .delete()
+      .eq("student_id", studentId);
+    if (deleteError) throw new Error(deleteError.message);
 
-    const { error } = await supabaseAdmin.from("student_strength_choices").upsert(
-      {
+    const { error } = await supabaseAdmin.from("student_strength_choices").insert(
+      codes.map((strength_code) => ({
         student_id: studentId,
-        teacher_id: student.teacher_id,
-        strength_code: data.strengthCode,
-      },
+        teacher_id: teacherId,
+        strength_code,
+      })),
+    );
+    if (error) throw new Error(error.message);
+    return { strengthCodes: codes };
+  });
+
+/** Écriture réservée à l'élève : son objectif personnel (un seul). */
+export const setMyGoal = createServerFn({ method: "POST" })
+  .inputValidator((input: { goalCode: string }) =>
+    z.object({ goalCode: codeSchema }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { GOALS } = await import("./engagement");
+    if (!GOALS.some((g) => g.code === data.goalCode)) throw new Error("Objectif inconnu");
+
+    const { resolveStudent } = await import("./student-choices.server");
+    const { studentId, teacherId } = await resolveStudent();
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("student_goal_choices").upsert(
+      { student_id: studentId, teacher_id: teacherId, goal_code: data.goalCode },
       { onConflict: "student_id" },
     );
     if (error) throw new Error(error.message);
-    return { strengthCode: data.strengthCode };
+    return { goalCode: data.goalCode };
   });

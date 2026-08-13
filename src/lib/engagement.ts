@@ -96,7 +96,7 @@ export type Strength = { code: string; emoji: string; label: string };
 
 /**
  * Points forts personnels : cette liste est proposée à l'élève, qui choisit lui-même
- * un seul point fort. L'enseignant ne peut que le consulter, jamais le modifier.
+ * exactement 3 points forts. L'enseignant ne peut que les consulter, jamais les modifier.
  */
 export const STRENGTHS: Strength[] = [
   { code: "bon_activite", emoji: "🏅", label: "Bon dans l'activité" },
@@ -116,7 +116,7 @@ export const STRENGTHS: Strength[] = [
   { code: "responsabilites", emoji: "🧭", label: "Je prends des responsabilités" },
   { code: "solutions", emoji: "💡", label: "Je propose des solutions" },
   { code: "positif", emoji: "❤️", label: "Positif avec les autres" },
-  { code: "objectifs", emoji: "🏹", label: "Je sais me fixer des objectifs" },
+  { code: "objectifs", emoji: "🎯", label: "Je sais me fixer des objectifs" },
   { code: "adaptable", emoji: "🤸", label: "Je m'adapte aux situations" },
   { code: "engage", emoji: "🏃", label: "Je m'engage pleinement" },
   { code: "observe", emoji: "👀", label: "J'observe et j'apprends des autres" },
@@ -126,4 +126,36 @@ export const STRENGTHS: Strength[] = [
 
 export function strength(code: string): Strength | undefined {
   return STRENGTHS.find((s) => s.code === code);
+}
+
+/** Nombre exact de points forts que l'élève doit choisir. */
+export const MAX_STRENGTHS = 3;
+
+export type Goal = { code: string; emoji: string; label: string };
+
+/**
+ * Points à travailler : l'élève choisit un seul objectif personnel de progression.
+ * L'enseignant ne peut que le consulter.
+ */
+export const GOALS: Goal[] = [
+  { code: "concentration", emoji: "🎯", label: "Mieux me concentrer" },
+  { code: "perseverer", emoji: "💪", label: "Persévérer davantage" },
+  { code: "cooperer", emoji: "🤝", label: "Mieux coopérer" },
+  { code: "communiquer", emoji: "🗣️", label: "Mieux communiquer" },
+  { code: "autonomie", emoji: "🧠", label: "Devenir plus autonome" },
+  { code: "investir", emoji: "🏃", label: "M'investir davantage" },
+  { code: "materiel", emoji: "🧰", label: "Participer davantage à l'installation et au rangement" },
+  { code: "pairs", emoji: "👥", label: "Mieux interagir avec mes camarades" },
+  { code: "regularite", emoji: "🔥", label: "Être plus régulier" },
+  { code: "initiatives", emoji: "🚀", label: "Prendre davantage d'initiatives" },
+  { code: "emotions", emoji: "🧘", label: "Mieux gérer mes émotions" },
+  { code: "oser", emoji: "👊", label: "Oser davantage" },
+  { code: "performances", emoji: "🏆", label: "Améliorer mes performances" },
+  { code: "competences", emoji: "📈", label: "Progresser dans mes compétences" },
+  { code: "conseiller", emoji: "🧑‍🏫", label: "Mieux conseiller mes partenaires" },
+  { code: "encourager", emoji: "🌟", label: "Encourager davantage les autres" },
+];
+
+export function goal(code: string): Goal | undefined {
+  return GOALS.find((g) => g.code === code);
 }

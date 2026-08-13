@@ -14,12 +14,16 @@ import {
 } from "@/lib/competencies.functions";
 import {
   listStudentEngagement,
-  listStudentStrengths,
+  getStudentStrengthChoice,
   setStudentEngagement,
   clearStudentEngagement,
-  toggleStudentStrength,
 } from "@/lib/engagement.functions";
-import { ENGAGEMENT_INDICATORS, ENGAGEMENT_LEVELS, STRENGTHS } from "@/lib/engagement";
+import {
+  ENGAGEMENT_INDICATORS,
+  ENGAGEMENT_LEVELS,
+  strength as findStrength,
+} from "@/lib/engagement";
+
 
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({

@@ -186,6 +186,63 @@ export type Database = {
           },
         ]
       }
+      program_sessions: {
+        Row: {
+          activity_id: string | null
+          activity_name: string
+          class_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          objective: string | null
+          period_label: string | null
+          session_date: string | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          activity_id?: string | null
+          activity_name?: string
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          objective?: string | null
+          period_label?: string | null
+          session_date?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: string | null
+          activity_name?: string
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          objective?: string | null
+          period_label?: string | null
+          session_date?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_sessions_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_sessions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_competency_levels: {
         Row: {
           competency_id: string
@@ -306,6 +363,108 @@ export type Database = {
             foreignKeyName: "student_goal_choices_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_grade_items: {
+        Row: {
+          competency_id: string | null
+          created_at: string
+          grade_id: string
+          id: string
+          label: string
+          max_points: number
+          points: number
+          position: number
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          competency_id?: string | null
+          created_at?: string
+          grade_id: string
+          id?: string
+          label?: string
+          max_points?: number
+          points?: number
+          position?: number
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          competency_id?: string | null
+          created_at?: string
+          grade_id?: string
+          id?: string
+          label?: string
+          max_points?: number
+          points?: number
+          position?: number
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_grade_items_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "competencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_grade_items_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "student_grades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_grades: {
+        Row: {
+          activity_id: string
+          comment: string | null
+          created_at: string
+          evaluated_on: string
+          id: string
+          student_id: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          activity_id: string
+          comment?: string | null
+          created_at?: string
+          evaluated_on?: string
+          id?: string
+          student_id: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: string
+          comment?: string | null
+          created_at?: string
+          evaluated_on?: string
+          id?: string
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_grades_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
           },

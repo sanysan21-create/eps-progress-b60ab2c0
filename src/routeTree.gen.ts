@@ -21,6 +21,7 @@ import { Route as EleveActivitesRouteImport } from './routes/eleve/activites'
 import { Route as EleveNotesRouteImport } from './routes/eleve/notes'
 import { Route as EleveObjectifsRouteImport } from './routes/eleve/objectifs'
 import { Route as EleveProfilRouteImport } from './routes/eleve/profil'
+import { Route as EleveProgrammeRouteImport } from './routes/eleve/programme'
 import { Route as EleveProgressionRouteImport } from './routes/eleve/progression'
 import { Route as EleveReussitesRouteImport } from './routes/eleve/reussites'
 import { Route as AuthenticatedProfIndexRouteImport } from './routes/_authenticated/prof/index'
@@ -88,6 +89,11 @@ const EleveProfilRoute = EleveProfilRouteImport.update({
   path: '/profil',
   getParentRoute: () => EleveRoute,
 } as any)
+const EleveProgrammeRoute = EleveProgrammeRouteImport.update({
+  id: '/programme',
+  path: '/programme',
+  getParentRoute: () => EleveRoute,
+} as any)
 const EleveProgressionRoute = EleveProgressionRouteImport.update({
   id: '/progression',
   path: '/progression',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/eleve/notes': typeof EleveNotesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
+  '/eleve/programme': typeof EleveProgrammeRoute
   '/eleve/progression': typeof EleveProgressionRoute
   '/eleve/reussites': typeof EleveReussitesRoute
   '/acces-eleve/': typeof AccesEleveIndexRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/eleve/notes': typeof EleveNotesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
+  '/eleve/programme': typeof EleveProgrammeRoute
   '/eleve/progression': typeof EleveProgressionRoute
   '/eleve/reussites': typeof EleveReussitesRoute
   '/acces-eleve': typeof AccesEleveIndexRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/eleve/notes': typeof EleveNotesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
+  '/eleve/programme': typeof EleveProgrammeRoute
   '/eleve/progression': typeof EleveProgressionRoute
   '/eleve/reussites': typeof EleveReussitesRoute
   '/acces-eleve/': typeof AccesEleveIndexRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/eleve/notes'
     | '/eleve/objectifs'
     | '/eleve/profil'
+    | '/eleve/programme'
     | '/eleve/progression'
     | '/eleve/reussites'
     | '/acces-eleve/'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/eleve/notes'
     | '/eleve/objectifs'
     | '/eleve/profil'
+    | '/eleve/programme'
     | '/eleve/progression'
     | '/eleve/reussites'
     | '/acces-eleve'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/eleve/notes'
     | '/eleve/objectifs'
     | '/eleve/profil'
+    | '/eleve/programme'
     | '/eleve/progression'
     | '/eleve/reussites'
     | '/acces-eleve/'
@@ -344,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EleveProfilRouteImport
       parentRoute: typeof EleveRoute
     }
+    '/eleve/programme': {
+      id: '/eleve/programme'
+      path: '/programme'
+      fullPath: '/eleve/programme'
+      preLoaderRoute: typeof EleveProgrammeRouteImport
+      parentRoute: typeof EleveRoute
+    }
     '/eleve/progression': {
       id: '/eleve/progression'
       path: '/progression'
@@ -431,6 +450,7 @@ interface EleveRouteChildren {
   EleveNotesRoute: typeof EleveNotesRoute
   EleveObjectifsRoute: typeof EleveObjectifsRoute
   EleveProfilRoute: typeof EleveProfilRoute
+  EleveProgrammeRoute: typeof EleveProgrammeRoute
   EleveProgressionRoute: typeof EleveProgressionRoute
   EleveReussitesRoute: typeof EleveReussitesRoute
   EleveIndexRoute: typeof EleveIndexRoute
@@ -441,6 +461,7 @@ const EleveRouteChildren: EleveRouteChildren = {
   EleveNotesRoute: EleveNotesRoute,
   EleveObjectifsRoute: EleveObjectifsRoute,
   EleveProfilRoute: EleveProfilRoute,
+  EleveProgrammeRoute: EleveProgrammeRoute,
   EleveProgressionRoute: EleveProgressionRoute,
   EleveReussitesRoute: EleveReussitesRoute,
   EleveIndexRoute: EleveIndexRoute,

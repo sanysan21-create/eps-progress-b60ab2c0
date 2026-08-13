@@ -179,119 +179,149 @@ function TeacherProgram() {
             )}
           </div>
 
-          <label className="block space-y-1">
-            <span className="text-xs text-muted-foreground">Date de la séance</span>
-            <input
-              type="date"
-              value={draft.sessionDate}
-              onChange={(event) => setDraft({ ...draft, sessionDate: event.target.value })}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-xs text-muted-foreground">
-              Ou période (ex. « Semaine du 7 septembre », « Octobre »)
-            </span>
-            <input
-              value={draft.periodLabel}
-              onChange={(event) => setDraft({ ...draft, periodLabel: event.target.value })}
-              placeholder="Semaine du 7 septembre"
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-xs text-muted-foreground">Activité</span>
-            <select
-              value={draft.activityId}
-              onChange={(event) => setDraft({ ...draft, activityId: event.target.value })}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          <div className="flex rounded-xl border border-border p-1">
+            <button
+              type="button"
+              onClick={() => setFormTab("seance")}
+              className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                formTab === "seance"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <option value="">Choisir une activité…</option>
-              {(activities.data ?? []).map((activity) => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-xs text-muted-foreground">Classe</span>
-            <select
-              value={draft.classId}
-              onChange={(event) => setDraft({ ...draft, classId: event.target.value })}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              Séance
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTab("bareme")}
+              className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                formTab === "bareme"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <option value="">Toutes mes classes</option>
-              {(classes.data ?? []).map((row) => (
-                <option key={row.id} value={row.id}>
-                  {row.name} · {row.school_year}
-                </option>
-              ))}
-            </select>
-          </label>
+              Barême
+            </button>
+          </div>
 
-          <label className="block space-y-1">
-            <span className="text-xs text-muted-foreground">Objectif de la séance</span>
-            <textarea
-              value={draft.objective}
-              onChange={(event) => setDraft({ ...draft, objective: event.target.value })}
-              rows={3}
-              placeholder="Améliorer sa respiration et maintenir son effort sur 25 mètres."
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-xs text-muted-foreground">Description courte (optionnel)</span>
-            <input
-              value={draft.description}
-              onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </label>
-
-          <div className="space-y-2">
-            <span className="text-xs text-muted-foreground">
-              Image du barème (visible par les élèves)
-            </span>
-            {draft.scaleImageUrl || draft.scaleImagePath ? (
-              <div className="space-y-2 rounded-xl border border-border bg-background p-2">
-                {draft.scaleImageUrl && (
-                  <img
-                    src={draft.scaleImageUrl}
-                    alt="Barème de la séance"
-                    className="max-h-48 w-full rounded-lg object-contain"
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => setDraft({ ...draft, scaleImagePath: null, scaleImageUrl: null })}
-                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="size-3" /> Retirer le barème
-                </button>
-              </div>
-            ) : (
-              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-background px-3 py-3 text-sm text-muted-foreground hover:border-primary hover:text-primary">
-                <ImagePlus className="size-4" />
-                {uploading ? "Envoi…" : "Ajouter une image de barème"}
+          {formTab === "seance" ? (
+            <div className="space-y-4">
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">Date de la séance</span>
                 <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploading}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    event.target.value = "";
-                    if (file) void handleScaleUpload(file);
-                  }}
+                  type="date"
+                  value={draft.sessionDate}
+                  onChange={(event) => setDraft({ ...draft, sessionDate: event.target.value })}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
               </label>
-            )}
-          </div>
+
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">
+                  Ou période (ex. « Semaine du 7 septembre », « Octobre »)
+                </span>
+                <input
+                  value={draft.periodLabel}
+                  onChange={(event) => setDraft({ ...draft, periodLabel: event.target.value })}
+                  placeholder="Semaine du 7 septembre"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">Activité</span>
+                <select
+                  value={draft.activityId}
+                  onChange={(event) => setDraft({ ...draft, activityId: event.target.value })}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value="">Choisir une activité…</option>
+                  {(activities.data ?? []).map((activity) => (
+                    <option key={activity.id} value={activity.id}>
+                      {activity.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">Classe</span>
+                <select
+                  value={draft.classId}
+                  onChange={(event) => setDraft({ ...draft, classId: event.target.value })}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value="">Toutes mes classes</option>
+                  {(classes.data ?? []).map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.name} · {row.school_year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">Objectif de la séance</span>
+                <textarea
+                  value={draft.objective}
+                  onChange={(event) => setDraft({ ...draft, objective: event.target.value })}
+                  rows={3}
+                  placeholder="Améliorer sa respiration et maintenir son effort sur 25 mètres."
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">Description courte (optionnel)</span>
+                <input
+                  value={draft.description}
+                  onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </label>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Ajoute une image du barème. Les élèves pourront l’ouvrir depuis leur onglet
+                Programme.
+              </p>
+              {draft.scaleImageUrl || draft.scaleImagePath ? (
+                <div className="space-y-3 rounded-xl border border-border bg-background p-2">
+                  {draft.scaleImageUrl && (
+                    <img
+                      src={draft.scaleImageUrl}
+                      alt="Barème de la séance"
+                      className="max-h-56 w-full rounded-lg object-contain"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setDraft({ ...draft, scaleImagePath: null, scaleImageUrl: null })}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="size-3" /> Retirer le barème
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-background px-3 py-6 text-sm text-muted-foreground hover:border-primary hover:text-primary">
+                  <ImagePlus className="size-5" />
+                  {uploading ? "Envoi…" : "Ajouter une image de barème"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) void handleScaleUpload(file);
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          )}
 
           <button
             type="button"

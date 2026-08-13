@@ -731,9 +731,11 @@ export type Database = {
       }
       students: {
         Row: {
+          as_member: boolean
           created_at: string
           first_name: string
           id: string
+          last_login_at: string | null
           last_name: string
           qr_token: string
           student_code: string
@@ -741,9 +743,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          as_member?: boolean
           created_at?: string
           first_name: string
           id?: string
+          last_login_at?: string | null
           last_name: string
           qr_token?: string
           student_code?: string
@@ -751,9 +755,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          as_member?: boolean
           created_at?: string
           first_name?: string
           id?: string
+          last_login_at?: string | null
           last_name?: string
           qr_token?: string
           student_code?: string

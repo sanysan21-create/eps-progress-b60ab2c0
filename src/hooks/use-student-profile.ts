@@ -29,10 +29,12 @@ export function useStudentEngagement() {
   return useQuery({ queryKey: ["my-engagement"], queryFn: () => fetchEngagement() });
 }
 
-export function useStudentStrengths() {
-  const fetchStrengths = useServerFn(getMyStrengths);
-  return useQuery({ queryKey: ["my-strengths"], queryFn: () => fetchStrengths() });
+/** Point fort personnel choisi par l'élève lui-même (unique, modifiable). */
+export function useMyStrength() {
+  const fetchStrength = useServerFn(getMyStrength);
+  return useQuery({ queryKey: ["my-strength"], queryFn: () => fetchStrength() });
 }
+
 
 
 export type StudentMarkFlat = {

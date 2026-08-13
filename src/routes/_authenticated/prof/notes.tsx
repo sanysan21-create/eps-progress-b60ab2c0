@@ -83,6 +83,12 @@ function TeacherGrades() {
     return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
   }, [students.data]);
 
+  useEffect(() => {
+    if (selectedClass) return;
+    const first = classNames[0];
+    if (first) setSelectedClass(first);
+  }, [classNames, selectedClass]);
+
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     let rows = students.data ?? [];

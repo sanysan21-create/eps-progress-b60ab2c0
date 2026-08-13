@@ -90,7 +90,7 @@ function StudentProfile() {
   const session = useStudentSession();
   const profile = useStudentActivities();
   const engagement = useStudentEngagement();
-  const strengths = useStudentStrengths();
+  const myStrength = useMyStrength();
 
   const info = session.data;
   const activities = profile.data ?? [];

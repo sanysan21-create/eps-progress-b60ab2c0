@@ -114,9 +114,10 @@ function StudentHome() {
       <section className="space-y-4">
         <h2 className="display-title text-xl italic">Dernière progression</h2>
         <div className="rounded-3xl border border-border bg-surface p-5">
-          <p className="mono-label text-primary">{studentHistory[0].date}</p>
-          <p className="mt-2 font-bold">{studentHistory[0].title}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{studentHistory[0].detail}</p>
+          <p className="mono-label text-primary">{latest?.date}</p>
+          <p className="mt-2 font-bold">{latest?.title}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{latest?.detail}</p>
+
           <Link
             to="/eleve/progression"
             className="mono-label mt-4 inline-block text-primary hover:underline"

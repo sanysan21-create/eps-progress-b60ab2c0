@@ -45,7 +45,7 @@ function TokenAccessPage() {
     done.current = true;
     redeem({ data: { token } })
       .then((result) => {
-        if (result.ok) void navigate({ to: "/eleve", replace: true });
+        if (result.ok) void navigate({ to: "/eleve/profil", replace: true });
         else setError(MESSAGES[result.reason] ?? "Ce QR code est invalide ou n'est associé à aucun élève.");
       })
       .catch(() => setError("Vérification impossible. Réessaie dans un instant."));

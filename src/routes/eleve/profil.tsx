@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { LevelDots } from "@/components/eps/LevelDots";
 import { StrengthPicker } from "@/components/eps/StrengthPicker";
+import { GoalPicker } from "@/components/eps/GoalPicker";
 import {
   ENGAGEMENT_INDICATORS,
   ENGAGEMENT_LEVEL_MAX,
@@ -11,7 +12,8 @@ import {
   averageProgress,
   flattenActivities,
   initialsOf,
-  useMyStrength,
+  useMyGoal,
+  useMyStrengths,
   useStudentActivities,
   useStudentEngagement,
   useStudentSession,
@@ -83,7 +85,8 @@ function StudentProfile() {
   const session = useStudentSession();
   const profile = useStudentActivities();
   const engagement = useStudentEngagement();
-  const myStrength = useMyStrength();
+  const myStrengths = useMyStrengths();
+  const myGoal = useMyGoal();
 
   const info = session.data;
   const activities = profile.data ?? [];
@@ -130,7 +133,7 @@ function StudentProfile() {
       </p>
 
       {/* Progression */}
-      <Section title="Ma progression">
+      <Section title="📈 Ma progression">
         {progress === null ? (
           <EmptyNote>Tes premières évaluations apparaîtront ici.</EmptyNote>
         ) : (
@@ -154,7 +157,7 @@ function StudentProfile() {
       </Section>
 
       {/* Compétences */}
-      <Section title="Mes compétences">
+      <Section title="🎯 Mes compétences">
         {activities.length === 0 ? (
           <EmptyNote>Aucune compétence renseignée pour le moment.</EmptyNote>
         ) : (
@@ -192,7 +195,7 @@ function StudentProfile() {
       </Section>
 
       {/* Implication */}
-      <Section title="Mon implication en EPS">
+      <Section title="💪 Mon implication en EPS">
         {engagementMarks.length === 0 ? (
           <EmptyNote>Ton implication sera renseignée au fil des séances.</EmptyNote>
         ) : (
@@ -221,9 +224,14 @@ function StudentProfile() {
         )}
       </Section>
 
-      {/* Point fort personnel : choisi par l'élève lui-même */}
-      <Section title="Mon point fort ⭐">
-        <StrengthPicker current={myStrength.data ?? null} />
+      {/* Points forts : choisis par l'élève lui-même */}
+      <Section title="⭐ Mes points forts">
+        <StrengthPicker current={myStrengths.data ?? []} />
+      </Section>
+
+      {/* Objectif : point à travailler choisi par l'élève lui-même */}
+      <Section title="🚀 Mon objectif">
+        <GoalPicker current={myGoal.data ?? null} />
       </Section>
     </div>
   );

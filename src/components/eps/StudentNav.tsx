@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Home, Dumbbell, TrendingUp, Target, Trophy } from "lucide-react";
+import { User, Dumbbell, TrendingUp, Target, Trophy } from "lucide-react";
 
 const items = [
-  { to: "/eleve", label: "Profil", icon: Home },
+  { to: "/eleve/profil", label: "Profil", icon: User },
   { to: "/eleve/activites", label: "Activités", icon: Dumbbell },
   { to: "/eleve/progression", label: "Progrès", icon: TrendingUp },
   { to: "/eleve/objectifs", label: "Objectifs", icon: Target },
@@ -16,7 +16,7 @@ export function StudentNav() {
         <Link
           key={to}
           to={to}
-          activeOptions={{ exact: to === "/eleve" }}
+          activeOptions={{ exact: to === "/eleve/profil" }}
           className="flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-muted-foreground transition-colors hover:text-foreground"
           activeProps={{ className: "text-primary bg-primary/10" }}
         >

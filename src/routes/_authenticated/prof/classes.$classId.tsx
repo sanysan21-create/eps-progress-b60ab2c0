@@ -291,6 +291,15 @@ function ClassDetailPage() {
           >
             <Upload className="size-4" /> Importer des élèves
           </button>
+          {missingQrCount > 0 && (
+            <button
+              onClick={() => generateMissingMutation.mutate()}
+              disabled={generateMissingMutation.isPending}
+              className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-xs font-bold uppercase disabled:opacity-60"
+            >
+              <QrCode className="size-4" /> Générer les QR manquants ({missingQrCount})
+            </button>
+          )}
         </div>
       </header>
 

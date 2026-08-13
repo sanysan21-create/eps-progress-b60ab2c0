@@ -55,10 +55,10 @@ function QuickCompetencies() {
   const setLevel = useServerFn(setStudentLevel);
   const clearLevel = useServerFn(clearStudentLevel);
   const fetchEngagement = useServerFn(listStudentEngagement);
-  const fetchStrengths = useServerFn(listStudentStrengths);
+  const fetchStrengthChoice = useServerFn(getStudentStrengthChoice);
   const saveEngagement = useServerFn(setStudentEngagement);
   const removeEngagement = useServerFn(clearStudentEngagement);
-  const toggleStrength = useServerFn(toggleStudentStrength);
+
 
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);

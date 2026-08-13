@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
 import { Users, ClipboardCheck, Dumbbell } from "lucide-react";
 
-export const Route = createFileRoute("/prof")({
+export const Route = createFileRoute("/_authenticated/prof")({
   component: TeacherLayout,
 });
 

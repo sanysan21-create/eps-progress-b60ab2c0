@@ -4,7 +4,7 @@ import { Plus, TrendingUp } from "lucide-react";
 import { LevelChips } from "@/components/eps/LevelBars";
 import { classes, pupils, LEVEL_LABELS, type Level } from "@/data/demo";
 
-export const Route = createFileRoute("/prof/")({
+export const Route = createFileRoute("/_authenticated/prof/")({
   head: () => ({
     meta: [
       { title: "Mes classes et élèves — EPS Progress" },

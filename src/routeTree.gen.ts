@@ -11,16 +11,16 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EleveRouteImport } from './routes/eleve'
-import { Route as ProfRouteImport } from './routes/prof'
+import { Route as AuthenticatedProfRouteImport } from './routes/_authenticated/prof'
 import { Route as EleveIndexRouteImport } from './routes/eleve/index'
 import { Route as EleveActivitesRouteImport } from './routes/eleve/activites'
 import { Route as EleveObjectifsRouteImport } from './routes/eleve/objectifs'
 import { Route as EleveProfilRouteImport } from './routes/eleve/profil'
 import { Route as EleveProgressionRouteImport } from './routes/eleve/progression'
 import { Route as EleveReussitesRouteImport } from './routes/eleve/reussites'
-import { Route as ProfIndexRouteImport } from './routes/prof/index'
-import { Route as ProfActivitesRouteImport } from './routes/prof/activites'
-import { Route as ProfEvaluerRouteImport } from './routes/prof/evaluer'
+import { Route as AuthenticatedProfIndexRouteImport } from './routes/_authenticated/prof/index'
+import { Route as AuthenticatedProfActivitesRouteImport } from './routes/_authenticated/prof/activites'
+import { Route as AuthenticatedProfEvaluerRouteImport } from './routes/_authenticated/prof/evaluer'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -32,8 +32,8 @@ const EleveRoute = EleveRouteImport.update({
   path: '/eleve',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfRoute = ProfRouteImport.update({
-  id: '/prof',
+const AuthenticatedProfRoute = AuthenticatedProfRouteImport.update({
+  id: '/_authenticated/prof',
   path: '/prof',
   getParentRoute: () => rootRouteImport,
 } as any)
@@ -67,35 +67,37 @@ const EleveReussitesRoute = EleveReussitesRouteImport.update({
   path: '/reussites',
   getParentRoute: () => EleveRoute,
 } as any)
-const ProfIndexRoute = ProfIndexRouteImport.update({
+const AuthenticatedProfIndexRoute = AuthenticatedProfIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => ProfRoute,
+  getParentRoute: () => AuthenticatedProfRoute,
 } as any)
-const ProfActivitesRoute = ProfActivitesRouteImport.update({
-  id: '/activites',
-  path: '/activites',
-  getParentRoute: () => ProfRoute,
-} as any)
-const ProfEvaluerRoute = ProfEvaluerRouteImport.update({
-  id: '/evaluer',
-  path: '/evaluer',
-  getParentRoute: () => ProfRoute,
-} as any)
+const AuthenticatedProfActivitesRoute =
+  AuthenticatedProfActivitesRouteImport.update({
+    id: '/activites',
+    path: '/activites',
+    getParentRoute: () => AuthenticatedProfRoute,
+  } as any)
+const AuthenticatedProfEvaluerRoute =
+  AuthenticatedProfEvaluerRouteImport.update({
+    id: '/evaluer',
+    path: '/evaluer',
+    getParentRoute: () => AuthenticatedProfRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/eleve': typeof EleveRouteWithChildren
-  '/prof': typeof ProfRouteWithChildren
+  '/prof': typeof AuthenticatedProfRouteWithChildren
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
   '/eleve/progression': typeof EleveProgressionRoute
   '/eleve/reussites': typeof EleveReussitesRoute
-  '/prof/activites': typeof ProfActivitesRoute
-  '/prof/evaluer': typeof ProfEvaluerRoute
   '/eleve/': typeof EleveIndexRoute
-  '/prof/': typeof ProfIndexRoute
+  '/prof/activites': typeof AuthenticatedProfActivitesRoute
+  '/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
+  '/prof/': typeof AuthenticatedProfIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -104,25 +106,25 @@ export interface FileRoutesByTo {
   '/eleve/profil': typeof EleveProfilRoute
   '/eleve/progression': typeof EleveProgressionRoute
   '/eleve/reussites': typeof EleveReussitesRoute
-  '/prof/activites': typeof ProfActivitesRoute
-  '/prof/evaluer': typeof ProfEvaluerRoute
   '/eleve': typeof EleveIndexRoute
-  '/prof': typeof ProfIndexRoute
+  '/prof/activites': typeof AuthenticatedProfActivitesRoute
+  '/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
+  '/prof': typeof AuthenticatedProfIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/eleve': typeof EleveRouteWithChildren
-  '/prof': typeof ProfRouteWithChildren
+  '/_authenticated/prof': typeof AuthenticatedProfRouteWithChildren
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
   '/eleve/progression': typeof EleveProgressionRoute
   '/eleve/reussites': typeof EleveReussitesRoute
-  '/prof/activites': typeof ProfActivitesRoute
-  '/prof/evaluer': typeof ProfEvaluerRoute
   '/eleve/': typeof EleveIndexRoute
-  '/prof/': typeof ProfIndexRoute
+  '/_authenticated/prof/activites': typeof AuthenticatedProfActivitesRoute
+  '/_authenticated/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
+  '/_authenticated/prof/': typeof AuthenticatedProfIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -135,9 +137,9 @@ export interface FileRouteTypes {
     | '/eleve/profil'
     | '/eleve/progression'
     | '/eleve/reussites'
+    | '/eleve/'
     | '/prof/activites'
     | '/prof/evaluer'
-    | '/eleve/'
     | '/prof/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -147,30 +149,30 @@ export interface FileRouteTypes {
     | '/eleve/profil'
     | '/eleve/progression'
     | '/eleve/reussites'
+    | '/eleve'
     | '/prof/activites'
     | '/prof/evaluer'
-    | '/eleve'
     | '/prof'
   id:
     | '__root__'
     | '/'
     | '/eleve'
-    | '/prof'
+    | '/_authenticated/prof'
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/profil'
     | '/eleve/progression'
     | '/eleve/reussites'
-    | '/prof/activites'
-    | '/prof/evaluer'
     | '/eleve/'
-    | '/prof/'
+    | '/_authenticated/prof/activites'
+    | '/_authenticated/prof/evaluer'
+    | '/_authenticated/prof/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EleveRoute: typeof EleveRouteWithChildren
-  ProfRoute: typeof ProfRouteWithChildren
+  AuthenticatedProfRoute: typeof AuthenticatedProfRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -189,11 +191,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EleveRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/prof': {
-      id: '/prof'
+    '/_authenticated/prof': {
+      id: '/_authenticated/prof'
       path: '/prof'
       fullPath: '/prof'
-      preLoaderRoute: typeof ProfRouteImport
+      preLoaderRoute: typeof AuthenticatedProfRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/eleve/': {
@@ -238,26 +240,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EleveReussitesRouteImport
       parentRoute: typeof EleveRoute
     }
-    '/prof/': {
-      id: '/prof/'
+    '/_authenticated/prof/': {
+      id: '/_authenticated/prof/'
       path: '/'
       fullPath: '/prof/'
-      preLoaderRoute: typeof ProfIndexRouteImport
-      parentRoute: typeof ProfRoute
+      preLoaderRoute: typeof AuthenticatedProfIndexRouteImport
+      parentRoute: typeof AuthenticatedProfRoute
     }
-    '/prof/activites': {
-      id: '/prof/activites'
+    '/_authenticated/prof/activites': {
+      id: '/_authenticated/prof/activites'
       path: '/activites'
       fullPath: '/prof/activites'
-      preLoaderRoute: typeof ProfActivitesRouteImport
-      parentRoute: typeof ProfRoute
+      preLoaderRoute: typeof AuthenticatedProfActivitesRouteImport
+      parentRoute: typeof AuthenticatedProfRoute
     }
-    '/prof/evaluer': {
-      id: '/prof/evaluer'
+    '/_authenticated/prof/evaluer': {
+      id: '/_authenticated/prof/evaluer'
       path: '/evaluer'
       fullPath: '/prof/evaluer'
-      preLoaderRoute: typeof ProfEvaluerRouteImport
-      parentRoute: typeof ProfRoute
+      preLoaderRoute: typeof AuthenticatedProfEvaluerRouteImport
+      parentRoute: typeof AuthenticatedProfRoute
     }
   }
 }
@@ -282,24 +284,25 @@ const EleveRouteChildren: EleveRouteChildren = {
 
 const EleveRouteWithChildren = EleveRoute._addFileChildren(EleveRouteChildren)
 
-interface ProfRouteChildren {
-  ProfActivitesRoute: typeof ProfActivitesRoute
-  ProfEvaluerRoute: typeof ProfEvaluerRoute
-  ProfIndexRoute: typeof ProfIndexRoute
+interface AuthenticatedProfRouteChildren {
+  AuthenticatedProfActivitesRoute: typeof AuthenticatedProfActivitesRoute
+  AuthenticatedProfEvaluerRoute: typeof AuthenticatedProfEvaluerRoute
+  AuthenticatedProfIndexRoute: typeof AuthenticatedProfIndexRoute
 }
 
-const ProfRouteChildren: ProfRouteChildren = {
-  ProfActivitesRoute: ProfActivitesRoute,
-  ProfEvaluerRoute: ProfEvaluerRoute,
-  ProfIndexRoute: ProfIndexRoute,
+const AuthenticatedProfRouteChildren: AuthenticatedProfRouteChildren = {
+  AuthenticatedProfActivitesRoute: AuthenticatedProfActivitesRoute,
+  AuthenticatedProfEvaluerRoute: AuthenticatedProfEvaluerRoute,
+  AuthenticatedProfIndexRoute: AuthenticatedProfIndexRoute,
 }
 
-const ProfRouteWithChildren = ProfRoute._addFileChildren(ProfRouteChildren)
+const AuthenticatedProfRouteWithChildren =
+  AuthenticatedProfRoute._addFileChildren(AuthenticatedProfRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EleveRoute: EleveRouteWithChildren,
-  ProfRoute: ProfRouteWithChildren,
+  AuthenticatedProfRoute: AuthenticatedProfRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

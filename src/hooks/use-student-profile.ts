@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
-import { getStudentSessionInfo } from "@/lib/student-access.functions";
+import { getStudentSessionInfo, getMyAsMember } from "@/lib/student-access.functions";
 import { getMyEngagement, getMyGoal, getMyStrengths } from "@/lib/engagement.functions";
 import { getMyAchievements } from "@/lib/achievements.functions";
 import { getMyMedal } from "@/lib/medals.functions";
@@ -52,6 +52,12 @@ export function useMyAchievements() {
 export function useMyMedal() {
   const fetchMedal = useServerFn(getMyMedal);
   return useQuery({ queryKey: ["my-medal"], queryFn: () => fetchMedal() });
+}
+
+/** Inscription à l'AS décidée par l'enseignant — affiche le badge AS sur le profil. */
+export function useMyAsMember() {
+  const fetchAs = useServerFn(getMyAsMember);
+  return useQuery({ queryKey: ["my-as-member"], queryFn: () => fetchAs() });
 }
 
 export type StudentMarkFlat = {

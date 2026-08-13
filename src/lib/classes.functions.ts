@@ -17,6 +17,8 @@ export type StudentRow = {
   student_code: string;
   qr_token: string;
   created_at: string;
+  last_login_at: string | null;
+  as_member: boolean;
 };
 
 const nameSchema = z.string().trim().min(1, "Champ requis").max(80);
@@ -98,7 +100,7 @@ export const getClassDetail = createServerFn({ method: "GET" })
 
       const { data: rows, error } = await context.supabase
         .from("class_students")
-        .select("students(id, first_name, last_name, student_code, qr_token, created_at)")
+        .select("students(id, first_name, last_name, student_code, qr_token, created_at, last_login_at, as_member)")
         .eq("class_id", data.id);
       if (error) throw new Error(error.message);
 
@@ -264,7 +266,7 @@ export const searchStudents = createServerFn({ method: "GET" })
     const { data: rows, error } = await context.supabase
       .from("students")
       .select(
-        "id, first_name, last_name, student_code, qr_token, created_at, class_students(classes(id, name))",
+        "id, first_name, last_name, student_code, qr_token, created_at, last_login_at, as_member, class_students(classes(id, name))",
       )
       .or(
         `first_name.ilike.%${term}%,last_name.ilike.%${term}%,student_code.ilike.%${term}%`,
@@ -281,6 +283,8 @@ export const searchStudents = createServerFn({ method: "GET" })
         student_code: row.student_code,
         qr_token: row.qr_token,
         created_at: row.created_at,
+        last_login_at: row.last_login_at,
+        as_member: row.as_member,
         classes: (links ?? [])
           .map((l) => l.classes)
           .filter((c): c is { id: string; name: string } => Boolean(c)),
@@ -290,7 +294,7 @@ export const searchStudents = createServerFn({ method: "GET" })
     // Recherche par nom de classe
     const { data: classRows, error: classError } = await context.supabase
       .from("classes")
-      .select("id, name, class_students(students(id, first_name, last_name, student_code, qr_token, created_at))")
+      .select("id, name, class_students(students(id, first_name, last_name, student_code, qr_token, created_at, last_login_at, as_member))")
       .ilike("name", `%${term}%`)
       .limit(20);
     if (classError) throw new Error(classError.message);
@@ -309,4 +313,19 @@ export const searchStudents = createServerFn({ method: "GET" })
     return byName.sort((a, b) =>
       `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, "fr"),
     );
+  });
+
+/** Inscription de l'élève à l'Association Sportive (AS) — badge visible côté élève. */
+export const setStudentAsMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string; asMember: boolean }) =>
+    z.object({ id: z.string().uuid(), asMember: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("students")
+      .update({ as_member: data.asMember })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

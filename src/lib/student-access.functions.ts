@@ -52,8 +52,34 @@ export const redeemStudentQr = createServerFn({ method: "POST" })
 
     const session = await getStudentSession();
     await session.update({ studentId: identity.id });
+
+    // Trace de la dernière connexion réussie (visible par l'enseignant).
+    await supabaseAdmin
+      .from("students")
+      .update({ last_login_at: new Date().toISOString() })
+      .eq("id", identity.id);
+
     return { ok: true };
   });
+
+/** Inscription à l'AS de l'élève identifié par son cookie de session QR (lecture seule). */
+export const getMyAsMember = createServerFn({ method: "GET" }).handler(
+  async (): Promise<boolean> => {
+    const { getStudentSession } = await import("./student-qr.server");
+    const session = await getStudentSession();
+    const studentId = session.data.studentId;
+    if (!studentId) return false;
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("students")
+      .select("as_member")
+      .eq("id", studentId)
+      .maybeSingle();
+    return Boolean(data?.as_member);
+  },
+);
+
 
 /** Identité de l'élève déduite uniquement du cookie de session signé côté serveur. */
 export const getStudentSessionInfo = createServerFn({ method: "GET" }).handler(

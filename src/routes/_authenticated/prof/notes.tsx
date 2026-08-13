@@ -56,6 +56,7 @@ function TeacherGrades() {
   const removeGrade = useServerFn(deleteStudentGrade);
 
   const [query, setQuery] = useState("");
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [studentId, setStudentId] = useState<string | null>(null);
   const [activityId, setActivityId] = useState("");
   const [items, setItems] = useState<FormItem[]>(initialItems);

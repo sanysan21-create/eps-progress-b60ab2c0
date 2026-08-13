@@ -385,30 +385,63 @@ function QuickCompetencies() {
             </div>
           </section>
 
-          <section className="space-y-3 rounded-3xl border border-border bg-surface p-5">
+          <section className="space-y-4 rounded-3xl border border-border bg-surface p-5">
             <div>
-              <h2 className="text-sm font-bold uppercase">Point fort choisi par l'élève</h2>
+              <span className="mono-label rounded bg-surface-2 px-2 py-1 text-primary">
+                Choix de l'élève
+              </span>
+              <h2 className="mt-2 text-sm font-bold uppercase">Points forts et objectif</h2>
               <p className="text-xs text-muted-foreground">
-                Consultation uniquement : c'est l'élève qui choisit son point fort depuis son
-                profil.
+                Consultation uniquement : l'élève choisit lui-même ses 3 points forts et son point à
+                travailler depuis son profil.
               </p>
             </div>
 
             {!soloId ? (
               <p className="text-sm text-muted-foreground">
-                Sélectionne un seul élève pour voir son point fort.
+                Sélectionne un seul élève pour voir ses choix.
               </p>
-            ) : chosenStrength ? (
-              <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-4">
-                <span className="text-2xl" aria-hidden>
-                  {chosenStrength.emoji}
-                </span>
-                <p className="text-base font-semibold">{chosenStrength.label}</p>
-              </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                L'élève n'a pas encore choisi son point fort.
-              </p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="mono-label text-muted-foreground">
+                    Points forts choisis par l'élève
+                  </p>
+                  {chosenStrengths.length > 0 ? (
+                    <ul className="flex flex-wrap gap-2">
+                      {chosenStrengths.map((item) => (
+                        <li
+                          key={item.code}
+                          className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm font-medium"
+                        >
+                          <span aria-hidden>⭐</span>
+                          {item.label}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      L'élève n'a pas encore choisi ses points forts.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="mono-label text-muted-foreground">Objectif choisi par l'élève</p>
+                  {chosenGoal ? (
+                    <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-4">
+                      <span className="text-2xl" aria-hidden>
+                        🚀
+                      </span>
+                      <p className="text-base font-semibold">{chosenGoal.label}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      L'élève n'a pas encore choisi son objectif.
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
           </section>
 

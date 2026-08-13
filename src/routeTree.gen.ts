@@ -25,7 +25,6 @@ import { Route as EleveReussitesRouteImport } from './routes/eleve/reussites'
 import { Route as AuthenticatedProfIndexRouteImport } from './routes/_authenticated/prof/index'
 import { Route as AuthenticatedProfActivitesRouteImport } from './routes/_authenticated/prof/activites'
 import { Route as AuthenticatedProfCompetencesRouteImport } from './routes/_authenticated/prof/competences'
-import { Route as ApiPublicQrSelftestRouteImport } from './routes/api/public/qr-selftest'
 import { Route as AuthenticatedProfClassesClassIdRouteImport } from './routes/_authenticated/prof/classes.$classId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -109,11 +108,6 @@ const AuthenticatedProfCompetencesRoute =
     path: '/competences',
     getParentRoute: () => AuthenticatedProfRoute,
   } as any)
-const ApiPublicQrSelftestRoute = ApiPublicQrSelftestRouteImport.update({
-  id: '/api/public/qr-selftest',
-  path: '/api/public/qr-selftest',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedProfClassesClassIdRoute =
   AuthenticatedProfClassesClassIdRouteImport.update({
     id: '/classes/$classId',
@@ -136,7 +130,6 @@ export interface FileRoutesByFullPath {
   '/eleve/': typeof EleveIndexRoute
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/competences': typeof AuthenticatedProfCompetencesRoute
-  '/api/public/qr-selftest': typeof ApiPublicQrSelftestRoute
   '/prof/': typeof AuthenticatedProfIndexRoute
   '/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -153,7 +146,6 @@ export interface FileRoutesByTo {
   '/eleve': typeof EleveIndexRoute
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/competences': typeof AuthenticatedProfCompetencesRoute
-  '/api/public/qr-selftest': typeof ApiPublicQrSelftestRoute
   '/prof': typeof AuthenticatedProfIndexRoute
   '/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -174,7 +166,6 @@ export interface FileRoutesById {
   '/eleve/': typeof EleveIndexRoute
   '/_authenticated/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/_authenticated/prof/competences': typeof AuthenticatedProfCompetencesRoute
-  '/api/public/qr-selftest': typeof ApiPublicQrSelftestRoute
   '/_authenticated/prof/': typeof AuthenticatedProfIndexRoute
   '/_authenticated/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -195,7 +186,6 @@ export interface FileRouteTypes {
     | '/eleve/'
     | '/prof/activites'
     | '/prof/competences'
-    | '/api/public/qr-selftest'
     | '/prof/'
     | '/prof/classes/$classId'
   fileRoutesByTo: FileRoutesByTo
@@ -212,7 +202,6 @@ export interface FileRouteTypes {
     | '/eleve'
     | '/prof/activites'
     | '/prof/competences'
-    | '/api/public/qr-selftest'
     | '/prof'
     | '/prof/classes/$classId'
   id:
@@ -232,7 +221,6 @@ export interface FileRouteTypes {
     | '/eleve/'
     | '/_authenticated/prof/activites'
     | '/_authenticated/prof/competences'
-    | '/api/public/qr-selftest'
     | '/_authenticated/prof/'
     | '/_authenticated/prof/classes/$classId'
   fileRoutesById: FileRoutesById
@@ -244,7 +232,6 @@ export interface RootRouteChildren {
   EleveRoute: typeof EleveRouteWithChildren
   AccesEleveTokenRoute: typeof AccesEleveTokenRoute
   AccesEleveIndexRoute: typeof AccesEleveIndexRoute
-  ApiPublicQrSelftestRoute: typeof ApiPublicQrSelftestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -361,13 +348,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfCompetencesRouteImport
       parentRoute: typeof AuthenticatedProfRoute
     }
-    '/api/public/qr-selftest': {
-      id: '/api/public/qr-selftest'
-      path: '/api/public/qr-selftest'
-      fullPath: '/api/public/qr-selftest'
-      preLoaderRoute: typeof ApiPublicQrSelftestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/prof/classes/$classId': {
       id: '/_authenticated/prof/classes/$classId'
       path: '/classes/$classId'
@@ -433,7 +413,6 @@ const rootRouteChildren: RootRouteChildren = {
   EleveRoute: EleveRouteWithChildren,
   AccesEleveTokenRoute: AccesEleveTokenRoute,
   AccesEleveIndexRoute: AccesEleveIndexRoute,
-  ApiPublicQrSelftestRoute: ApiPublicQrSelftestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

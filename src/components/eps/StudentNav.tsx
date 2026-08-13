@@ -16,7 +16,7 @@ export function StudentNav() {
         <Link
           key={to}
           to={to}
-          activeOptions={{ exact: to === "/eleve" }}
+          activeOptions={{ exact: to === "/eleve/profil" }}
           className="flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-muted-foreground transition-colors hover:text-foreground"
           activeProps={{ className: "text-primary bg-primary/10" }}
         >

@@ -12,6 +12,15 @@ import {
   setStudentLevel,
   clearStudentLevel,
 } from "@/lib/competencies.functions";
+import {
+  listStudentEngagement,
+  listStudentStrengths,
+  setStudentEngagement,
+  clearStudentEngagement,
+  toggleStudentStrength,
+} from "@/lib/engagement.functions";
+import { ENGAGEMENT_INDICATORS, ENGAGEMENT_LEVELS, STRENGTHS } from "@/lib/engagement";
+
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({
   head: () => ({

@@ -1,21 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LevelDots } from "@/components/eps/LevelDots";
+import { StrengthPicker } from "@/components/eps/StrengthPicker";
 import {
   ENGAGEMENT_INDICATORS,
   ENGAGEMENT_LEVEL_MAX,
   engagementLevelLabel,
-  strength as findStrength,
 } from "@/lib/engagement";
 import {
   averageProgress,
   flattenActivities,
   initialsOf,
+  useMyStrength,
   useStudentActivities,
   useStudentEngagement,
   useStudentSession,
-  useStudentStrengths,
 } from "@/hooks/use-student-profile";
+
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({

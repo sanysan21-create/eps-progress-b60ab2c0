@@ -97,9 +97,19 @@ function QuickCompetencies() {
   }
 
   async function handleAdd() {
-    if (!selected.length) return toast.error("Sélectionne au moins un élève");
-    if (!label.trim()) return toast.error("Écris l'intitulé de la compétence");
-    if (!levelLabel) return toast.error("Choisis un niveau — « Non renseigné » n'enregistre rien");
+    if (!selected.length) {
+      toast.error("Sélectionne au moins un élève");
+      return;
+    }
+    if (!label.trim()) {
+      toast.error("Écris l'intitulé de la compétence");
+      return;
+    }
+    if (!levelLabel) {
+      toast.error("Choisis un niveau — « Non renseigné » n'enregistre rien");
+      return;
+    }
+
 
     const option = levelOptions.find((l) => l.label === levelLabel);
     setSaving(true);

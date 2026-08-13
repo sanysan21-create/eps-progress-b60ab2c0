@@ -1,12 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { User, Dumbbell, TrendingUp, Target, Trophy } from "lucide-react";
+import { User, ClipboardList, CalendarDays } from "lucide-react";
 
 const items = [
   { to: "/eleve/profil", label: "Profil", icon: User },
-  { to: "/eleve/activites", label: "Activités", icon: Dumbbell },
-  { to: "/eleve/progression", label: "Progrès", icon: TrendingUp },
-  { to: "/eleve/objectifs", label: "Objectifs", icon: Target },
-  { to: "/eleve/reussites", label: "Réussites", icon: Trophy },
+  { to: "/eleve/notes", label: "Notes", icon: ClipboardList },
+  { to: "/eleve/programme", label: "Programme", icon: CalendarDays },
 ] as const;
 
 export function StudentNav() {
@@ -16,8 +14,7 @@ export function StudentNav() {
         <Link
           key={to}
           to={to}
-          activeOptions={{ exact: to === "/eleve/profil" }}
-          className="flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-muted-foreground transition-colors hover:text-foreground"
+          className="flex flex-1 flex-col items-center gap-1 rounded-2xl px-3 py-2 text-muted-foreground transition-colors hover:text-foreground"
           activeProps={{ className: "text-primary bg-primary/10" }}
         >
           <Icon className="size-5" />

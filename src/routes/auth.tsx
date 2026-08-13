@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { GraduationCap, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const [space, setSpace] = useState<"choice" | "teacher">("choice");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -82,10 +84,33 @@ function AuthPage() {
           <Link to="/" className="display-title block text-4xl italic tracking-tighter text-primary">
             EPS Progress
           </Link>
-          <p className="mono-label mt-2 text-muted-foreground">Espace enseignant</p>
+          <p className="mono-label mt-2 text-muted-foreground">
+            {space === "choice" ? "Choisis ton espace" : "Espace enseignant"}
+          </p>
         </div>
 
-        <div className="rounded-3xl border border-border bg-surface p-6">
+        {space === "choice" && (
+          <div className="space-y-3 rounded-3xl border border-border bg-surface p-6">
+            <h1 className="display-title text-2xl">Se connecter</h1>
+            <button
+              onClick={() => setSpace("teacher")}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-xs font-bold uppercase text-primary-foreground"
+            >
+              <GraduationCap className="size-4" /> Espace enseignant
+            </button>
+            <Link
+              to="/acces-eleve"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-4 text-xs font-bold uppercase text-foreground"
+            >
+              <QrCode className="size-4" /> Espace élève
+            </Link>
+            <p className="mono-label pt-1 text-center text-muted-foreground">
+              Élèves : connexion par QR code
+            </p>
+          </div>
+        )}
+
+        <div className={space === "teacher" ? "rounded-3xl border border-border bg-surface p-6" : "hidden"}>
           <h1 className="display-title text-2xl">
             {mode === "signin" ? "Connexion" : "Créer un compte"}
           </h1>
@@ -149,10 +174,20 @@ function AuthPage() {
           >
             {mode === "signin" ? "Pas encore de compte ? S'inscrire" : "J'ai déjà un compte"}
           </button>
+
+          <button
+            onClick={() => setSpace("choice")}
+            className="mono-label mt-3 w-full text-center text-muted-foreground hover:text-primary"
+          >
+            ← Retour au choix de l'espace
+          </button>
         </div>
 
-        <Link to="/eleve" className="mono-label block text-center text-muted-foreground hover:text-primary">
-          → Espace élève
+        <Link
+          to="/acces-eleve"
+          className="mono-label block text-center text-muted-foreground hover:text-primary"
+        >
+          → Espace élève (QR code)
         </Link>
       </div>
     </main>

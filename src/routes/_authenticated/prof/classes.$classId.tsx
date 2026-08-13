@@ -23,9 +23,10 @@ import {
   moveStudent,
   removeFromClass,
   deleteStudent,
-  regenerateQrToken,
   type StudentRow,
 } from "@/lib/classes.functions";
+import { listQrStatuses, generateMissingQrForClass } from "@/lib/student-qr.functions";
+import { StudentQrDialog } from "@/components/eps/StudentQrDialog";
 import {
   Dialog,
   DialogContent,
@@ -99,13 +100,17 @@ function ClassDetailPage() {
   const moveOne = useServerFn(moveStudent);
   const removeOne = useServerFn(removeFromClass);
   const destroyOne = useServerFn(deleteStudent);
-  const regenerate = useServerFn(regenerateQrToken);
+  const fetchQrStatuses = useServerFn(listQrStatuses);
+  const generateMissing = useServerFn(generateMissingQrForClass);
 
   const detail = useQuery({
     queryKey: ["class", classId],
     queryFn: () => fetchDetail({ data: { id: classId } }),
   });
   const classesQuery = useQuery({ queryKey: ["classes"], queryFn: () => fetchClasses() });
+  const qrStatuses = useQuery({ queryKey: ["qr-statuses"], queryFn: () => fetchQrStatuses() });
+  const [qrTarget, setQrTarget] = useState<StudentRow | null>(null);
+
 
   const [term, setTerm] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -191,14 +196,29 @@ function ClassDetailPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const qrMutation = useMutation({
-    mutationFn: (id: string) => regenerate({ data: { id } }),
-    onSuccess: () => {
-      toast.success("QR code régénéré");
-      refresh();
+  const qrStatusByStudent = useMemo(() => {
+    const map = new Map<string, "active" | "revoked" | "none">();
+    for (const row of qrStatuses.data ?? []) map.set(row.student_id, row.status);
+    return map;
+  }, [qrStatuses.data]);
+
+  const missingQrCount = students.filter(
+    (s) => (qrStatusByStudent.get(s.id) ?? "none") !== "active",
+  ).length;
+
+  const generateMissingMutation = useMutation({
+    mutationFn: () => generateMissing({ data: { classId } }),
+    onSuccess: (result) => {
+      toast.success(
+        result.generated > 0
+          ? `${result.generated} QR code(s) généré(s)`
+          : "Tous les élèves ont déjà un QR code actif",
+      );
+      queryClient.invalidateQueries({ queryKey: ["qr-statuses"] });
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
 
   const importMutation = useMutation({
     mutationFn: () =>
@@ -271,6 +291,15 @@ function ClassDetailPage() {
           >
             <Upload className="size-4" /> Importer des élèves
           </button>
+          {missingQrCount > 0 && (
+            <button
+              onClick={() => generateMissingMutation.mutate()}
+              disabled={generateMissingMutation.isPending}
+              className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-xs font-bold uppercase disabled:opacity-60"
+            >
+              <QrCode className="size-4" /> Générer les QR manquants ({missingQrCount})
+            </button>
+          )}
         </div>
       </header>
 
@@ -313,11 +342,34 @@ function ClassDetailPage() {
                   <p className="text-sm font-bold">
                     {student.first_name} {student.last_name}
                   </p>
-                  <p className="mono-label text-muted-foreground">{student.student_code}</p>
+                  <p className="mono-label flex flex-wrap items-center gap-2 text-muted-foreground">
+                    {student.student_code}
+                    <span
+                      className={
+                        (qrStatusByStudent.get(student.id) ?? "none") === "active"
+                          ? "rounded bg-surface-2 px-1.5 py-0.5 text-primary"
+                          : (qrStatusByStudent.get(student.id) ?? "none") === "revoked"
+                            ? "rounded bg-surface-2 px-1.5 py-0.5 text-destructive"
+                            : "rounded bg-surface-2 px-1.5 py-0.5 text-muted-foreground"
+                      }
+                    >
+                      {(qrStatusByStudent.get(student.id) ?? "none") === "active"
+                        ? "QR actif"
+                        : (qrStatusByStudent.get(student.id) ?? "none") === "revoked"
+                          ? "QR révoqué"
+                          : "QR non généré"}
+                    </span>
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setQrTarget(student)}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-[10px] font-bold uppercase"
+                >
+                  <QrCode className="size-3.5" /> QR Code
+                </button>
                 <button
                   onClick={() => setProfileTarget(student)}
                   className="rounded-lg border border-border px-3 py-2 text-[10px] font-bold uppercase"
@@ -360,8 +412,8 @@ function ClassDetailPage() {
                     >
                       Déplacer vers une autre classe
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => qrMutation.mutate(student.id)}>
-                      <QrCode className="mr-2 size-4" /> Régénérer le QR code
+                    <DropdownMenuItem onClick={() => setQrTarget(student)}>
+                      <QrCode className="mr-2 size-4" /> QR Code de l'élève
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -463,8 +515,16 @@ function ClassDetailPage() {
               <dd className="font-bold">{klass?.name}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="mono-label text-muted-foreground">Jeton QR</dt>
-              <dd className="truncate font-mono text-xs">{profileTarget?.qr_token}</dd>
+              <dt className="mono-label text-muted-foreground">QR Code de l'élève</dt>
+              <dd className="mono-label text-primary">
+                {profileTarget
+                  ? (qrStatusByStudent.get(profileTarget.id) ?? "none") === "active"
+                    ? "Actif"
+                    : (qrStatusByStudent.get(profileTarget.id) ?? "none") === "revoked"
+                      ? "Révoqué"
+                      : "Non généré"
+                  : "—"}
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="mono-label text-muted-foreground">Ajouté le</dt>
@@ -646,6 +706,15 @@ function ClassDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* QR code de l'élève */}
+      <StudentQrDialog
+        student={qrTarget}
+        className={klass?.name}
+        onOpenChange={(open) => {
+          if (!open) setQrTarget(null);
+        }}
+      />
     </div>
   );
 }

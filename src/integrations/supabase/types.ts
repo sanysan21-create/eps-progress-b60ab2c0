@@ -83,6 +83,47 @@ export type Database = {
         }
         Relationships: []
       }
+      student_qr_tokens: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          revoked_at: string | null
+          student_id: string
+          teacher_id: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          revoked_at?: string | null
+          student_id: string
+          teacher_id?: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          revoked_at?: string | null
+          student_id?: string
+          teacher_id?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_qr_tokens_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           created_at: string

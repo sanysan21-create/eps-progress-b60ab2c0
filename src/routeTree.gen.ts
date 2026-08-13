@@ -14,6 +14,8 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as EleveRouteImport } from './routes/eleve'
 import { Route as AuthenticatedProfRouteImport } from './routes/_authenticated/prof'
+import { Route as AccesEleveIndexRouteImport } from './routes/acces-eleve/index'
+import { Route as AccesEleveTokenRouteImport } from './routes/acces-eleve/$token'
 import { Route as EleveIndexRouteImport } from './routes/eleve/index'
 import { Route as EleveActivitesRouteImport } from './routes/eleve/activites'
 import { Route as EleveObjectifsRouteImport } from './routes/eleve/objectifs'
@@ -48,6 +50,16 @@ const AuthenticatedProfRoute = AuthenticatedProfRouteImport.update({
   id: '/prof',
   path: '/prof',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AccesEleveIndexRoute = AccesEleveIndexRouteImport.update({
+  id: '/acces-eleve/',
+  path: '/acces-eleve/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccesEleveTokenRoute = AccesEleveTokenRouteImport.update({
+  id: '/acces-eleve/$token',
+  path: '/acces-eleve/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const EleveIndexRoute = EleveIndexRouteImport.update({
   id: '/',
@@ -108,11 +120,13 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/eleve': typeof EleveRouteWithChildren
   '/prof': typeof AuthenticatedProfRouteWithChildren
+  '/acces-eleve/$token': typeof AccesEleveTokenRoute
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
   '/eleve/progression': typeof EleveProgressionRoute
   '/eleve/reussites': typeof EleveReussitesRoute
+  '/acces-eleve/': typeof AccesEleveIndexRoute
   '/eleve/': typeof EleveIndexRoute
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
@@ -122,11 +136,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/acces-eleve/$token': typeof AccesEleveTokenRoute
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
   '/eleve/progression': typeof EleveProgressionRoute
   '/eleve/reussites': typeof EleveReussitesRoute
+  '/acces-eleve': typeof AccesEleveIndexRoute
   '/eleve': typeof EleveIndexRoute
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
@@ -140,11 +156,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/eleve': typeof EleveRouteWithChildren
   '/_authenticated/prof': typeof AuthenticatedProfRouteWithChildren
+  '/acces-eleve/$token': typeof AccesEleveTokenRoute
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
   '/eleve/progression': typeof EleveProgressionRoute
   '/eleve/reussites': typeof EleveReussitesRoute
+  '/acces-eleve/': typeof AccesEleveIndexRoute
   '/eleve/': typeof EleveIndexRoute
   '/_authenticated/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/_authenticated/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
@@ -158,11 +176,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/eleve'
     | '/prof'
+    | '/acces-eleve/$token'
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/profil'
     | '/eleve/progression'
     | '/eleve/reussites'
+    | '/acces-eleve/'
     | '/eleve/'
     | '/prof/activites'
     | '/prof/evaluer'
@@ -172,11 +192,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/acces-eleve/$token'
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/profil'
     | '/eleve/progression'
     | '/eleve/reussites'
+    | '/acces-eleve'
     | '/eleve'
     | '/prof/activites'
     | '/prof/evaluer'
@@ -189,11 +211,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/eleve'
     | '/_authenticated/prof'
+    | '/acces-eleve/$token'
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/profil'
     | '/eleve/progression'
     | '/eleve/reussites'
+    | '/acces-eleve/'
     | '/eleve/'
     | '/_authenticated/prof/activites'
     | '/_authenticated/prof/evaluer'
@@ -206,6 +230,8 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   EleveRoute: typeof EleveRouteWithChildren
+  AccesEleveTokenRoute: typeof AccesEleveTokenRoute
+  AccesEleveIndexRoute: typeof AccesEleveIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -244,6 +270,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/prof'
       preLoaderRoute: typeof AuthenticatedProfRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/acces-eleve/': {
+      id: '/acces-eleve/'
+      path: '/acces-eleve'
+      fullPath: '/acces-eleve/'
+      preLoaderRoute: typeof AccesEleveIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acces-eleve/$token': {
+      id: '/acces-eleve/$token'
+      path: '/acces-eleve/$token'
+      fullPath: '/acces-eleve/$token'
+      preLoaderRoute: typeof AccesEleveTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/eleve/': {
       id: '/eleve/'
@@ -371,6 +411,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   EleveRoute: EleveRouteWithChildren,
+  AccesEleveTokenRoute: AccesEleveTokenRoute,
+  AccesEleveIndexRoute: AccesEleveIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

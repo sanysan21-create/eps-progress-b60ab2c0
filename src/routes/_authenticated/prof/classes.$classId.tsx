@@ -403,8 +403,8 @@ function ClassDetailPage() {
                     >
                       Déplacer vers une autre classe
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => qrMutation.mutate(student.id)}>
-                      <QrCode className="mr-2 size-4" /> Régénérer le QR code
+                    <DropdownMenuItem onClick={() => setQrTarget(student)}>
+                      <QrCode className="mr-2 size-4" /> QR Code de l'élève
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

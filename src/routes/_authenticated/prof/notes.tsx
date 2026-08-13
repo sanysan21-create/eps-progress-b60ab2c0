@@ -74,16 +74,27 @@ function TeacherGrades() {
   const activity = (activities.data ?? []).find((row) => row.id === activityId) ?? null;
   const competencies = activity?.competencies ?? [];
 
+  const classNames = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of students.data ?? []) {
+      for (const name of row.class_names) set.add(name);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
+  }, [students.data]);
+
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const rows = students.data ?? [];
-    if (!needle) return rows.slice(0, 40);
+    let rows = students.data ?? [];
+    if (selectedClass) {
+      rows = rows.filter((row) => row.class_names.includes(selectedClass));
+    }
+    if (!needle) return rows.slice(0, 80);
     return rows
       .filter((row) =>
         `${row.first_name} ${row.last_name} ${row.student_code}`.toLowerCase().includes(needle),
       )
-      .slice(0, 40);
-  }, [query, students.data]);
+      .slice(0, 80);
+  }, [query, selectedClass, students.data]);
 
   const totals = gradeTotals(
     items.map((item) => ({

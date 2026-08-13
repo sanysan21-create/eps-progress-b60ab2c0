@@ -5,7 +5,7 @@ import { RankJourney } from "@/components/eps/RankJourney";
 import { AchievementBadges } from "@/components/eps/AchievementBadges";
 import { StrengthPicker } from "@/components/eps/StrengthPicker";
 import { GoalPicker } from "@/components/eps/GoalPicker";
-import { computeProgression, splitAchievements } from "@/lib/progression";
+import { computeProgression } from "@/lib/progression";
 import {
   ENGAGEMENT_INDICATORS,
   ENGAGEMENT_LEVEL_MAX,
@@ -15,6 +15,7 @@ import {
   averageProgress,
   flattenActivities,
   initialsOf,
+  useMyAchievements,
   useMyGoal,
   useMyStrengths,
   useStudentActivities,
@@ -90,6 +91,7 @@ function StudentProfile() {
   const engagement = useStudentEngagement();
   const myStrengths = useMyStrengths();
   const myGoal = useMyGoal();
+  const achievements = useMyAchievements();
 
   const info = session.data;
   const activities = profile.data ?? [];
@@ -105,7 +107,6 @@ function StudentProfile() {
     goal,
   };
   const journey = computeProgression(progressionInput);
-  const { unlocked, locked } = splitAchievements(progressionInput);
 
   const engagementMarks = (engagement.data ?? [])
     .map((mark) => ({
@@ -153,7 +154,7 @@ function StudentProfile() {
 
       {/* Réussites personnelles */}
       <Section title="🏅 Mes réussites">
-        <AchievementBadges unlocked={unlocked} locked={locked} />
+        <AchievementBadges achievements={achievements.data ?? []} />
       </Section>
 
       {/* Progression */}

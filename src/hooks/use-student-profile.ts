@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { getStudentSessionInfo } from "@/lib/student-access.functions";
 import { getMyEngagement, getMyGoal, getMyStrengths } from "@/lib/engagement.functions";
+import { getMyAchievements } from "@/lib/achievements.functions";
 import {
   getMyProfileCompetencies,
   type StudentProfileActivity,
@@ -38,6 +39,12 @@ export function useMyStrengths() {
 export function useMyGoal() {
   const fetchGoal = useServerFn(getMyGoal);
   return useQuery({ queryKey: ["my-goal"], queryFn: () => fetchGoal() });
+}
+
+/** Réussites proposées par l'enseignant, avec l'état obtenue / à obtenir. */
+export function useMyAchievements() {
+  const fetchAchievements = useServerFn(getMyAchievements);
+  return useQuery({ queryKey: ["my-achievements"], queryFn: () => fetchAchievements() });
 }
 
 export type StudentMarkFlat = {

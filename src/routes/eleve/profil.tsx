@@ -3,15 +3,13 @@ import { Waves, Dumbbell, Timer, Circle, ChevronRight, Target, Trophy, Flame } f
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { LevelBars } from "@/components/eps/LevelBars";
-import { getMyCompetencies } from "@/lib/competencies.functions";
+import { getMyProfileCompetencies } from "@/lib/competencies.functions";
 import {
   student,
-  studentActivities,
   studentObjectives,
   studentAchievements,
   LEVEL_LABELS,
   type Level,
-  type Activity,
 } from "@/data/demo";
 
 
@@ -34,15 +32,17 @@ export const Route = createFileRoute("/eleve/profil")({
   component: StudentProfile,
 });
 
-const activityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  natation: Waves,
-  basket: Circle,
-  athletisme: Timer,
-  gymnastique: Dumbbell,
-};
+const activityIcons: { match: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { match: "natation", icon: Waves },
+  { match: "basket", icon: Circle },
+  { match: "course", icon: Timer },
+  { match: "athl", icon: Timer },
+  { match: "gym", icon: Dumbbell },
+];
 
-function ActivityIcon({ activity }: { activity: Activity }) {
-  const Icon = activityIcons[activity.id] || Flame;
+function ActivityIcon({ name }: { name: string }) {
+  const normalized = name.toLowerCase();
+  const Icon = activityIcons.find((entry) => normalized.includes(entry.match))?.icon ?? Flame;
   return (
     <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
       <Icon className="size-6" />
@@ -53,11 +53,12 @@ function ActivityIcon({ activity }: { activity: Activity }) {
 function StudentProfile() {
   const nextObjective = studentObjectives.find((o) => !o.done);
   const unlockedAchievements = studentAchievements.filter((a) => a.unlocked).slice(0, 3);
-  const fetchCompetencies = useServerFn(getMyCompetencies);
-  const competencies = useQuery({
-    queryKey: ["my-competencies"],
-    queryFn: () => fetchCompetencies(),
+  const fetchProfile = useServerFn(getMyProfileCompetencies);
+  const profile = useQuery({
+    queryKey: ["my-profile-competencies"],
+    queryFn: () => fetchProfile(),
   });
+
 
 
   return (

@@ -94,6 +94,33 @@ function StudentProfile() {
         </div>
       </header>
 
+      {/* Mes compétences (renseignées par le professeur) */}
+      {(competencies.data ?? []).length > 0 && (
+        <section className="space-y-4">
+          <h2 className="display-title text-xl italic">Mes compétences</h2>
+          <div className="space-y-3">
+            {(competencies.data ?? []).map((c) => (
+              <article
+                key={c.id}
+                className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface p-4"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{c.label}</p>
+                  {c.activity_name && (
+                    <p className="mono-label text-muted-foreground">{c.activity_name}</p>
+                  )}
+                </div>
+                <span className="mono-label shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-primary">
+                  {c.level_label}
+                </span>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+
+
       {/* Mes activités */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">

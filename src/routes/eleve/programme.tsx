@@ -177,6 +177,43 @@ function StudentProgram() {
               </ul>
             </section>
           )}
+
+          {scales.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+                📊 Mes barèmes
+              </h2>
+              <ul className="space-y-3">
+                {scales.map((session) => (
+                  <li
+                    key={`scale-${session.id}`}
+                    className="overflow-hidden rounded-2xl border border-border bg-surface"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setZoom(session.scale_image_url)}
+                      className="w-full text-left"
+                    >
+                      <img
+                        src={session.scale_image_url ?? ""}
+                        alt={`Barème ${session.scale_activity_name ?? session.activity_name}`}
+                        className="max-h-44 w-full bg-background object-contain"
+                      />
+                      <span className="flex items-center justify-between gap-2 px-5 py-3">
+                        <span className="flex items-center gap-2 text-sm font-semibold">
+                          <span aria-hidden>
+                            {activityEmoji(session.scale_activity_name ?? session.activity_name)}
+                          </span>
+                          {session.scale_activity_name ?? session.activity_name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">Voir le barème</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </>
       )}
 

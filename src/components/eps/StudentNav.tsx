@@ -11,10 +11,10 @@ import {
 
 const items = [
   { to: "/eleve/profil", label: "Profil", icon: User },
+  { to: "/eleve/reussites", label: "Réussites", icon: Trophy },
   { to: "/eleve/activites", label: "Activités", icon: Flame },
   { to: "/eleve/progression", label: "Progrès", icon: TrendingUp },
   { to: "/eleve/objectifs", label: "Objectifs", icon: Target },
-  { to: "/eleve/reussites", label: "Réussites", icon: Trophy },
   { to: "/eleve/notes", label: "Notes", icon: ClipboardList },
   { to: "/eleve/programme", label: "Programme", icon: CalendarDays },
 ] as const;

@@ -56,6 +56,7 @@ function TeacherGrades() {
   const removeGrade = useServerFn(deleteStudentGrade);
 
   const [query, setQuery] = useState("");
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [studentId, setStudentId] = useState<string | null>(null);
   const [activityId, setActivityId] = useState("");
   const [items, setItems] = useState<FormItem[]>(initialItems);
@@ -74,16 +75,27 @@ function TeacherGrades() {
   const activity = (activities.data ?? []).find((row) => row.id === activityId) ?? null;
   const competencies = activity?.competencies ?? [];
 
+  const classNames = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of students.data ?? []) {
+      for (const name of row.class_names) set.add(name);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
+  }, [students.data]);
+
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const rows = students.data ?? [];
-    if (!needle) return rows.slice(0, 40);
+    let rows = students.data ?? [];
+    if (selectedClass) {
+      rows = rows.filter((row) => row.class_names.includes(selectedClass));
+    }
+    if (!needle) return rows.slice(0, 80);
     return rows
       .filter((row) =>
         `${row.first_name} ${row.last_name} ${row.student_code}`.toLowerCase().includes(needle),
       )
-      .slice(0, 40);
-  }, [query, students.data]);
+      .slice(0, 80);
+  }, [query, selectedClass, students.data]);
 
   const totals = gradeTotals(
     items.map((item) => ({
@@ -163,7 +175,47 @@ function TeacherGrades() {
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         {/* Élèves */}
         <section className="space-y-3 rounded-2xl border border-border bg-surface p-5">
-          <h2 className="mono-label text-muted-foreground">1 · Élève</h2>
+          <h2 className="mono-label text-muted-foreground">1 · Classe puis élève</h2>
+
+          <div
+            role="tablist"
+            aria-label="Classes"
+            className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedClass === null}
+              onClick={() => setSelectedClass(null)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                selectedClass === null
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border bg-background text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              Toutes
+            </button>
+            {classNames.map((name) => (
+              <button
+                key={name}
+                type="button"
+                role="tab"
+                aria-selected={selectedClass === name}
+                onClick={() => setSelectedClass(name)}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  selectedClass === name
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border bg-background text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                {name}
+              </button>
+            ))}
+            {classNames.length === 0 && (
+              <span className="py-1.5 text-xs text-muted-foreground">Aucune classe</span>
+            )}
+          </div>
+
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -174,7 +226,13 @@ function TeacherGrades() {
               className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
             />
           </div>
+
+          <p className="mono-label text-muted-foreground">
+            {filtered.length} élève{filtered.length > 1 ? "s" : ""}
+          </p>
+
           <ul className="max-h-72 space-y-1 overflow-y-auto">
+
             {filtered.map((row) => (
               <li key={row.id}>
                 <button

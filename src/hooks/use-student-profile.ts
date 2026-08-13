@@ -54,6 +54,12 @@ export function useMyMedal() {
   return useQuery({ queryKey: ["my-medal"], queryFn: () => fetchMedal() });
 }
 
+/** Inscription à l'AS décidée par l'enseignant — affiche le badge AS sur le profil. */
+export function useMyAsMember() {
+  const fetchAs = useServerFn(getMyAsMember);
+  return useQuery({ queryKey: ["my-as-member"], queryFn: () => fetchAs() });
+}
+
 export type StudentMarkFlat = {
   activityName: string;
   competencyId: string;

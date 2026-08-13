@@ -188,19 +188,6 @@ function TeacherGrades() {
             aria-label="Classes"
             className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
           >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={selectedClass === null}
-              onClick={() => setSelectedClass(null)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                selectedClass === null
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border bg-background text-muted-foreground hover:bg-accent"
-              }`}
-            >
-              Toutes
-            </button>
             {classNames.map((name) => (
               <button
                 key={name}

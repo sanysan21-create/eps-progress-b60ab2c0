@@ -1,0 +1,1 @@
+ALTER TABLE public.competencies ADD COLUMN IF NOT EXISTS progress_tip text;

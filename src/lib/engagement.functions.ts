@@ -63,53 +63,25 @@ export const clearStudentEngagement = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const listStudentStrengths = createServerFn({ method: "GET" })
+/**
+ * Lecture seule pour l'enseignant : point fort choisi par l'élève lui-même.
+ * L'enseignant ne peut jamais l'attribuer ni le modifier.
+ */
+export const getStudentStrengthChoice = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data, context }): Promise<string[]> => {
-    const { data: rows, error } = await context.supabase
-      .from("student_strengths")
+  .handler(async ({ data, context }): Promise<string | null> => {
+    const { data: row, error } = await context.supabase
+      .from("student_strength_choices")
       .select("strength_code")
-      .eq("student_id", data.studentId);
+      .eq("student_id", data.studentId)
+      .maybeSingle();
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((row) => row.strength_code);
+    return row?.strength_code ?? null;
   });
 
-export const toggleStudentStrength = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: { studentIds: string[]; strengthCode: string; selected: boolean }) =>
-    z
-      .object({
-        studentIds: studentIdsSchema,
-        strengthCode: codeSchema,
-        selected: z.boolean(),
-      })
-      .parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    if (data.selected) {
-      const { error } = await context.supabase.from("student_strengths").upsert(
-        data.studentIds.map((studentId) => ({
-          student_id: studentId,
-          strength_code: data.strengthCode,
-          teacher_id: context.userId,
-        })),
-        { onConflict: "student_id,strength_code" },
-      );
-      if (error) throw new Error(error.message);
-      return { ok: true };
-    }
-
-    const { error } = await context.supabase
-      .from("student_strengths")
-      .delete()
-      .eq("strength_code", data.strengthCode)
-      .in("student_id", data.studentIds);
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
 
 /** Lecture seule : implication de l'élève identifié par son cookie de session QR. */
 export const getMyEngagement = createServerFn({ method: "GET" }).handler(

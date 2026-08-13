@@ -53,6 +53,12 @@ function ActivityIcon({ activity }: { activity: Activity }) {
 function StudentProfile() {
   const nextObjective = studentObjectives.find((o) => !o.done);
   const unlockedAchievements = studentAchievements.filter((a) => a.unlocked).slice(0, 3);
+  const fetchCompetencies = useServerFn(getMyCompetencies);
+  const competencies = useQuery({
+    queryKey: ["my-competencies"],
+    queryFn: () => fetchCompetencies(),
+  });
+
 
   return (
     <div className="animate-slide-up space-y-8">

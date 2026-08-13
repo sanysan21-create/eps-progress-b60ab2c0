@@ -100,13 +100,17 @@ function ClassDetailPage() {
   const moveOne = useServerFn(moveStudent);
   const removeOne = useServerFn(removeFromClass);
   const destroyOne = useServerFn(deleteStudent);
-  const regenerate = useServerFn(regenerateQrToken);
+  const fetchQrStatuses = useServerFn(listQrStatuses);
+  const generateMissing = useServerFn(generateMissingQrForClass);
 
   const detail = useQuery({
     queryKey: ["class", classId],
     queryFn: () => fetchDetail({ data: { id: classId } }),
   });
   const classesQuery = useQuery({ queryKey: ["classes"], queryFn: () => fetchClasses() });
+  const qrStatuses = useQuery({ queryKey: ["qr-statuses"], queryFn: () => fetchQrStatuses() });
+  const [qrTarget, setQrTarget] = useState<StudentRow | null>(null);
+
 
   const [term, setTerm] = useState("");
   const [addOpen, setAddOpen] = useState(false);

@@ -15,6 +15,7 @@ import {
 import { sessionWhen } from "@/lib/program";
 import { activityEmoji } from "@/lib/activity-emoji";
 import { supabase } from "@/integrations/supabase/client";
+import { SequencePlanner } from "@/components/eps/SequencePlanner";
 
 export const Route = createFileRoute("/_authenticated/prof/programme")({
   head: () => ({
@@ -164,6 +165,8 @@ function TeacherProgram() {
           et les activités à venir.
         </p>
       </header>
+
+      <SequencePlanner />
 
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
         <section className="space-y-4 rounded-2xl border border-border bg-surface p-5">

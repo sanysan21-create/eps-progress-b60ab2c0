@@ -130,18 +130,20 @@ function StudentProfile() {
             {info ? initialsOf(info.firstName, info.lastName) : "?"}
           </span>
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="display-title text-2xl leading-tight">
             Bonjour {info?.firstName ?? "…"} 👋
           </h1>
-          <p className="flex items-center gap-2 truncate text-sm text-muted-foreground">
-            <span className="truncate">
-              {info ? `${info.firstName} ${info.lastName}` : ""}
-              {info?.className ? ` · ${info.className}` : ""}
-            </span>
-            <MedalBadge code={myMedal.data ?? null} size={26} />
+          <p className="truncate text-sm text-muted-foreground">
+            {info ? `${info.firstName} ${info.lastName}` : ""}
+            {info?.className ? ` · ${info.className}` : ""}
           </p>
         </div>
+        {myMedal.data && (
+          <div className="shrink-0 animate-slide-up text-center">
+            <MedalBadge code={myMedal.data} size={92} withLabel />
+          </div>
+        )}
       </header>
 
       <p className="text-sm leading-relaxed text-foreground/80">

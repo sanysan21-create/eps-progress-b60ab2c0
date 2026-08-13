@@ -1,12 +1,20 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Waves, Dumbbell, Timer, Circle, ChevronRight, Target, Trophy, Flame } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 
+import { LevelDots } from "@/components/eps/LevelDots";
+import {
+  ENGAGEMENT_INDICATORS,
+  ENGAGEMENT_LEVEL_MAX,
+  engagementLevelLabel,
+  strength as findStrength,
+} from "@/lib/engagement";
 import {
   averageProgress,
   flattenActivities,
   initialsOf,
   useStudentActivities,
+  useStudentEngagement,
   useStudentSession,
+  useStudentStrengths,
 } from "@/hooks/use-student-profile";
 
 export const Route = createFileRoute("/eleve/profil")({
@@ -16,12 +24,12 @@ export const Route = createFileRoute("/eleve/profil")({
       {
         name: "description",
         content:
-          "Profil EPS de l'élève : activités, compétences évaluées, prochain objectif et réussites.",
+          "Profil EPS de l'élève : progression, compétences, implication en cours et points forts renseignés par l'enseignant.",
       },
       { property: "og:title", content: "Mon profil EPS — EPS Progress" },
       {
         property: "og:description",
-        content: "Activités, compétences évaluées, prochain objectif et réussites de l'élève.",
+        content: "Progression, compétences, implication et points forts de l'élève.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -30,20 +38,49 @@ export const Route = createFileRoute("/eleve/profil")({
   component: StudentProfile,
 });
 
-const activityIcons: { match: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { match: "natation", icon: Waves },
-  { match: "basket", icon: Circle },
-  { match: "course", icon: Timer },
-  { match: "athl", icon: Timer },
-  { match: "gym", icon: Dumbbell },
+const activityEmojis: { match: string; emoji: string }[] = [
+  { match: "natation", emoji: "🏊" },
+  { match: "nage", emoji: "🏊" },
+  { match: "basket", emoji: "🏀" },
+  { match: "hand", emoji: "🤾" },
+  { match: "foot", emoji: "⚽" },
+  { match: "volley", emoji: "🏐" },
+  { match: "badminton", emoji: "🏸" },
+  { match: "tennis", emoji: "🎾" },
+  { match: "course", emoji: "🏃" },
+  { match: "athl", emoji: "🏃" },
+  { match: "gym", emoji: "🤸" },
+  { match: "danse", emoji: "💃" },
+  { match: "escalade", emoji: "🧗" },
+  { match: "muscu", emoji: "🏋️" },
+  { match: "vélo", emoji: "🚴" },
+  { match: "rugby", emoji: "🏉" },
 ];
 
-function ActivityIcon({ name }: { name: string }) {
+function activityEmoji(name: string) {
   const normalized = name.toLowerCase();
-  const Icon = activityIcons.find((entry) => normalized.includes(entry.match))?.icon ?? Flame;
+  return activityEmojis.find((entry) => normalized.includes(entry.match))?.emoji ?? "🎽";
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-      <Icon className="size-6" />
+    <section className="space-y-3">
+      <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function EmptyNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-surface/60 px-5 py-6 text-sm text-muted-foreground">
+      {children}
     </div>
   );
 }
@@ -51,160 +88,164 @@ function ActivityIcon({ name }: { name: string }) {
 function StudentProfile() {
   const session = useStudentSession();
   const profile = useStudentActivities();
+  const engagement = useStudentEngagement();
+  const strengths = useStudentStrengths();
+
   const info = session.data;
-  const marks = flattenActivities(profile.data ?? []);
+  const activities = profile.data ?? [];
+  const marks = flattenActivities(activities);
   const progress = averageProgress(marks);
-  const nextObjective = marks
-    .filter((m) => m.levelPosition < m.levelMax)
-    .sort((a, b) => a.levelPosition / a.levelMax - b.levelPosition / b.levelMax)[0];
-  const mastered = marks.filter((m) => m.levelPosition >= m.levelMax).slice(0, 3);
+
+  const engagementMarks = (engagement.data ?? [])
+    .map((mark) => ({ ...mark, indicator: ENGAGEMENT_INDICATORS.find((i) => i.code === mark.indicator_code) }))
+    .filter((mark): mark is typeof mark & { indicator: (typeof ENGAGEMENT_INDICATORS)[number] } =>
+      Boolean(mark.indicator),
+    )
+    .sort(
+      (a, b) =>
+        ENGAGEMENT_INDICATORS.indexOf(a.indicator) - ENGAGEMENT_INDICATORS.indexOf(b.indicator),
+    );
+
+  const strengthList = (strengths.data ?? [])
+    .map((code) => findStrength(code))
+    .filter((s): s is NonNullable<typeof s> => Boolean(s));
 
   return (
-    <div className="animate-slide-up space-y-8">
-      <header className="relative overflow-hidden rounded-3xl border border-border bg-surface p-6">
-        <div className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary/10 blur-2xl" />
-        <div className="relative flex items-center gap-4">
-          <div className="grid size-20 shrink-0 place-items-center rounded-3xl bg-surface-2 ring-1 ring-border">
-            <span className="display-title text-3xl text-primary">
-              {info ? initialsOf(info.firstName, info.lastName) : "?"}
-            </span>
-          </div>
-          <div className="min-w-0">
-            <p className="mono-label text-primary">{info?.className ?? "Sans classe"}</p>
-            <h1 className="display-title truncate text-3xl">
-              {info ? `${info.firstName} ${info.lastName}` : "…"}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {marks.length} compétence{marks.length > 1 ? "s" : ""} évaluée
-              {marks.length > 1 ? "s" : ""}
-              {info ? ` · ${info.studentCode}` : ""}
-            </p>
-          </div>
+    <div className="animate-slide-up space-y-10 pb-4">
+      {/* Identité */}
+      <header className="flex items-center gap-4">
+        <div className="grid size-16 shrink-0 place-items-center rounded-full bg-surface ring-1 ring-border">
+          <span className="display-title text-xl text-primary">
+            {info ? initialsOf(info.firstName, info.lastName) : "?"}
+          </span>
         </div>
-
-        <div className="relative mt-6 rounded-2xl bg-background/50 p-4">
-          <p className="mono-label text-muted-foreground">Progression globale</p>
-          <p className="display-title text-3xl text-primary">
-            {progress === null ? "—" : `${progress}%`}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Moyenne des niveaux atteints sur l'ensemble de tes compétences évaluées.
+        <div className="min-w-0">
+          <h1 className="display-title text-2xl leading-tight">
+            Bonjour {info?.firstName ?? "…"} 👋
+          </h1>
+          <p className="truncate text-sm text-muted-foreground">
+            {info ? `${info.firstName} ${info.lastName}` : ""}
+            {info?.className ? ` · ${info.className}` : ""}
           </p>
         </div>
       </header>
 
-      <section className="space-y-4">
-        <h2 className="display-title text-xl italic">Mes activités</h2>
+      <p className="text-sm leading-relaxed text-foreground/80">
+        {progress === null
+          ? "Ton profil se construira au fil des séances. Chaque effort compte."
+          : "Continue à progresser, chaque effort compte."}
+      </p>
 
-        {profile.isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
-
-        {!profile.isLoading && (profile.data ?? []).length === 0 && (
-          <div className="rounded-3xl border border-border bg-surface p-6 text-center">
-            <Flame className="mx-auto size-8 text-primary" />
-            <p className="mt-3 font-bold">Aucune compétence n'a encore été évaluée.</p>
-            <p className="text-sm text-muted-foreground">
-              Ton professeur renseignera tes niveaux au fil des séances.
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          {(profile.data ?? []).map((activity) => (
-            <article
-              key={activity.activity_id}
-              className="space-y-3 rounded-3xl border border-border bg-surface p-5"
-            >
-              <div className="flex items-center gap-3">
-                <ActivityIcon name={activity.activity_name} />
-                <h3 className="display-title text-xl italic">{activity.activity_name}</h3>
-              </div>
-              <div className="space-y-2">
-                {activity.competencies.map((competency) => (
-                  <div
-                    key={competency.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl bg-background/60 p-3"
-                  >
-                    <p className="min-w-0 text-sm font-semibold">{competency.label}</p>
-                    <span className="mono-label shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-primary">
-                      Niveau {competency.level_position} — {competency.level_label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="display-title text-xl italic">Mon prochain objectif</h2>
-        {nextObjective ? (
-          <article className="relative overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground">
-            <div className="absolute -right-6 -top-6 size-32 rounded-full bg-background/10" />
-            <div className="relative flex items-start gap-4">
-              <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-background/20">
-                <Target className="size-6" />
-              </div>
-              <div className="min-w-0">
-                <p className="mono-label text-primary-foreground/80">{nextObjective.activityName}</p>
-                <p className="display-title text-xl">{nextObjective.competencyLabel}</p>
-                <p className="mt-2 text-sm font-medium text-primary-foreground/90">
-                  Niveau {nextObjective.levelPosition} / {nextObjective.levelMax} — prochain palier
-                  à atteindre.
-                </p>
-              </div>
-            </div>
-            <Link
-              to="/eleve/objectifs"
-              className="mono-label relative mt-5 inline-flex items-center gap-1 rounded-full bg-surface px-4 py-2 text-xs font-bold text-foreground hover:bg-surface/90"
-            >
-              Voir mes objectifs <ChevronRight className="size-4" />
-            </Link>
-          </article>
+      {/* Progression */}
+      <Section title="Ma progression">
+        {progress === null ? (
+          <EmptyNote>Tes premières évaluations apparaîtront ici.</EmptyNote>
         ) : (
-          <div className="rounded-3xl border border-border bg-surface p-6 text-center">
-            <Trophy className="mx-auto size-8 text-primary" />
-            <p className="mt-3 font-bold">
-              {marks.length === 0
-                ? "Pas encore d'objectif : aucune compétence évaluée."
-                : "Tous tes niveaux maximum sont atteints !"}
+          <div className="rounded-2xl border border-border bg-surface p-5">
+            <div className="flex items-end justify-between">
+              <p className="text-sm text-muted-foreground">Niveaux atteints</p>
+              <p className="display-title text-3xl text-primary">{progress}%</p>
+            </div>
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-2">
+              <div
+                className="h-full origin-left rounded-full bg-primary animate-bar-grow"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Moyenne de tes niveaux sur {marks.length} compétence{marks.length > 1 ? "s" : ""}{" "}
+              évaluée{marks.length > 1 ? "s" : ""}.
             </p>
           </div>
         )}
-      </section>
+      </Section>
 
-      {mastered.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="display-title text-xl italic">Mes réussites</h2>
-            <Link
-              to="/eleve/reussites"
-              className="mono-label flex items-center gap-1 text-muted-foreground hover:text-primary"
-            >
-              Tout voir <ChevronRight className="size-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 gap-3">
-            {mastered.map((mark) => (
+      {/* Compétences */}
+      <Section title="Mes compétences">
+        {activities.length === 0 ? (
+          <EmptyNote>Aucune compétence renseignée pour le moment.</EmptyNote>
+        ) : (
+          <div className="space-y-4">
+            {activities.map((activity) => (
               <article
-                key={mark.competencyId}
-                className="flex items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4"
+                key={activity.activity_id}
+                className="rounded-2xl border border-border bg-surface p-5"
               >
-                <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
-                  <Trophy className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold uppercase italic">
-                    {mark.competencyLabel}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{mark.activityName}</p>
-                  <p className="mono-label mt-1 text-primary">{mark.levelLabel}</p>
-                </div>
+                <h3 className="flex items-center gap-2 text-base font-semibold">
+                  <span aria-hidden>{activityEmoji(activity.activity_name)}</span>
+                  {activity.activity_name}
+                </h3>
+                <ul className="mt-4 space-y-4">
+                  {activity.competencies.map((competency) => (
+                    <li key={competency.id} className="space-y-1.5">
+                      <p className="text-sm font-medium leading-snug">{competency.label}</p>
+                      <div className="flex items-center gap-3">
+                        <LevelDots
+                          level={competency.level_position}
+                          max={competency.level_max}
+                          label={`${competency.label} : niveau ${competency.level_position} sur ${competency.level_max}`}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {competency.level_label}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </article>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </Section>
+
+      {/* Implication */}
+      <Section title="Mon implication en EPS">
+        {engagementMarks.length === 0 ? (
+          <EmptyNote>Ton implication sera renseignée au fil des séances.</EmptyNote>
+        ) : (
+          <div className="rounded-2xl border border-border bg-surface p-5">
+            <ul className="space-y-4">
+              {engagementMarks.map((mark) => (
+                <li key={mark.indicator_code} className="space-y-1.5">
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    <span aria-hidden>{mark.indicator.emoji}</span>
+                    {mark.indicator.label}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <LevelDots
+                      level={mark.level}
+                      max={ENGAGEMENT_LEVEL_MAX}
+                      label={`${mark.indicator.label} : ${engagementLevelLabel(mark.level)}`}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {engagementLevelLabel(mark.level)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Section>
+
+      {/* Points forts */}
+      <Section title="Mes points forts ⭐">
+        {strengthList.length === 0 ? (
+          <EmptyNote>Tes points forts apparaîtront ici.</EmptyNote>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {strengthList.map((item) => (
+              <li
+                key={item.code}
+                className="flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-sm"
+              >
+                <span aria-hidden>{item.emoji}</span>
+                <span className="font-medium">{item.label}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
     </div>
   );
 }

@@ -12,6 +12,15 @@ import {
   setStudentLevel,
   clearStudentLevel,
 } from "@/lib/competencies.functions";
+import {
+  listStudentEngagement,
+  listStudentStrengths,
+  setStudentEngagement,
+  clearStudentEngagement,
+  toggleStudentStrength,
+} from "@/lib/engagement.functions";
+import { ENGAGEMENT_INDICATORS, ENGAGEMENT_LEVELS, STRENGTHS } from "@/lib/engagement";
+
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({
   head: () => ({
@@ -41,6 +50,11 @@ function QuickCompetencies() {
   const fetchMarks = useServerFn(listStudentMarks);
   const setLevel = useServerFn(setStudentLevel);
   const clearLevel = useServerFn(clearStudentLevel);
+  const fetchEngagement = useServerFn(listStudentEngagement);
+  const fetchStrengths = useServerFn(listStudentStrengths);
+  const saveEngagement = useServerFn(setStudentEngagement);
+  const removeEngagement = useServerFn(clearStudentEngagement);
+  const toggleStrength = useServerFn(toggleStudentStrength);
 
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -55,6 +69,61 @@ function QuickCompetencies() {
     queryFn: () => fetchMarks({ data: { studentId: soloId! } }),
     enabled: Boolean(soloId),
   });
+  const engagement = useQuery({
+    queryKey: ["student-engagement", soloId],
+    queryFn: () => fetchEngagement({ data: { studentId: soloId! } }),
+    enabled: Boolean(soloId),
+  });
+  const strengths = useQuery({
+    queryKey: ["student-strengths", soloId],
+    queryFn: () => fetchStrengths({ data: { studentId: soloId! } }),
+    enabled: Boolean(soloId),
+  });
+
+  const engagementByCode = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const mark of engagement.data ?? []) map.set(mark.indicator_code, mark.level);
+    return map;
+  }, [engagement.data]);
+
+  const strengthSet = useMemo(() => new Set(strengths.data ?? []), [strengths.data]);
+
+  async function handleEngagementChange(indicatorCode: string, value: string) {
+    if (!selected.length) {
+      toast.error("Sélectionne au moins un élève");
+      return;
+    }
+    try {
+      if (value) {
+        await saveEngagement({
+          data: { studentIds: selected, indicatorCode, level: Number(value) },
+        });
+        toast.success("Implication enregistrée");
+      } else {
+        await removeEngagement({ data: { studentIds: selected, indicatorCode } });
+        toast.success("Indicateur retiré");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["student-engagement"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
+    }
+  }
+
+  async function handleStrengthToggle(strengthCode: string, isSelected: boolean) {
+    if (!selected.length) {
+      toast.error("Sélectionne au moins un élève");
+      return;
+    }
+    try {
+      await toggleStrength({
+        data: { studentIds: selected, strengthCode, selected: !isSelected },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["student-strengths"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
+    }
+  }
+
 
   const activityList = activities.data ?? [];
   const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;
@@ -277,6 +346,80 @@ function QuickCompetencies() {
               « Non renseigné » n'attribue rien : la compétence n'apparaît pas dans le profil élève.
             </p>
           </section>
+
+          <section className="space-y-4 rounded-3xl border border-border bg-surface p-5">
+            <div>
+              <h2 className="text-sm font-bold uppercase">Implication en EPS</h2>
+              <p className="text-xs text-muted-foreground">
+                Échelle positive de valorisation, sans note. « Non renseigné » n'affiche rien dans le
+                profil élève.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {ENGAGEMENT_INDICATORS.map((indicator) => {
+                const current = soloId ? (engagementByCode.get(indicator.code) ?? "") : "";
+                return (
+                  <article
+                    key={indicator.code}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background p-4"
+                  >
+                    <div className="min-w-[200px] flex-1">
+                      <p className="text-sm font-bold">
+                        <span aria-hidden>{indicator.emoji}</span> {indicator.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{indicator.hint}</p>
+                    </div>
+                    <select
+                      value={String(current)}
+                      onChange={(e) => void handleEngagementChange(indicator.code, e.target.value)}
+                      className="min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+                    >
+                      <option value="">Non renseigné</option>
+                      {ENGAGEMENT_LEVELS.map((level) => (
+                        <option key={level.value} value={level.value}>
+                          {level.label}
+                        </option>
+                      ))}
+                    </select>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="space-y-4 rounded-3xl border border-border bg-surface p-5">
+            <div>
+              <h2 className="text-sm font-bold uppercase">Points forts</h2>
+              <p className="text-xs text-muted-foreground">
+                Coche uniquement ce qui correspond réellement à l'élève. Rien n'est attribué
+                automatiquement.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {STRENGTHS.map((item) => {
+                const isSelected = soloId ? strengthSet.has(item.code) : false;
+                return (
+                  <button
+                    key={item.code}
+                    onClick={() => void handleStrengthToggle(item.code, isSelected)}
+                    aria-pressed={isSelected}
+                    className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors ${
+                      isSelected
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    <span aria-hidden>{item.emoji}</span>
+                    {item.label}
+                    {isSelected && <Check className="size-3.5 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
 
           {selected.length > 1 && (
             <p className="text-sm text-muted-foreground">

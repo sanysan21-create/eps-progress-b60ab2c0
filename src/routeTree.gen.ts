@@ -15,6 +15,7 @@ import { Route as EleveIndexRouteImport } from './routes/eleve/index'
 import { Route as EleveActivitesRouteImport } from './routes/eleve/activites'
 import { Route as EleveObjectifsRouteImport } from './routes/eleve/objectifs'
 import { Route as EleveProgressionRouteImport } from './routes/eleve/progression'
+import { Route as EleveReussitesRouteImport } from './routes/eleve/reussites'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const EleveProgressionRoute = EleveProgressionRouteImport.update({
   path: '/progression',
   getParentRoute: () => EleveRoute,
 } as any)
+const EleveReussitesRoute = EleveReussitesRouteImport.update({
+  id: '/reussites',
+  path: '/reussites',
+  getParentRoute: () => EleveRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/progression': typeof EleveProgressionRoute
+  '/eleve/reussites': typeof EleveReussitesRoute
   '/eleve/': typeof EleveIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/progression': typeof EleveProgressionRoute
+  '/eleve/reussites': typeof EleveReussitesRoute
   '/eleve': typeof EleveIndexRoute
 }
 export interface FileRoutesById {
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/progression': typeof EleveProgressionRoute
+  '/eleve/reussites': typeof EleveReussitesRoute
   '/eleve/': typeof EleveIndexRoute
 }
 export interface FileRouteTypes {
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/progression'
+    | '/eleve/reussites'
     | '/eleve/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/progression'
+    | '/eleve/reussites'
     | '/eleve'
   id:
     | '__root__'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/progression'
+    | '/eleve/reussites'
     | '/eleve/'
   fileRoutesById: FileRoutesById
 }
@@ -146,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EleveProgressionRouteImport
       parentRoute: typeof EleveRoute
     }
+    '/eleve/reussites': {
+      id: '/eleve/reussites'
+      path: '/reussites'
+      fullPath: '/eleve/reussites'
+      preLoaderRoute: typeof EleveReussitesRouteImport
+      parentRoute: typeof EleveRoute
+    }
   }
 }
 
@@ -153,6 +172,7 @@ interface EleveRouteChildren {
   EleveActivitesRoute: typeof EleveActivitesRoute
   EleveObjectifsRoute: typeof EleveObjectifsRoute
   EleveProgressionRoute: typeof EleveProgressionRoute
+  EleveReussitesRoute: typeof EleveReussitesRoute
   EleveIndexRoute: typeof EleveIndexRoute
 }
 
@@ -160,6 +180,7 @@ const EleveRouteChildren: EleveRouteChildren = {
   EleveActivitesRoute: EleveActivitesRoute,
   EleveObjectifsRoute: EleveObjectifsRoute,
   EleveProgressionRoute: EleveProgressionRoute,
+  EleveReussitesRoute: EleveReussitesRoute,
   EleveIndexRoute: EleveIndexRoute,
 }
 

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EleveRouteImport } from './routes/eleve'
+import { Route as EleveIndexRouteImport } from './routes/eleve/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,38 @@ const EleveRoute = EleveRouteImport.update({
   path: '/eleve',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EleveIndexRoute = EleveIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EleveRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/eleve': typeof EleveRoute
+  '/eleve': typeof EleveRouteWithChildren
+  '/eleve/': typeof EleveIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/eleve': typeof EleveRoute
+  '/eleve': typeof EleveIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/eleve': typeof EleveRoute
+  '/eleve': typeof EleveRouteWithChildren
+  '/eleve/': typeof EleveIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/eleve'
+  fullPaths: '/' | '/eleve' | '/eleve/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/eleve'
-  id: '__root__' | '/' | '/eleve'
+  id: '__root__' | '/' | '/eleve' | '/eleve/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  EleveRoute: typeof EleveRoute
+  EleveRoute: typeof EleveRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +73,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EleveRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/eleve/': {
+      id: '/eleve/'
+      path: '/'
+      fullPath: '/eleve/'
+      preLoaderRoute: typeof EleveIndexRouteImport
+      parentRoute: typeof EleveRoute
+    }
   }
 }
 
+interface EleveRouteChildren {
+  EleveIndexRoute: typeof EleveIndexRoute
+}
+
+const EleveRouteChildren: EleveRouteChildren = {
+  EleveIndexRoute: EleveIndexRoute,
+}
+
+const EleveRouteWithChildren = EleveRoute._addFileChildren(EleveRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  EleveRoute: EleveRoute,
+  EleveRoute: EleveRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

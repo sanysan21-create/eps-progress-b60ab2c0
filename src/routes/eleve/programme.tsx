@@ -32,11 +32,29 @@ export const Route = createFileRoute("/eleve/programme")({
 
 function StudentProgram() {
   const fetchProgram = useServerFn(getMyProgram);
+  const fetchSequences = useServerFn(getMyProgramSequences);
   const program = useQuery({ queryKey: ["my-program"], queryFn: () => fetchProgram() });
+  const sequencesQuery = useQuery({
+    queryKey: ["my-program-sequences"],
+    queryFn: () => fetchSequences(),
+  });
   const sessions = program.data ?? [];
+  const sequences = sequencesQuery.data ?? [];
   const next = nextSession(sessions);
   const upcoming = upcomingSessions(sessions);
   const [zoom, setZoom] = useState<string | null>(null);
+
+  // Barèmes disponibles : une entrée par activité, dédoublonnée.
+  const scales = sessions
+    .filter((session) => session.scale_image_url)
+    .filter(
+      (session, index, all) =>
+        all.findIndex(
+          (other) =>
+            (other.scale_activity_name ?? other.activity_name) ===
+            (session.scale_activity_name ?? session.activity_name),
+        ) === index,
+    );
 
   return (
     <div className="animate-slide-up space-y-8 pb-4">
@@ -47,12 +65,39 @@ function StudentProgram() {
         </p>
       </header>
 
+      {sequences.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+            🗂️ Mes séquences
+          </h2>
+          <ul className="space-y-3">
+            {sequences.map((sequence) => (
+              <li
+                key={sequence.id}
+                className="rounded-2xl border border-border bg-surface px-5 py-4"
+              >
+                <p className="flex items-center gap-2 text-base font-semibold">
+                  <span aria-hidden>{activityEmoji(sequence.activity_name ?? sequence.name)}</span>
+                  {sequence.name}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {[sequenceRange(sequence), sequence.activity_name].filter(Boolean).join(" · ") ||
+                    "Séquence à venir"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {program.isPending ? (
         <div className="h-32 animate-pulse rounded-2xl border border-border bg-surface" />
       ) : sessions.length === 0 ? (
-        <div className="rounded-2xl border border-border/60 bg-surface/60 px-5 py-6 text-sm text-muted-foreground">
-          Le programme sera bientôt disponible.
-        </div>
+        sequences.length === 0 ? (
+          <div className="rounded-2xl border border-border/60 bg-surface/60 px-5 py-6 text-sm text-muted-foreground">
+            Le programme sera bientôt disponible.
+          </div>
+        ) : null
       ) : (
         <>
           {next && (

@@ -14,7 +14,6 @@ import {
   averageProgress,
   flattenActivities,
   initialsOf,
-  useMyAchievements,
   useMyGoal,
   useMyStrengths,
   useStudentActivities,

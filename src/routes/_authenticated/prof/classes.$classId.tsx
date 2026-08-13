@@ -506,8 +506,16 @@ function ClassDetailPage() {
               <dd className="font-bold">{klass?.name}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="mono-label text-muted-foreground">Jeton QR</dt>
-              <dd className="truncate font-mono text-xs">{profileTarget?.qr_token}</dd>
+              <dt className="mono-label text-muted-foreground">QR Code de l'élève</dt>
+              <dd className="mono-label text-primary">
+                {profileTarget
+                  ? (qrStatusByStudent.get(profileTarget.id) ?? "none") === "active"
+                    ? "Actif"
+                    : (qrStatusByStudent.get(profileTarget.id) ?? "none") === "revoked"
+                      ? "Révoqué"
+                      : "Non généré"
+                  : "—"}
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="mono-label text-muted-foreground">Ajouté le</dt>

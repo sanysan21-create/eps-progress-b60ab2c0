@@ -9,8 +9,9 @@ export const Route = createFileRoute("/_authenticated/prof")({
 
 const nav = [
   { to: "/prof", label: "Gestion classes", icon: Users, exact: true },
-  { to: "/prof/competences", label: "Saisie compétences", icon: ListChecks, exact: false },
-  { to: "/prof/activites", label: "Activités & niveaux", icon: Dumbbell, exact: false },
+  { to: "/prof/competences", label: "Évaluer compétences", icon: ListChecks, exact: false },
+  { to: "/prof/activites", label: "Activités & compétences", icon: Dumbbell, exact: false },
+
   { to: "/prof/evaluer", label: "Évaluation rapide", icon: ClipboardCheck, exact: false },
 ] as const;
 

@@ -319,6 +319,30 @@ function CompetencyCard({
         </button>
       </div>
 
+      <label className="block space-y-1.5">
+        <span className="mono-label text-muted-foreground">
+          Conseil pour progresser (visible par l'élève)
+        </span>
+        <input
+          defaultValue={competency.progress_tip ?? ""}
+          placeholder="Ex. : viser le fond de court pour repousser l'adversaire"
+          onBlur={async (e) => {
+            const value = e.target.value.trim();
+            if (value === (competency.progress_tip ?? "")) return;
+            try {
+              await patchCompetency({ data: { id: competency.id, progressTip: value } });
+              await onChanged();
+              toast.success("Conseil enregistré");
+            } catch (error) {
+              fail(error);
+            }
+          }}
+          className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      </label>
+
+
+
       <div className="space-y-2 pl-1">
         <p className="mono-label text-muted-foreground">Niveaux de cette compétence</p>
         {competency.levels.map((level, index) => {

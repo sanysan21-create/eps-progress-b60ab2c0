@@ -147,6 +147,7 @@ export type Database = {
           id: string
           label: string
           position: number
+          progress_tip: string | null
           teacher_id: string
           updated_at: string
         }
@@ -156,6 +157,7 @@ export type Database = {
           id?: string
           label: string
           position?: number
+          progress_tip?: string | null
           teacher_id?: string
           updated_at?: string
         }
@@ -165,6 +167,7 @@ export type Database = {
           id?: string
           label?: string
           position?: number
+          progress_tip?: string | null
           teacher_id?: string
           updated_at?: string
         }

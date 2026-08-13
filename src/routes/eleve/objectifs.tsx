@@ -83,6 +83,12 @@ function StudentObjectives() {
                         mark.levelPosition + 1
                       }`}
                 </p>
+                {mark.progressTip && (
+                  <p className="mt-1 truncate text-xs font-semibold text-primary">
+                    {mark.progressTip}
+                  </p>
+                )}
+
               </div>
             </article>
           );

@@ -54,6 +54,7 @@ export type StudentMarkFlat = {
   levelLabel: string;
   levelPosition: number;
   levelMax: number;
+  progressTip: string | null;
 };
 
 export function flattenActivities(activities: StudentProfileActivity[]): StudentMarkFlat[] {
@@ -65,6 +66,7 @@ export function flattenActivities(activities: StudentProfileActivity[]): Student
       levelLabel: competency.level_label,
       levelPosition: competency.level_position,
       levelMax: competency.level_max,
+      progressTip: competency.progress_tip,
     })),
   );
 }

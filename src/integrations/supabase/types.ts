@@ -238,6 +238,44 @@ export type Database = {
           },
         ]
       }
+      student_engagement: {
+        Row: {
+          created_at: string
+          id: string
+          indicator_code: string
+          level: number
+          student_id: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          indicator_code: string
+          level: number
+          student_id: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          indicator_code?: string
+          level?: number
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_engagement_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_qr_tokens: {
         Row: {
           active: boolean
@@ -272,6 +310,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "student_qr_tokens_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_strengths: {
+        Row: {
+          created_at: string
+          id: string
+          strength_code: string
+          student_id: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          strength_code: string
+          student_id: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          strength_code?: string
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_strengths_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"

@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Waves, Dumbbell, Timer, Circle, ChevronRight, Target, Trophy, Flame } from "lucide-react";
-import { LevelRing } from "@/components/eps/LevelRing";
 import { LevelBars } from "@/components/eps/LevelBars";
 import {
   student,

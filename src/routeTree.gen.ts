@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EleveRouteImport } from './routes/eleve'
 import { Route as EleveIndexRouteImport } from './routes/eleve/index'
+import { Route as EleveActivitesRouteImport } from './routes/eleve/activites'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,28 +29,36 @@ const EleveIndexRoute = EleveIndexRouteImport.update({
   path: '/',
   getParentRoute: () => EleveRoute,
 } as any)
+const EleveActivitesRoute = EleveActivitesRouteImport.update({
+  id: '/activites',
+  path: '/activites',
+  getParentRoute: () => EleveRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/eleve': typeof EleveRouteWithChildren
+  '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/': typeof EleveIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/eleve/activites': typeof EleveActivitesRoute
   '/eleve': typeof EleveIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/eleve': typeof EleveRouteWithChildren
+  '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/': typeof EleveIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/eleve' | '/eleve/'
+  fullPaths: '/' | '/eleve' | '/eleve/activites' | '/eleve/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/eleve'
-  id: '__root__' | '/' | '/eleve' | '/eleve/'
+  to: '/' | '/eleve/activites' | '/eleve'
+  id: '__root__' | '/' | '/eleve' | '/eleve/activites' | '/eleve/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -80,14 +89,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EleveIndexRouteImport
       parentRoute: typeof EleveRoute
     }
+    '/eleve/activites': {
+      id: '/eleve/activites'
+      path: '/activites'
+      fullPath: '/eleve/activites'
+      preLoaderRoute: typeof EleveActivitesRouteImport
+      parentRoute: typeof EleveRoute
+    }
   }
 }
 
 interface EleveRouteChildren {
+  EleveActivitesRoute: typeof EleveActivitesRoute
   EleveIndexRoute: typeof EleveIndexRoute
 }
 
 const EleveRouteChildren: EleveRouteChildren = {
+  EleveActivitesRoute: EleveActivitesRoute,
   EleveIndexRoute: EleveIndexRoute,
 }
 

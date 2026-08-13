@@ -347,6 +347,80 @@ function QuickCompetencies() {
             </p>
           </section>
 
+          <section className="space-y-4 rounded-3xl border border-border bg-surface p-5">
+            <div>
+              <h2 className="text-sm font-bold uppercase">Implication en EPS</h2>
+              <p className="text-xs text-muted-foreground">
+                Échelle positive de valorisation, sans note. « Non renseigné » n'affiche rien dans le
+                profil élève.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {ENGAGEMENT_INDICATORS.map((indicator) => {
+                const current = soloId ? (engagementByCode.get(indicator.code) ?? "") : "";
+                return (
+                  <article
+                    key={indicator.code}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background p-4"
+                  >
+                    <div className="min-w-[200px] flex-1">
+                      <p className="text-sm font-bold">
+                        <span aria-hidden>{indicator.emoji}</span> {indicator.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{indicator.hint}</p>
+                    </div>
+                    <select
+                      value={String(current)}
+                      onChange={(e) => void handleEngagementChange(indicator.code, e.target.value)}
+                      className="min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+                    >
+                      <option value="">Non renseigné</option>
+                      {ENGAGEMENT_LEVELS.map((level) => (
+                        <option key={level.value} value={level.value}>
+                          {level.label}
+                        </option>
+                      ))}
+                    </select>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="space-y-4 rounded-3xl border border-border bg-surface p-5">
+            <div>
+              <h2 className="text-sm font-bold uppercase">Points forts</h2>
+              <p className="text-xs text-muted-foreground">
+                Coche uniquement ce qui correspond réellement à l'élève. Rien n'est attribué
+                automatiquement.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {STRENGTHS.map((item) => {
+                const isSelected = soloId ? strengthSet.has(item.code) : false;
+                return (
+                  <button
+                    key={item.code}
+                    onClick={() => void handleStrengthToggle(item.code, isSelected)}
+                    aria-pressed={isSelected}
+                    className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors ${
+                      isSelected
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    <span aria-hidden>{item.emoji}</span>
+                    {item.label}
+                    {isSelected && <Check className="size-3.5 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+
           {selected.length > 1 && (
             <p className="text-sm text-muted-foreground">
               En sélection multiple, le niveau choisi est appliqué à tous les élèves sélectionnés.

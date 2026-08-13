@@ -236,11 +236,16 @@ export const updateCompetency = createServerFn({ method: "POST" })
         .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      label?: string;
+      level_label?: string;
+      level_position?: number;
+    } = {};
     if (data.label !== undefined) patch.label = data.label;
     if (data.levelLabel !== undefined) patch.level_label = data.levelLabel;
     if (data.levelPosition !== undefined) patch.level_position = data.levelPosition;
     if (Object.keys(patch).length === 0) return { ok: true };
+
 
     const { error } = await context.supabase
       .from("student_competencies")

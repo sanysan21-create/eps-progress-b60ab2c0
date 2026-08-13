@@ -12,7 +12,7 @@ export const listProgramSessions = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("program_sessions")
       .select(
-        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, scale_image_path, classes(name), activities(name)",
+        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, scale_image_path, scale_activity_id, classes(name), activities!program_sessions_activity_id_fkey(name), scale_activity:activities!program_sessions_scale_activity_id_fkey(name)",
       )
       .order("session_date", { ascending: true, nullsFirst: false });
     if (error) throw new Error(error.message);
@@ -32,6 +32,7 @@ export const saveProgramSession = createServerFn({ method: "POST" })
       objective?: string | null;
       description?: string | null;
       scaleImagePath?: string | null;
+      scaleActivityId?: string | null;
     }) =>
       z
         .object({
@@ -44,6 +45,7 @@ export const saveProgramSession = createServerFn({ method: "POST" })
           objective: z.string().trim().max(1000).nullable().optional(),
           description: z.string().trim().max(1000).nullable().optional(),
           scaleImagePath: z.string().trim().max(400).nullable().optional(),
+          scaleActivityId: z.string().uuid().nullable().optional(),
         })
         .parse(input),
   )
@@ -64,6 +66,7 @@ export const saveProgramSession = createServerFn({ method: "POST" })
       objective: data.objective ?? null,
       description: data.description ?? null,
       scale_image_path: data.scaleImagePath ?? null,
+      scale_activity_id: data.scaleImagePath ? (data.scaleActivityId ?? null) : null,
       teacher_id: context.userId,
     };
 
@@ -122,7 +125,7 @@ export const getMyProgram = createServerFn({ method: "GET" }).handler(
     const query = supabaseAdmin
       .from("program_sessions")
       .select(
-        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, scale_image_path, classes(name), activities(name)",
+        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, scale_image_path, scale_activity_id, classes(name), activities!program_sessions_activity_id_fkey(name), scale_activity:activities!program_sessions_scale_activity_id_fkey(name)",
       )
       .eq("teacher_id", student.teacher_id)
       .order("session_date", { ascending: true, nullsFirst: false });

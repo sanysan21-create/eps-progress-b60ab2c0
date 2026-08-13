@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Waves, Dumbbell, Timer, Circle, ChevronRight, Target, Trophy, Flame } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { LevelBars } from "@/components/eps/LevelBars";
+import { getMyCompetencies } from "@/lib/competencies.functions";
 import {
   student,
   studentActivities,
@@ -10,6 +13,7 @@ import {
   type Level,
   type Activity,
 } from "@/data/demo";
+
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({

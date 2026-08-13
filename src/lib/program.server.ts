@@ -10,8 +10,10 @@ type RawSession = {
   objective: string | null;
   description: string | null;
   scale_image_path?: string | null;
+  scale_activity_id?: string | null;
   classes: { name: string } | null;
   activities: { name: string } | null;
+  scale_activity?: { name: string } | null;
 };
 
 export const PROGRAM_SCALES_BUCKET = "program-scales";
@@ -30,6 +32,8 @@ export function mapProgramRows(rows: unknown): ProgramSession[] {
     description: row.description,
     scale_image_path: row.scale_image_path ?? null,
     scale_image_url: null,
+    scale_activity_id: row.scale_activity_id ?? null,
+    scale_activity_name: row.scale_activity?.name ?? null,
   }));
 }
 

@@ -4,7 +4,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { DEFAULT_LEVELS } from "@/lib/levels";
 
-export type CompetencyLevel = { id: string; label: string; position: number };
+export type CompetencyLevel = {
+  id: string;
+  label: string;
+  position: number;
+  tip?: string | null;
+};
 export type Competency = {
   id: string;
   label: string;
@@ -40,6 +45,7 @@ export type StudentProfileActivity = {
     level_position: number;
     level_max: number;
     progress_tip: string | null;
+    level_tip: string | null;
   }[];
 };
 
@@ -56,7 +62,7 @@ export const listActivities = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("activities")
       .select(
-        "id, name, description, competencies(id, label, position, progress_tip, competency_levels(id, label, position))",
+        "id, name, description, competencies(id, label, position, progress_tip, competency_levels(id, label, position, tip))",
       )
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
@@ -246,13 +252,24 @@ export const addCompetencyLevel = createServerFn({ method: "POST" })
 
 export const updateCompetencyLevel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string; label: string }) =>
-    z.object({ id: z.string().uuid(), label: labelSchema }).parse(input),
+  .inputValidator((input: { id: string; label?: string; tip?: string | null }) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        label: labelSchema.optional(),
+        tip: z.string().trim().max(300).nullable().optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
+    const patch: { label?: string; tip?: string | null } = {};
+    if (data.label !== undefined) patch.label = data.label;
+    if (data.tip !== undefined) patch.tip = data.tip || null;
+    if (Object.keys(patch).length === 0) return { ok: true };
+
     const { error } = await context.supabase
       .from("competency_levels")
-      .update({ label: data.label })
+      .update(patch)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -392,7 +409,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" }).handle
     const { data: rows, error } = await supabaseAdmin
       .from("student_competency_levels")
       .select(
-        "competency_id, competencies(id, label, position, progress_tip, activity_id, activities(id, name), competency_levels(position)), competency_levels(label, position)",
+        "competency_id, competencies(id, label, position, progress_tip, activity_id, activities(id, name), competency_levels(position)), competency_levels(label, position, tip)",
       )
       .eq("student_id", studentId);
     if (error) throw new Error(error.message);
@@ -407,7 +424,11 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" }).handle
         activities: { id: string; name: string } | null;
         competency_levels: { position: number }[] | null;
       } | null;
-      const level = row.competency_levels as unknown as { label: string; position: number } | null;
+      const level = row.competency_levels as unknown as {
+        label: string;
+        position: number;
+        tip: string | null;
+      } | null;
       if (!competency?.activities || !level) continue;
 
       const activity = competency.activities;
@@ -422,6 +443,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" }).handle
         level_label: level.label,
         level_position: level.position,
         progress_tip: competency.progress_tip ?? null,
+        level_tip: level.tip ?? null,
         level_max: Math.max(
           level.position,
           ...(competency.competency_levels ?? []).map((l) => l.position),

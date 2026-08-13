@@ -189,6 +189,7 @@ export type Database = {
           label: string
           position: number
           teacher_id: string
+          tip: string | null
           updated_at: string
         }
         Insert: {
@@ -198,6 +199,7 @@ export type Database = {
           label: string
           position?: number
           teacher_id?: string
+          tip?: string | null
           updated_at?: string
         }
         Update: {
@@ -207,6 +209,7 @@ export type Database = {
           label?: string
           position?: number
           teacher_id?: string
+          tip?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -229,6 +232,7 @@ export type Database = {
           id: string
           objective: string | null
           period_label: string | null
+          scale_activity_id: string | null
           scale_image_path: string | null
           scale_image_url: string | null
           session_date: string | null
@@ -244,6 +248,7 @@ export type Database = {
           id?: string
           objective?: string | null
           period_label?: string | null
+          scale_activity_id?: string | null
           scale_image_path?: string | null
           scale_image_url?: string | null
           session_date?: string | null
@@ -259,6 +264,7 @@ export type Database = {
           id?: string
           objective?: string | null
           period_label?: string | null
+          scale_activity_id?: string | null
           scale_image_path?: string | null
           scale_image_url?: string | null
           session_date?: string | null
@@ -278,6 +284,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_sessions_scale_activity_id_fkey"
+            columns: ["scale_activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
             referencedColumns: ["id"]
           },
         ]
@@ -546,6 +559,41 @@ export type Database = {
             foreignKeyName: "student_grades_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_medals: {
+        Row: {
+          created_at: string
+          id: string
+          medal: string
+          student_id: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          medal: string
+          student_id: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          medal?: string
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_medals_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
             referencedRelation: "students"
             referencedColumns: ["id"]
           },

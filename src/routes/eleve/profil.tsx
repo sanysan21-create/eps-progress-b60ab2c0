@@ -19,7 +19,9 @@ import {
   useStudentActivities,
   useStudentEngagement,
   useStudentSession,
+  useMyMedal,
 } from "@/hooks/use-student-profile";
+import { MedalBadge } from "@/components/eps/MedalBadge";
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({
@@ -89,6 +91,7 @@ function StudentProfile() {
   const engagement = useStudentEngagement();
   const myStrengths = useMyStrengths();
   const myGoal = useMyGoal();
+  const myMedal = useMyMedal();
 
   const info = session.data;
   const activities = profile.data ?? [];
@@ -131,9 +134,12 @@ function StudentProfile() {
           <h1 className="display-title text-2xl leading-tight">
             Bonjour {info?.firstName ?? "…"} 👋
           </h1>
-          <p className="truncate text-sm text-muted-foreground">
-            {info ? `${info.firstName} ${info.lastName}` : ""}
-            {info?.className ? ` · ${info.className}` : ""}
+          <p className="flex items-center gap-2 truncate text-sm text-muted-foreground">
+            <span className="truncate">
+              {info ? `${info.firstName} ${info.lastName}` : ""}
+              {info?.className ? ` · ${info.className}` : ""}
+            </span>
+            <MedalBadge code={myMedal.data ?? null} size={26} />
           </p>
         </div>
       </header>
@@ -199,6 +205,16 @@ function StudentProfile() {
                           {competency.level_label}
                         </span>
                       </div>
+                      {competency.level_tip && (
+                        <div className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+                          <p className="mono-label text-primary">
+                            💡 Conseil de ton enseignant
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+                            {competency.level_tip}
+                          </p>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

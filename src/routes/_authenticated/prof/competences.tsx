@@ -25,6 +25,8 @@ import {
   strength as findStrength,
   goal as findGoal,
 } from "@/lib/engagement";
+import { listClasses } from "@/lib/classes.functions";
+import { listClassStudents } from "@/lib/achievements.functions";
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({
   head: () => ({
@@ -61,12 +63,22 @@ function QuickCompetencies() {
   const saveEngagement = useServerFn(setStudentEngagement);
   const removeEngagement = useServerFn(clearStudentEngagement);
 
+  const fetchClasses = useServerFn(listClasses);
+  const fetchClassStudents = useServerFn(listClassStudents);
+
+  const [classId, setClassId] = useState("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [activityId, setActivityId] = useState<string>("");
 
   const students = useQuery({ queryKey: ["teacher-students"], queryFn: () => fetchStudents() });
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
+  const classes = useQuery({ queryKey: ["classes"], queryFn: () => fetchClasses() });
+  const classStudents = useQuery({
+    queryKey: ["class-students", classId],
+    queryFn: () => fetchClassStudents({ data: { classId } }),
+    enabled: Boolean(classId),
+  });
 
   const soloId = selected.length === 1 ? selected[0]! : null;
   const marks = useQuery({
@@ -133,14 +145,16 @@ function QuickCompetencies() {
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const list = students.data ?? [];
+    const all = students.data ?? [];
+    const classIds = new Set((classStudents.data ?? []).map((student) => student.id));
+    const list = classId ? all.filter((student) => classIds.has(student.id)) : all;
     if (!term) return list;
     return list.filter((s) =>
       `${s.first_name} ${s.last_name} ${s.student_code} ${s.class_names.join(" ")}`
         .toLowerCase()
         .includes(term),
     );
-  }, [students.data, query]);
+  }, [students.data, query, classId, classStudents.data]);
 
   function toggle(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -187,6 +201,47 @@ function QuickCompetencies() {
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <section className="space-y-3 rounded-3xl border border-border bg-surface p-4">
+          <label className="block space-y-1.5">
+            <span className="mono-label text-muted-foreground">Classe</span>
+            <select
+              value={classId}
+              onChange={(event) => {
+                setClassId(event.target.value);
+                setSelected([]);
+              }}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+            >
+              <option value="">Toutes mes classes</option>
+              {(classes.data ?? []).map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.name} · {row.school_year}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-1.5">
+            <span className="mono-label text-muted-foreground">Élève</span>
+            <select
+              value={selected.length === 1 ? selected[0] : ""}
+              onChange={(event) =>
+                setSelected(event.target.value ? [event.target.value] : [])
+              }
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+            >
+              <option value="">Choisir un élève…</option>
+              {filtered.map((student) => (
+                <option key={student.id} value={student.id}>
+                  {student.first_name} {student.last_name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <p className="mono-label text-muted-foreground">
+            Ou sélectionne plusieurs élèves dans la liste ci-dessous.
+          </p>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input

@@ -47,6 +47,7 @@ type Draft = {
   description: string;
   scaleImagePath: string | null;
   scaleImageUrl: string | null;
+  scaleActivityId: string;
 };
 
 function emptyDraft(): Draft {
@@ -60,6 +61,7 @@ function emptyDraft(): Draft {
     description: "",
     scaleImagePath: null,
     scaleImageUrl: null,
+    scaleActivityId: "",
   };
 }
 
@@ -129,6 +131,7 @@ function TeacherProgram() {
           objective: draft.objective.trim() || null,
           description: draft.description.trim() || null,
           scaleImagePath: draft.scaleImagePath,
+          scaleActivityId: draft.scaleActivityId || null,
         },
       });
       toast.success(draft.id ? "Séance mise à jour" : "Séance ajoutée au programme");
@@ -295,9 +298,35 @@ function TeacherProgram() {
                       className="max-h-56 w-full rounded-lg object-contain"
                     />
                   )}
+                  <label className="block space-y-1">
+                    <span className="text-xs text-muted-foreground">
+                      Cette image concerne quelle activité ?
+                    </span>
+                    <select
+                      value={draft.scaleActivityId}
+                      onChange={(event) =>
+                        setDraft({ ...draft, scaleActivityId: event.target.value })
+                      }
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    >
+                      <option value="">Choisir une activité existante…</option>
+                      {(activities.data ?? []).map((activity) => (
+                        <option key={activity.id} value={activity.id}>
+                          {activity.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     type="button"
-                    onClick={() => setDraft({ ...draft, scaleImagePath: null, scaleImageUrl: null })}
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        scaleImagePath: null,
+                        scaleImageUrl: null,
+                        scaleActivityId: "",
+                      })
+                    }
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="size-3" /> Retirer le barème
@@ -371,6 +400,9 @@ function TeacherProgram() {
                           className="mt-3 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary"
                         >
                           📊 Voir le barème
+                          {session.scale_activity_name
+                            ? ` · ${session.scale_activity_name}`
+                            : ""}
                         </a>
                       )}
                     </div>
@@ -388,6 +420,7 @@ function TeacherProgram() {
                             description: session.description ?? "",
                             scaleImagePath: session.scale_image_path,
                             scaleImageUrl: session.scale_image_url,
+                            scaleActivityId: session.scale_activity_id ?? "",
                           })
                         }
                         aria-label={`Modifier la séance ${session.activity_name}`}

@@ -10,6 +10,9 @@ export type ProgramSession = {
   description: string | null;
   scale_image_path: string | null;
   scale_image_url: string | null;
+  /** Activité existante à laquelle l'image du barème correspond. */
+  scale_activity_id: string | null;
+  scale_activity_name: string | null;
 };
 
 /** "Semaine du 7 septembre" — libellé lisible d'une séance planifiée. */

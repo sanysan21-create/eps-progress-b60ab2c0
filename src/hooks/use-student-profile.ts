@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getStudentSessionInfo } from "@/lib/student-access.functions";
 import { getMyEngagement, getMyGoal, getMyStrengths } from "@/lib/engagement.functions";
 import { getMyAchievements } from "@/lib/achievements.functions";
+import { getMyMedal } from "@/lib/medals.functions";
 import {
   getMyProfileCompetencies,
   type StudentProfileActivity,
@@ -47,6 +48,12 @@ export function useMyAchievements() {
   return useQuery({ queryKey: ["my-achievements"], queryFn: () => fetchAchievements() });
 }
 
+/** Médaille attribuée par l'enseignant (bronze, argent, or) — null si aucune. */
+export function useMyMedal() {
+  const fetchMedal = useServerFn(getMyMedal);
+  return useQuery({ queryKey: ["my-medal"], queryFn: () => fetchMedal() });
+}
+
 export type StudentMarkFlat = {
   activityName: string;
   competencyId: string;
@@ -55,6 +62,7 @@ export type StudentMarkFlat = {
   levelPosition: number;
   levelMax: number;
   progressTip: string | null;
+  levelTip: string | null;
 };
 
 export function flattenActivities(activities: StudentProfileActivity[]): StudentMarkFlat[] {
@@ -67,6 +75,7 @@ export function flattenActivities(activities: StudentProfileActivity[]): Student
       levelPosition: competency.level_position,
       levelMax: competency.level_max,
       progressTip: competency.progress_tip,
+      levelTip: competency.level_tip,
     })),
   );
 }

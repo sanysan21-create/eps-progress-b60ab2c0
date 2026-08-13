@@ -88,6 +88,14 @@ function StudentObjectives() {
                     {mark.progressTip}
                   </p>
                 )}
+                {mark.levelTip && (
+                  <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+                    <p className="mono-label text-primary">💡 Conseil de ton enseignant</p>
+                    <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+                      {mark.levelTip}
+                    </p>
+                  </div>
+                )}
 
               </div>
             </article>

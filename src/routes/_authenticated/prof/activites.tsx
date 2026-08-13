@@ -349,7 +349,7 @@ function CompetencyCard({
           const previous = competency.levels[index - 1];
           const next = competency.levels[index + 1];
           return (
-            <div key={level.id} className="flex items-center gap-2">
+            <div key={level.id} className="flex items-start gap-2">
               <span
                 className="grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold text-primary"
                 style={{
@@ -358,20 +358,38 @@ function CompetencyCard({
               >
                 {index + 1}
               </span>
-              <input
-                defaultValue={level.label}
-                onBlur={async (e) => {
-                  const value = e.target.value.trim();
-                  if (!value || value === level.label) return;
-                  try {
-                    await patchLevel({ data: { id: level.id, label: value } });
-                    await onChanged();
-                  } catch (error) {
-                    fail(error);
-                  }
-                }}
-                className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-              />
+              <div className="flex-1 space-y-1.5">
+                <input
+                  defaultValue={level.label}
+                  onBlur={async (e) => {
+                    const value = e.target.value.trim();
+                    if (!value || value === level.label) return;
+                    try {
+                      await patchLevel({ data: { id: level.id, label: value } });
+                      await onChanged();
+                    } catch (error) {
+                      fail(error);
+                    }
+                  }}
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+                <input
+                  defaultValue={level.tip ?? ""}
+                  placeholder="Conseil pour ce niveau (facultatif)"
+                  onBlur={async (e) => {
+                    const value = e.target.value.trim();
+                    if (value === (level.tip ?? "")) return;
+                    try {
+                      await patchLevel({ data: { id: level.id, tip: value } });
+                      await onChanged();
+                      toast.success("Conseil du niveau enregistré");
+                    } catch (error) {
+                      fail(error);
+                    }
+                  }}
+                  className="w-full rounded-xl border border-dashed border-border bg-surface px-3 py-1.5 text-xs outline-none focus:border-primary"
+                />
+              </div>
               <button
                 disabled={!previous}
                 onClick={async () => {

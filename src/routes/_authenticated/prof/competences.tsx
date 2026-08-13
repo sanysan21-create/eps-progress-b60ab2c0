@@ -50,6 +50,11 @@ function QuickCompetencies() {
   const fetchMarks = useServerFn(listStudentMarks);
   const setLevel = useServerFn(setStudentLevel);
   const clearLevel = useServerFn(clearStudentLevel);
+  const fetchEngagement = useServerFn(listStudentEngagement);
+  const fetchStrengths = useServerFn(listStudentStrengths);
+  const saveEngagement = useServerFn(setStudentEngagement);
+  const removeEngagement = useServerFn(clearStudentEngagement);
+  const toggleStrength = useServerFn(toggleStudentStrength);
 
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -64,6 +69,61 @@ function QuickCompetencies() {
     queryFn: () => fetchMarks({ data: { studentId: soloId! } }),
     enabled: Boolean(soloId),
   });
+  const engagement = useQuery({
+    queryKey: ["student-engagement", soloId],
+    queryFn: () => fetchEngagement({ data: { studentId: soloId! } }),
+    enabled: Boolean(soloId),
+  });
+  const strengths = useQuery({
+    queryKey: ["student-strengths", soloId],
+    queryFn: () => fetchStrengths({ data: { studentId: soloId! } }),
+    enabled: Boolean(soloId),
+  });
+
+  const engagementByCode = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const mark of engagement.data ?? []) map.set(mark.indicator_code, mark.level);
+    return map;
+  }, [engagement.data]);
+
+  const strengthSet = useMemo(() => new Set(strengths.data ?? []), [strengths.data]);
+
+  async function handleEngagementChange(indicatorCode: string, value: string) {
+    if (!selected.length) {
+      toast.error("Sélectionne au moins un élève");
+      return;
+    }
+    try {
+      if (value) {
+        await saveEngagement({
+          data: { studentIds: selected, indicatorCode, level: Number(value) },
+        });
+        toast.success("Implication enregistrée");
+      } else {
+        await removeEngagement({ data: { studentIds: selected, indicatorCode } });
+        toast.success("Indicateur retiré");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["student-engagement"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
+    }
+  }
+
+  async function handleStrengthToggle(strengthCode: string, isSelected: boolean) {
+    if (!selected.length) {
+      toast.error("Sélectionne au moins un élève");
+      return;
+    }
+    try {
+      await toggleStrength({
+        data: { studentIds: selected, strengthCode, selected: !isSelected },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["student-strengths"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
+    }
+  }
+
 
   const activityList = activities.data ?? [];
   const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;

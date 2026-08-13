@@ -105,8 +105,14 @@ function TeacherGrades() {
   }
 
   async function handleSave() {
-    if (!studentId) return toast.error("Sélectionne un élève.");
-    if (!activityId) return toast.error("Sélectionne une activité.");
+    if (!studentId) {
+      toast.error("Sélectionne un élève.");
+      return;
+    }
+    if (!activityId) {
+      toast.error("Sélectionne une activité.");
+      return;
+    }
 
     setSaving(true);
     try {

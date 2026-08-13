@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, Search, Trash2, X } from "lucide-react";
@@ -82,6 +82,12 @@ function TeacherGrades() {
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
   }, [students.data]);
+
+  useEffect(() => {
+    if (selectedClass) return;
+    const first = classNames[0];
+    if (first) setSelectedClass(first);
+  }, [classNames, selectedClass]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -182,19 +188,6 @@ function TeacherGrades() {
             aria-label="Classes"
             className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
           >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={selectedClass === null}
-              onClick={() => setSelectedClass(null)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                selectedClass === null
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border bg-background text-muted-foreground hover:bg-accent"
-              }`}
-            >
-              Toutes
-            </button>
             {classNames.map((name) => (
               <button
                 key={name}

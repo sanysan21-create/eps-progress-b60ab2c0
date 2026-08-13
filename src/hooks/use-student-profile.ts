@@ -24,6 +24,17 @@ export function useStudentActivities() {
   return useQuery({ queryKey: ["my-profile-competencies"], queryFn: () => fetchProfile() });
 }
 
+export function useStudentEngagement() {
+  const fetchEngagement = useServerFn(getMyEngagement);
+  return useQuery({ queryKey: ["my-engagement"], queryFn: () => fetchEngagement() });
+}
+
+export function useStudentStrengths() {
+  const fetchStrengths = useServerFn(getMyStrengths);
+  return useQuery({ queryKey: ["my-strengths"], queryFn: () => fetchStrengths() });
+}
+
+
 export type StudentMarkFlat = {
   activityName: string;
   competencyId: string;

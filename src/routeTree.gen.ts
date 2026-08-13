@@ -23,6 +23,7 @@ import { Route as EleveReussitesRouteImport } from './routes/eleve/reussites'
 import { Route as AuthenticatedProfIndexRouteImport } from './routes/_authenticated/prof/index'
 import { Route as AuthenticatedProfActivitesRouteImport } from './routes/_authenticated/prof/activites'
 import { Route as AuthenticatedProfEvaluerRouteImport } from './routes/_authenticated/prof/evaluer'
+import { Route as AuthenticatedProfClassesClassIdRouteImport } from './routes/_authenticated/prof/classes.$classId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -95,6 +96,12 @@ const AuthenticatedProfEvaluerRoute =
     path: '/evaluer',
     getParentRoute: () => AuthenticatedProfRoute,
   } as any)
+const AuthenticatedProfClassesClassIdRoute =
+  AuthenticatedProfClassesClassIdRouteImport.update({
+    id: '/classes/$classId',
+    path: '/classes/$classId',
+    getParentRoute: () => AuthenticatedProfRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
   '/prof/': typeof AuthenticatedProfIndexRoute
+  '/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,6 +131,7 @@ export interface FileRoutesByTo {
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
   '/prof': typeof AuthenticatedProfIndexRoute
+  '/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -140,6 +149,7 @@ export interface FileRoutesById {
   '/_authenticated/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/_authenticated/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
   '/_authenticated/prof/': typeof AuthenticatedProfIndexRoute
+  '/_authenticated/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/prof/activites'
     | '/prof/evaluer'
     | '/prof/'
+    | '/prof/classes/$classId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/prof/activites'
     | '/prof/evaluer'
     | '/prof'
+    | '/prof/classes/$classId'
   id:
     | '__root__'
     | '/'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
     | '/_authenticated/prof/activites'
     | '/_authenticated/prof/evaluer'
     | '/_authenticated/prof/'
+    | '/_authenticated/prof/classes/$classId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -295,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfEvaluerRouteImport
       parentRoute: typeof AuthenticatedProfRoute
     }
+    '/_authenticated/prof/classes/$classId': {
+      id: '/_authenticated/prof/classes/$classId'
+      path: '/classes/$classId'
+      fullPath: '/prof/classes/$classId'
+      preLoaderRoute: typeof AuthenticatedProfClassesClassIdRouteImport
+      parentRoute: typeof AuthenticatedProfRoute
+    }
   }
 }
 
@@ -302,12 +322,14 @@ interface AuthenticatedProfRouteChildren {
   AuthenticatedProfActivitesRoute: typeof AuthenticatedProfActivitesRoute
   AuthenticatedProfEvaluerRoute: typeof AuthenticatedProfEvaluerRoute
   AuthenticatedProfIndexRoute: typeof AuthenticatedProfIndexRoute
+  AuthenticatedProfClassesClassIdRoute: typeof AuthenticatedProfClassesClassIdRoute
 }
 
 const AuthenticatedProfRouteChildren: AuthenticatedProfRouteChildren = {
   AuthenticatedProfActivitesRoute: AuthenticatedProfActivitesRoute,
   AuthenticatedProfEvaluerRoute: AuthenticatedProfEvaluerRoute,
   AuthenticatedProfIndexRoute: AuthenticatedProfIndexRoute,
+  AuthenticatedProfClassesClassIdRoute: AuthenticatedProfClassesClassIdRoute,
 }
 
 const AuthenticatedProfRouteWithChildren =

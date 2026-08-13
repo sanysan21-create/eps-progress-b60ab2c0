@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { LevelDots } from "@/components/eps/LevelDots";
 import { RankJourney } from "@/components/eps/RankJourney";
-import { AchievementBadges } from "@/components/eps/AchievementBadges";
 import { StrengthPicker } from "@/components/eps/StrengthPicker";
 import { GoalPicker } from "@/components/eps/GoalPicker";
 import { computeProgression } from "@/lib/progression";
@@ -15,7 +14,6 @@ import {
   averageProgress,
   flattenActivities,
   initialsOf,
-  useMyAchievements,
   useMyGoal,
   useMyStrengths,
   useStudentActivities,
@@ -91,7 +89,6 @@ function StudentProfile() {
   const engagement = useStudentEngagement();
   const myStrengths = useMyStrengths();
   const myGoal = useMyGoal();
-  const achievements = useMyAchievements();
 
   const info = session.data;
   const activities = profile.data ?? [];
@@ -150,11 +147,6 @@ function StudentProfile() {
       {/* Parcours de progression : étape personnelle, jamais un classement */}
       <Section title="🚀 Mon parcours">
         <RankJourney state={journey} />
-      </Section>
-
-      {/* Réussites personnelles */}
-      <Section title="🏅 Mes réussites">
-        <AchievementBadges achievements={achievements.data ?? []} />
       </Section>
 
       {/* Progression */}

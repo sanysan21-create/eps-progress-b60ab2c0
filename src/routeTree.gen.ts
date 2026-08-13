@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EleveRouteImport } from './routes/eleve'
+import { Route as ProfRouteImport } from './routes/prof'
 import { Route as EleveIndexRouteImport } from './routes/eleve/index'
 import { Route as EleveActivitesRouteImport } from './routes/eleve/activites'
 import { Route as EleveObjectifsRouteImport } from './routes/eleve/objectifs'
@@ -25,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
 const EleveRoute = EleveRouteImport.update({
   id: '/eleve',
   path: '/eleve',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfRoute = ProfRouteImport.update({
+  id: '/prof',
+  path: '/prof',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EleveIndexRoute = EleveIndexRouteImport.update({
@@ -56,6 +62,7 @@ const EleveReussitesRoute = EleveReussitesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/eleve': typeof EleveRouteWithChildren
+  '/prof': typeof ProfRoute
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/progression': typeof EleveProgressionRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/prof': typeof ProfRoute
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/progression': typeof EleveProgressionRoute
@@ -74,6 +82,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/eleve': typeof EleveRouteWithChildren
+  '/prof': typeof ProfRoute
   '/eleve/activites': typeof EleveActivitesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/progression': typeof EleveProgressionRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/eleve'
+    | '/prof'
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/progression'
@@ -93,6 +103,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/prof'
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/progression'
@@ -102,6 +113,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/eleve'
+    | '/prof'
     | '/eleve/activites'
     | '/eleve/objectifs'
     | '/eleve/progression'
@@ -112,6 +124,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EleveRoute: typeof EleveRouteWithChildren
+  ProfRoute: typeof ProfRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/eleve'
       fullPath: '/eleve'
       preLoaderRoute: typeof EleveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prof': {
+      id: '/prof'
+      path: '/prof'
+      fullPath: '/prof'
+      preLoaderRoute: typeof ProfRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/eleve/': {
@@ -189,6 +209,7 @@ const EleveRouteWithChildren = EleveRoute._addFileChildren(EleveRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EleveRoute: EleveRouteWithChildren,
+  ProfRoute: ProfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
-import { getStudentSessionInfo } from "@/lib/student-access.functions";
+import { getStudentSessionInfo, getMyAsMember } from "@/lib/student-access.functions";
 import { getMyEngagement, getMyGoal, getMyStrengths } from "@/lib/engagement.functions";
 import { getMyAchievements } from "@/lib/achievements.functions";
 import { getMyMedal } from "@/lib/medals.functions";

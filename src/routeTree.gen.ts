@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as EleveRouteImport } from './routes/eleve'
 import { Route as AuthenticatedProfRouteImport } from './routes/_authenticated/prof'
 import { Route as EleveIndexRouteImport } from './routes/eleve/index'
@@ -27,15 +28,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EleveRoute = EleveRouteImport.update({
   id: '/eleve',
   path: '/eleve',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProfRoute = AuthenticatedProfRouteImport.update({
-  id: '/_authenticated/prof',
+  id: '/prof',
   path: '/prof',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const EleveIndexRoute = EleveIndexRouteImport.update({
   id: '/',
@@ -114,6 +119,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/eleve': typeof EleveRouteWithChildren
   '/_authenticated/prof': typeof AuthenticatedProfRouteWithChildren
   '/eleve/activites': typeof EleveActivitesRoute
@@ -156,6 +162,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/eleve'
     | '/_authenticated/prof'
     | '/eleve/activites'
@@ -171,8 +178,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   EleveRoute: typeof EleveRouteWithChildren
-  AuthenticatedProfRoute: typeof AuthenticatedProfRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -182,6 +189,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/eleve': {
@@ -196,7 +210,7 @@ declare module '@tanstack/react-router' {
       path: '/prof'
       fullPath: '/prof'
       preLoaderRoute: typeof AuthenticatedProfRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/eleve/': {
       id: '/eleve/'
@@ -264,6 +278,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedProfRouteChildren {
+  AuthenticatedProfActivitesRoute: typeof AuthenticatedProfActivitesRoute
+  AuthenticatedProfEvaluerRoute: typeof AuthenticatedProfEvaluerRoute
+  AuthenticatedProfIndexRoute: typeof AuthenticatedProfIndexRoute
+}
+
+const AuthenticatedProfRouteChildren: AuthenticatedProfRouteChildren = {
+  AuthenticatedProfActivitesRoute: AuthenticatedProfActivitesRoute,
+  AuthenticatedProfEvaluerRoute: AuthenticatedProfEvaluerRoute,
+  AuthenticatedProfIndexRoute: AuthenticatedProfIndexRoute,
+}
+
+const AuthenticatedProfRouteWithChildren =
+  AuthenticatedProfRoute._addFileChildren(AuthenticatedProfRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedProfRoute: typeof AuthenticatedProfRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedProfRoute: AuthenticatedProfRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 interface EleveRouteChildren {
   EleveActivitesRoute: typeof EleveActivitesRoute
   EleveObjectifsRoute: typeof EleveObjectifsRoute
@@ -284,25 +324,10 @@ const EleveRouteChildren: EleveRouteChildren = {
 
 const EleveRouteWithChildren = EleveRoute._addFileChildren(EleveRouteChildren)
 
-interface AuthenticatedProfRouteChildren {
-  AuthenticatedProfActivitesRoute: typeof AuthenticatedProfActivitesRoute
-  AuthenticatedProfEvaluerRoute: typeof AuthenticatedProfEvaluerRoute
-  AuthenticatedProfIndexRoute: typeof AuthenticatedProfIndexRoute
-}
-
-const AuthenticatedProfRouteChildren: AuthenticatedProfRouteChildren = {
-  AuthenticatedProfActivitesRoute: AuthenticatedProfActivitesRoute,
-  AuthenticatedProfEvaluerRoute: AuthenticatedProfEvaluerRoute,
-  AuthenticatedProfIndexRoute: AuthenticatedProfIndexRoute,
-}
-
-const AuthenticatedProfRouteWithChildren =
-  AuthenticatedProfRoute._addFileChildren(AuthenticatedProfRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   EleveRoute: EleveRouteWithChildren,
-  AuthenticatedProfRoute: AuthenticatedProfRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

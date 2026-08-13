@@ -43,6 +43,15 @@ function TeacherLayout() {
             <Link to="/eleve" className="mono-label block text-muted-foreground hover:text-primary">
               → Voir l'espace élève
             </Link>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.href = "/auth";
+              }}
+              className="mono-label block text-muted-foreground hover:text-primary"
+            >
+              → Se déconnecter
+            </button>
             <div className="flex items-center gap-3 p-2">
               <div className="grid size-10 place-items-center rounded-full bg-surface-2 ring-2 ring-primary/20">
                 <span className="display-title text-primary">ML</span>

@@ -71,13 +71,15 @@ function StudentProfile() {
         <div className="relative mt-6 flex items-center justify-between rounded-2xl bg-background/50 p-4">
           <div>
             <p className="mono-label text-muted-foreground">Niveau global</p>
-            <p className="display-title text-2xl text-primary">
-              {student.globalLevel} <span className="text-base text-muted-foreground">/ 5</span>
+            <p className="display-title text-3xl text-primary">
+              {student.globalLevel} <span className="text-lg text-muted-foreground">/ 5</span>
             </p>
             <p className="text-xs text-muted-foreground">{LEVEL_LABELS[student.globalLevel as Level]}</p>
+            <p className="mono-label mt-1 text-[10px] text-muted-foreground">{student.globalScore} moyenne</p>
           </div>
-          <div className="w-20">
-            <LevelRing level={student.globalLevel} score={student.globalScore} />
+          <div className="flex flex-col items-end gap-2">
+            <LevelBars level={student.globalLevel} />
+            <span className="mono-label text-[10px] text-primary">{student.trend}</span>
           </div>
         </div>
       </header>

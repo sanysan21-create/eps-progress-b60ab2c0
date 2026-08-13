@@ -8,6 +8,8 @@ export type ProgramSession = {
   period_label: string | null;
   objective: string | null;
   description: string | null;
+  scale_image_path: string | null;
+  scale_image_url: string | null;
 };
 
 /** "Semaine du 7 septembre" — libellé lisible d'une séance planifiée. */

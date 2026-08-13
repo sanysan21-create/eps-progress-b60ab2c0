@@ -226,6 +226,8 @@ export type Database = {
           id: string
           objective: string | null
           period_label: string | null
+          scale_image_path: string | null
+          scale_image_url: string | null
           session_date: string | null
           teacher_id: string
           updated_at: string
@@ -239,6 +241,8 @@ export type Database = {
           id?: string
           objective?: string | null
           period_label?: string | null
+          scale_image_path?: string | null
+          scale_image_url?: string | null
           session_date?: string | null
           teacher_id?: string
           updated_at?: string
@@ -252,6 +256,8 @@ export type Database = {
           id?: string
           objective?: string | null
           period_label?: string | null
+          scale_image_path?: string | null
+          scale_image_url?: string | null
           session_date?: string | null
           teacher_id?: string
           updated_at?: string

@@ -8,15 +8,15 @@ import type { ProgramSession } from "@/lib/program";
 export const listProgramSessions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ProgramSession[]> => {
-    const { mapProgramRows } = await import("./program.server");
+    const { mapProgramRows, withSignedScaleUrls } = await import("./program.server");
     const { data, error } = await context.supabase
       .from("program_sessions")
       .select(
-        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, classes(name), activities(name)",
+        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, scale_image_path, classes(name), activities(name)",
       )
       .order("session_date", { ascending: true, nullsFirst: false });
     if (error) throw new Error(error.message);
-    return mapProgramRows(data);
+    return withSignedScaleUrls(mapProgramRows(data));
   });
 
 export const saveProgramSession = createServerFn({ method: "POST" })
@@ -31,6 +31,7 @@ export const saveProgramSession = createServerFn({ method: "POST" })
       periodLabel?: string | null;
       objective?: string | null;
       description?: string | null;
+      scaleImagePath?: string | null;
     }) =>
       z
         .object({
@@ -42,6 +43,7 @@ export const saveProgramSession = createServerFn({ method: "POST" })
           periodLabel: z.string().trim().max(120).nullable().optional(),
           objective: z.string().trim().max(1000).nullable().optional(),
           description: z.string().trim().max(1000).nullable().optional(),
+          scaleImagePath: z.string().trim().max(400).nullable().optional(),
         })
         .parse(input),
   )
@@ -61,6 +63,7 @@ export const saveProgramSession = createServerFn({ method: "POST" })
       period_label: data.periodLabel ?? null,
       objective: data.objective ?? null,
       description: data.description ?? null,
+      scale_image_path: data.scaleImagePath ?? null,
       teacher_id: context.userId,
     };
 
@@ -98,7 +101,7 @@ export const deleteProgramSession = createServerFn({ method: "POST" })
 export const getMyProgram = createServerFn({ method: "GET" }).handler(
   async (): Promise<ProgramSession[]> => {
     const { getStudentSession } = await import("./student-qr.server");
-    const { mapProgramRows } = await import("./program.server");
+    const { mapProgramRows, withSignedScaleUrls } = await import("./program.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
     if (!studentId) return [];
@@ -119,7 +122,7 @@ export const getMyProgram = createServerFn({ method: "GET" }).handler(
     const query = supabaseAdmin
       .from("program_sessions")
       .select(
-        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, classes(name), activities(name)",
+        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, scale_image_path, classes(name), activities(name)",
       )
       .eq("teacher_id", student.teacher_id)
       .order("session_date", { ascending: true, nullsFirst: false });
@@ -129,6 +132,6 @@ export const getMyProgram = createServerFn({ method: "GET" }).handler(
         ? await query.or(`class_id.is.null,class_id.in.(${classIds.join(",")})`)
         : await query.is("class_id", null);
     if (error) throw new Error(error.message);
-    return mapProgramRows(rows);
+    return withSignedScaleUrls(mapProgramRows(rows));
   },
 );

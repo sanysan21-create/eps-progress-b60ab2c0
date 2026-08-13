@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
@@ -33,6 +34,7 @@ function StudentProgram() {
   const sessions = program.data ?? [];
   const next = nextSession(sessions);
   const upcoming = upcomingSessions(sessions);
+  const [zoom, setZoom] = useState<string | null>(null);
 
   return (
     <div className="animate-slide-up space-y-8 pb-4">
@@ -73,6 +75,22 @@ function StudentProgram() {
                 {next.description && (
                   <p className="mt-3 text-sm text-muted-foreground">{next.description}</p>
                 )}
+                {next.scale_image_url && (
+                  <button
+                    type="button"
+                    onClick={() => setZoom(next.scale_image_url)}
+                    className="mt-4 w-full overflow-hidden rounded-xl border border-border bg-background text-left"
+                  >
+                    <img
+                      src={next.scale_image_url}
+                      alt="Barème de la séance"
+                      className="max-h-48 w-full object-contain"
+                    />
+                    <span className="block px-3 py-2 text-xs text-muted-foreground">
+                      📊 Barème — appuie pour agrandir
+                    </span>
+                  </button>
+                )}
               </article>
             </section>
           )}
@@ -98,12 +116,43 @@ function StudentProgram() {
                         {session.objective}
                       </p>
                     )}
+                    {session.scale_image_url && (
+                      <button
+                        type="button"
+                        onClick={() => setZoom(session.scale_image_url)}
+                        className="mt-3 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
+                      >
+                        📊 Voir le barème
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
             </section>
           )}
         </>
+      )}
+
+      {zoom && (
+        <div
+          role="dialog"
+          aria-label="Barème"
+          onClick={() => setZoom(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 p-4"
+        >
+          <img
+            src={zoom}
+            alt="Barème de la séance"
+            className="max-h-[85vh] w-full max-w-3xl rounded-2xl object-contain"
+          />
+          <button
+            type="button"
+            onClick={() => setZoom(null)}
+            className="absolute right-4 top-4 rounded-full border border-border bg-surface px-4 py-2 text-sm"
+          >
+            Fermer
+          </button>
+        </div>
       )}
     </div>
   );

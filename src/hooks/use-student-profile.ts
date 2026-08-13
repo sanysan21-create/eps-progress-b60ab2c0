@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { getStudentSessionInfo } from "@/lib/student-access.functions";
 import { getMyEngagement, getMyGoal, getMyStrengths } from "@/lib/engagement.functions";
+import { getMyAchievements } from "@/lib/achievements.functions";
 import {
   getMyProfileCompetencies,
   type StudentProfileActivity,

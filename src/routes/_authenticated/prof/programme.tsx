@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Pencil, Trash2, X } from "lucide-react";
+import { ImagePlus, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { listActivities } from "@/lib/competencies.functions";
@@ -14,6 +14,7 @@ import {
 } from "@/lib/program.functions";
 import { sessionWhen } from "@/lib/program";
 import { activityEmoji } from "@/lib/activity-emoji";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/prof/programme")({
   head: () => ({
@@ -44,6 +45,8 @@ type Draft = {
   periodLabel: string;
   objective: string;
   description: string;
+  scaleImagePath: string | null;
+  scaleImageUrl: string | null;
 };
 
 function emptyDraft(): Draft {
@@ -55,6 +58,8 @@ function emptyDraft(): Draft {
     periodLabel: "",
     objective: "",
     description: "",
+    scaleImagePath: null,
+    scaleImageUrl: null,
   };
 }
 
@@ -68,6 +73,43 @@ function TeacherProgram() {
 
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleScaleUpload(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choisis une image (JPG, PNG…).");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image trop lourde (5 Mo maximum).");
+      return;
+    }
+    setUploading(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) throw new Error("Session expirée, reconnecte-toi.");
+      const extension = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const path = `${userId}/${crypto.randomUUID()}.${extension}`;
+      const { error } = await supabase.storage
+        .from("program-scales")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (error) throw new Error(error.message);
+      const { data: signed } = await supabase.storage
+        .from("program-scales")
+        .createSignedUrl(path, 60 * 60);
+      setDraft((current) => ({
+        ...current,
+        scaleImagePath: path,
+        scaleImageUrl: signed?.signedUrl ?? null,
+      }));
+      toast.success("Barème ajouté");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Envoi impossible");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const sessions = useQuery({ queryKey: ["program-sessions"], queryFn: () => fetchSessions() });
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
@@ -85,6 +127,7 @@ function TeacherProgram() {
           periodLabel: draft.periodLabel.trim() || null,
           objective: draft.objective.trim() || null,
           description: draft.description.trim() || null,
+          scaleImagePath: draft.scaleImagePath,
         },
       });
       toast.success(draft.id ? "Séance mise à jour" : "Séance ajoutée au programme");
@@ -209,6 +252,46 @@ function TeacherProgram() {
             />
           </label>
 
+          <div className="space-y-2">
+            <span className="text-xs text-muted-foreground">
+              Image du barème (visible par les élèves)
+            </span>
+            {draft.scaleImageUrl || draft.scaleImagePath ? (
+              <div className="space-y-2 rounded-xl border border-border bg-background p-2">
+                {draft.scaleImageUrl && (
+                  <img
+                    src={draft.scaleImageUrl}
+                    alt="Barème de la séance"
+                    className="max-h-48 w-full rounded-lg object-contain"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...draft, scaleImagePath: null, scaleImageUrl: null })}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="size-3" /> Retirer le barème
+                </button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-background px-3 py-3 text-sm text-muted-foreground hover:border-primary hover:text-primary">
+                <ImagePlus className="size-4" />
+                {uploading ? "Envoi…" : "Ajouter une image de barème"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) void handleScaleUpload(file);
+                  }}
+                />
+              </label>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={() => void handleSave()}
@@ -249,6 +332,16 @@ function TeacherProgram() {
                       {session.description && (
                         <p className="mt-1 text-xs text-muted-foreground">{session.description}</p>
                       )}
+                      {session.scale_image_url && (
+                        <a
+                          href={session.scale_image_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+                        >
+                          📊 Voir le barème
+                        </a>
+                      )}
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <button
@@ -262,6 +355,8 @@ function TeacherProgram() {
                             periodLabel: session.period_label ?? "",
                             objective: session.objective ?? "",
                             description: session.description ?? "",
+                            scaleImagePath: session.scale_image_path,
+                            scaleImageUrl: session.scale_image_url,
                           })
                         }
                         aria-label={`Modifier la séance ${session.activity_name}`}

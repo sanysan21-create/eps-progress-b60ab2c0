@@ -169,6 +169,7 @@ export const setMyStrengths = createServerFn({ method: "POST" })
       throw new Error("Point fort inconnu");
     }
 
+    const { resolveStudent } = await import("./student-choices.server");
     const { studentId, teacherId } = await resolveStudent();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -198,6 +199,7 @@ export const setMyGoal = createServerFn({ method: "POST" })
     const { GOALS } = await import("./engagement");
     if (!GOALS.some((g) => g.code === data.goalCode)) throw new Error("Objectif inconnu");
 
+    const { resolveStudent } = await import("./student-choices.server");
     const { studentId, teacherId } = await resolveStudent();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

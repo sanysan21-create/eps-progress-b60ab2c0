@@ -706,6 +706,15 @@ function ClassDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* QR code de l'élève */}
+      <StudentQrDialog
+        student={qrTarget}
+        className={klass?.name}
+        onOpenChange={(open) => {
+          if (!open) setQrTarget(null);
+        }}
+      />
     </div>
   );
 }

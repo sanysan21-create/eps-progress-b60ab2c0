@@ -83,10 +83,33 @@ function AuthPage() {
           <Link to="/" className="display-title block text-4xl italic tracking-tighter text-primary">
             EPS Progress
           </Link>
-          <p className="mono-label mt-2 text-muted-foreground">Espace enseignant</p>
+          <p className="mono-label mt-2 text-muted-foreground">
+            {space === "choice" ? "Choisis ton espace" : "Espace enseignant"}
+          </p>
         </div>
 
-        <div className="rounded-3xl border border-border bg-surface p-6">
+        {space === "choice" && (
+          <div className="space-y-3 rounded-3xl border border-border bg-surface p-6">
+            <h1 className="display-title text-2xl">Se connecter</h1>
+            <button
+              onClick={() => setSpace("teacher")}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-xs font-bold uppercase text-primary-foreground"
+            >
+              <GraduationCap className="size-4" /> Espace enseignant
+            </button>
+            <Link
+              to="/acces-eleve"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-4 text-xs font-bold uppercase text-foreground"
+            >
+              <QrCode className="size-4" /> Espace élève
+            </Link>
+            <p className="mono-label pt-1 text-center text-muted-foreground">
+              Élèves : connexion par QR code
+            </p>
+          </div>
+        )}
+
+        <div className={space === "teacher" ? "rounded-3xl border border-border bg-surface p-6" : "hidden"}>
           <h1 className="display-title text-2xl">
             {mode === "signin" ? "Connexion" : "Créer un compte"}
           </h1>

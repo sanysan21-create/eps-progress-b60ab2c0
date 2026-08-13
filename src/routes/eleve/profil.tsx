@@ -147,6 +147,16 @@ function StudentProfile() {
           : "Ton parcours se construira au fil des séances. Chaque étape compte."}
       </p>
 
+      {/* Parcours de progression : étape personnelle, jamais un classement */}
+      <Section title="🚀 Mon parcours">
+        <RankJourney state={journey} />
+      </Section>
+
+      {/* Réussites personnelles */}
+      <Section title="🏅 Mes réussites">
+        <AchievementBadges achievements={achievements.data ?? []} />
+      </Section>
+
       {/* Progression */}
       <Section title="📈 Ma progression">
         {progress === null ? (
@@ -166,16 +176,6 @@ function StudentProfile() {
             </p>
           </div>
         )}
-      </Section>
-
-      {/* Parcours de progression : étape personnelle, jamais un classement */}
-      <Section title="🚀 Mon parcours">
-        <RankJourney state={journey} />
-      </Section>
-
-      {/* Réussites personnelles */}
-      <Section title="🏅 Mes réussites">
-        <AchievementBadges achievements={achievements.data ?? []} />
       </Section>
 
       {/* Compétences */}

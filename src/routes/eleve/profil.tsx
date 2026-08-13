@@ -89,7 +89,6 @@ function StudentProfile() {
   const engagement = useStudentEngagement();
   const myStrengths = useMyStrengths();
   const myGoal = useMyGoal();
-  const achievements = useMyAchievements();
 
   const info = session.data;
   const activities = profile.data ?? [];

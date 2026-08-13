@@ -41,6 +41,12 @@ export function useMyGoal() {
   return useQuery({ queryKey: ["my-goal"], queryFn: () => fetchGoal() });
 }
 
+/** Réussites proposées par l'enseignant, avec l'état obtenue / à obtenir. */
+export function useMyAchievements() {
+  const fetchAchievements = useServerFn(getMyAchievements);
+  return useQuery({ queryKey: ["my-achievements"], queryFn: () => fetchAchievements() });
+}
+
 export type StudentMarkFlat = {
   activityName: string;
   competencyId: string;

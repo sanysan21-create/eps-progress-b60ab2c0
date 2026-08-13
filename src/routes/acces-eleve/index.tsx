@@ -30,9 +30,10 @@ export const Route = createFileRoute("/acces-eleve/")({
 type RedeemFailure = Extract<RedeemResult, { ok: false }>["reason"];
 
 const MESSAGES: Record<RedeemFailure, string> = {
-  invalid: "QR code invalide",
-  revoked: "Ce QR code n'est plus actif. Demande à ton enseignant de générer un nouveau QR code.",
-  unknown: "QR code inconnu",
+  invalid: "Ce QR code est invalide ou n'est associé à aucun élève.",
+  revoked:
+    "Ce QR code n'est plus actif. Demandez à votre enseignant d'en générer un nouveau.",
+  unknown: "Ce QR code est invalide ou n'est associé à aucun élève.",
 };
 
 export function extractToken(text: string): string | null {
@@ -117,7 +118,7 @@ function StudentAccessPage() {
       const result = await QrScanner.scanImage(file, { returnDetailedScanResult: true });
       await verify(result.data);
     } catch {
-      setError("QR code invalide");
+      setError("QR code illisible. Réessaie avec une image plus nette.");
     }
   }
 

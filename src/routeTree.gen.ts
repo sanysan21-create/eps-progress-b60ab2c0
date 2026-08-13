@@ -25,7 +25,6 @@ import { Route as EleveReussitesRouteImport } from './routes/eleve/reussites'
 import { Route as AuthenticatedProfIndexRouteImport } from './routes/_authenticated/prof/index'
 import { Route as AuthenticatedProfActivitesRouteImport } from './routes/_authenticated/prof/activites'
 import { Route as AuthenticatedProfCompetencesRouteImport } from './routes/_authenticated/prof/competences'
-import { Route as AuthenticatedProfEvaluerRouteImport } from './routes/_authenticated/prof/evaluer'
 import { Route as AuthenticatedProfClassesClassIdRouteImport } from './routes/_authenticated/prof/classes.$classId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -109,12 +108,6 @@ const AuthenticatedProfCompetencesRoute =
     path: '/competences',
     getParentRoute: () => AuthenticatedProfRoute,
   } as any)
-const AuthenticatedProfEvaluerRoute =
-  AuthenticatedProfEvaluerRouteImport.update({
-    id: '/evaluer',
-    path: '/evaluer',
-    getParentRoute: () => AuthenticatedProfRoute,
-  } as any)
 const AuthenticatedProfClassesClassIdRoute =
   AuthenticatedProfClassesClassIdRouteImport.update({
     id: '/classes/$classId',
@@ -137,7 +130,6 @@ export interface FileRoutesByFullPath {
   '/eleve/': typeof EleveIndexRoute
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/competences': typeof AuthenticatedProfCompetencesRoute
-  '/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
   '/prof/': typeof AuthenticatedProfIndexRoute
   '/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -154,7 +146,6 @@ export interface FileRoutesByTo {
   '/eleve': typeof EleveIndexRoute
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/competences': typeof AuthenticatedProfCompetencesRoute
-  '/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
   '/prof': typeof AuthenticatedProfIndexRoute
   '/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -175,7 +166,6 @@ export interface FileRoutesById {
   '/eleve/': typeof EleveIndexRoute
   '/_authenticated/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/_authenticated/prof/competences': typeof AuthenticatedProfCompetencesRoute
-  '/_authenticated/prof/evaluer': typeof AuthenticatedProfEvaluerRoute
   '/_authenticated/prof/': typeof AuthenticatedProfIndexRoute
   '/_authenticated/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -196,7 +186,6 @@ export interface FileRouteTypes {
     | '/eleve/'
     | '/prof/activites'
     | '/prof/competences'
-    | '/prof/evaluer'
     | '/prof/'
     | '/prof/classes/$classId'
   fileRoutesByTo: FileRoutesByTo
@@ -213,7 +202,6 @@ export interface FileRouteTypes {
     | '/eleve'
     | '/prof/activites'
     | '/prof/competences'
-    | '/prof/evaluer'
     | '/prof'
     | '/prof/classes/$classId'
   id:
@@ -233,7 +221,6 @@ export interface FileRouteTypes {
     | '/eleve/'
     | '/_authenticated/prof/activites'
     | '/_authenticated/prof/competences'
-    | '/_authenticated/prof/evaluer'
     | '/_authenticated/prof/'
     | '/_authenticated/prof/classes/$classId'
   fileRoutesById: FileRoutesById
@@ -361,13 +348,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfCompetencesRouteImport
       parentRoute: typeof AuthenticatedProfRoute
     }
-    '/_authenticated/prof/evaluer': {
-      id: '/_authenticated/prof/evaluer'
-      path: '/evaluer'
-      fullPath: '/prof/evaluer'
-      preLoaderRoute: typeof AuthenticatedProfEvaluerRouteImport
-      parentRoute: typeof AuthenticatedProfRoute
-    }
     '/_authenticated/prof/classes/$classId': {
       id: '/_authenticated/prof/classes/$classId'
       path: '/classes/$classId'
@@ -381,7 +361,6 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedProfRouteChildren {
   AuthenticatedProfActivitesRoute: typeof AuthenticatedProfActivitesRoute
   AuthenticatedProfCompetencesRoute: typeof AuthenticatedProfCompetencesRoute
-  AuthenticatedProfEvaluerRoute: typeof AuthenticatedProfEvaluerRoute
   AuthenticatedProfIndexRoute: typeof AuthenticatedProfIndexRoute
   AuthenticatedProfClassesClassIdRoute: typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -389,7 +368,6 @@ interface AuthenticatedProfRouteChildren {
 const AuthenticatedProfRouteChildren: AuthenticatedProfRouteChildren = {
   AuthenticatedProfActivitesRoute: AuthenticatedProfActivitesRoute,
   AuthenticatedProfCompetencesRoute: AuthenticatedProfCompetencesRoute,
-  AuthenticatedProfEvaluerRoute: AuthenticatedProfEvaluerRoute,
   AuthenticatedProfIndexRoute: AuthenticatedProfIndexRoute,
   AuthenticatedProfClassesClassIdRoute: AuthenticatedProfClassesClassIdRoute,
 }

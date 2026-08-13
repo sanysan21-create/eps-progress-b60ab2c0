@@ -27,9 +27,10 @@ export const Route = createFileRoute("/acces-eleve/$token")({
 });
 
 const MESSAGES: Record<string, string> = {
-  invalid: "QR code invalide",
-  revoked: "Ce QR code n'est plus actif. Demande à ton enseignant de générer un nouveau QR code.",
-  unknown: "QR code inconnu",
+  invalid: "Ce QR code est invalide ou n'est associé à aucun élève.",
+  revoked:
+    "Ce QR code n'est plus actif. Demandez à votre enseignant d'en générer un nouveau.",
+  unknown: "Ce QR code est invalide ou n'est associé à aucun élève.",
 };
 
 function TokenAccessPage() {
@@ -45,7 +46,7 @@ function TokenAccessPage() {
     redeem({ data: { token } })
       .then((result) => {
         if (result.ok) void navigate({ to: "/eleve", replace: true });
-        else setError(MESSAGES[result.reason] ?? "QR code invalide");
+        else setError(MESSAGES[result.reason] ?? "Ce QR code est invalide ou n'est associé à aucun élève.");
       })
       .catch(() => setError("Vérification impossible. Réessaie dans un instant."));
   }, [token, redeem, navigate]);

@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
-import { Users, ClipboardCheck, Dumbbell, ListChecks } from "lucide-react";
+import { Users, Dumbbell, ListChecks } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,8 +11,6 @@ const nav = [
   { to: "/prof", label: "Gestion classes", icon: Users, exact: true },
   { to: "/prof/competences", label: "Évaluer compétences", icon: ListChecks, exact: false },
   { to: "/prof/activites", label: "Activités & compétences", icon: Dumbbell, exact: false },
-
-  { to: "/prof/evaluer", label: "Évaluation rapide", icon: ClipboardCheck, exact: false },
 ] as const;
 
 

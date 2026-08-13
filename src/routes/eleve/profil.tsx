@@ -1,17 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Waves, Dumbbell, Timer, Circle, ChevronRight, Target, Trophy, Flame } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { LevelBars } from "@/components/eps/LevelBars";
-import { getMyProfileCompetencies } from "@/lib/competencies.functions";
-import {
-  student,
-  studentObjectives,
-  studentAchievements,
-  LEVEL_LABELS,
-  type Level,
-} from "@/data/demo";
 
+import {
+  averageProgress,
+  flattenActivities,
+  initialsOf,
+  useStudentActivities,
+  useStudentSession,
+} from "@/hooks/use-student-profile";
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({
@@ -20,13 +16,15 @@ export const Route = createFileRoute("/eleve/profil")({
       {
         name: "description",
         content:
-          "Profil EPS de l'élève : niveau global, activités, prochain objectif et réussites.",
+          "Profil EPS de l'élève : activités, compétences évaluées, prochain objectif et réussites.",
       },
       { property: "og:title", content: "Mon profil EPS — EPS Progress" },
       {
         property: "og:description",
-        content: "Niveau global, activités, prochain objectif et réussites de l'élève.",
+        content: "Activités, compétences évaluées, prochain objectif et réussites de l'élève.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: StudentProfile,
@@ -51,51 +49,50 @@ function ActivityIcon({ name }: { name: string }) {
 }
 
 function StudentProfile() {
-  const nextObjective = studentObjectives.find((o) => !o.done);
-  const unlockedAchievements = studentAchievements.filter((a) => a.unlocked).slice(0, 3);
-  const fetchProfile = useServerFn(getMyProfileCompetencies);
-  const profile = useQuery({
-    queryKey: ["my-profile-competencies"],
-    queryFn: () => fetchProfile(),
-  });
-
-
+  const session = useStudentSession();
+  const profile = useStudentActivities();
+  const info = session.data;
+  const marks = flattenActivities(profile.data ?? []);
+  const progress = averageProgress(marks);
+  const nextObjective = marks
+    .filter((m) => m.levelPosition < m.levelMax)
+    .sort((a, b) => a.levelPosition / a.levelMax - b.levelPosition / b.levelMax)[0];
+  const mastered = marks.filter((m) => m.levelPosition >= m.levelMax).slice(0, 3);
 
   return (
     <div className="animate-slide-up space-y-8">
-      {/* Header profil */}
       <header className="relative overflow-hidden rounded-3xl border border-border bg-surface p-6">
         <div className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary/10 blur-2xl" />
         <div className="relative flex items-center gap-4">
           <div className="grid size-20 shrink-0 place-items-center rounded-3xl bg-surface-2 ring-1 ring-border">
-            <span className="display-title text-3xl text-primary">{student.initials}</span>
+            <span className="display-title text-3xl text-primary">
+              {info ? initialsOf(info.firstName, info.lastName) : "?"}
+            </span>
           </div>
           <div className="min-w-0">
-            <p className="mono-label text-primary">{student.className}</p>
-            <h1 className="display-title truncate text-3xl">{student.firstName}</h1>
+            <p className="mono-label text-primary">{info?.className ?? "Sans classe"}</p>
+            <h1 className="display-title truncate text-3xl">
+              {info ? `${info.firstName} ${info.lastName}` : "…"}
+            </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {student.evaluations} évaluations · {student.badges} badges
+              {marks.length} compétence{marks.length > 1 ? "s" : ""} évaluée
+              {marks.length > 1 ? "s" : ""}
+              {info ? ` · ${info.studentCode}` : ""}
             </p>
           </div>
         </div>
 
-        <div className="relative mt-6 flex items-center justify-between rounded-2xl bg-background/50 p-4">
-          <div>
-            <p className="mono-label text-muted-foreground">Niveau global</p>
-            <p className="display-title text-3xl text-primary">
-              {student.globalLevel} <span className="text-lg text-muted-foreground">/ 5</span>
-            </p>
-            <p className="text-xs text-muted-foreground">{LEVEL_LABELS[student.globalLevel as Level]}</p>
-            <p className="mono-label mt-1 text-[10px] text-muted-foreground">{student.globalScore} moyenne</p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <LevelBars level={student.globalLevel} />
-            <span className="mono-label text-[10px] text-primary">{student.trend}</span>
-          </div>
+        <div className="relative mt-6 rounded-2xl bg-background/50 p-4">
+          <p className="mono-label text-muted-foreground">Progression globale</p>
+          <p className="display-title text-3xl text-primary">
+            {progress === null ? "—" : `${progress}%`}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Moyenne des niveaux atteints sur l'ensemble de tes compétences évaluées.
+          </p>
         </div>
       </header>
 
-      {/* Mes activités — configurées et évaluées par le professeur */}
       <section className="space-y-4">
         <h2 className="display-title text-xl italic">Mes activités</h2>
 
@@ -139,8 +136,6 @@ function StudentProfile() {
         </div>
       </section>
 
-
-      {/* Mon prochain objectif */}
       <section className="space-y-4">
         <h2 className="display-title text-xl italic">Mon prochain objectif</h2>
         {nextObjective ? (
@@ -150,11 +145,12 @@ function StudentProfile() {
               <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-background/20">
                 <Target className="size-6" />
               </div>
-              <div>
-                <p className="mono-label text-primary-foreground/80">{nextObjective.activity}</p>
-                <p className="display-title text-xl">{nextObjective.label}</p>
+              <div className="min-w-0">
+                <p className="mono-label text-primary-foreground/80">{nextObjective.activityName}</p>
+                <p className="display-title text-xl">{nextObjective.competencyLabel}</p>
                 <p className="mt-2 text-sm font-medium text-primary-foreground/90">
-                  Continue sur ta lancée — tu es à quelques séances de valider ce objectif.
+                  Niveau {nextObjective.levelPosition} / {nextObjective.levelMax} — prochain palier
+                  à atteindre.
                 </p>
               </div>
             </div>
@@ -168,41 +164,47 @@ function StudentProfile() {
         ) : (
           <div className="rounded-3xl border border-border bg-surface p-6 text-center">
             <Trophy className="mx-auto size-8 text-primary" />
-            <p className="mt-3 font-bold">Tous les objectifs sont atteints !</p>
-            <p className="text-sm text-muted-foreground">Bravo, tu as validé ton cycle.</p>
+            <p className="mt-3 font-bold">
+              {marks.length === 0
+                ? "Pas encore d'objectif : aucune compétence évaluée."
+                : "Tous tes niveaux maximum sont atteints !"}
+            </p>
           </div>
         )}
       </section>
 
-      {/* Mes réussites */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="display-title text-xl italic">Mes réussites</h2>
-          <Link
-            to="/eleve/reussites"
-            className="mono-label flex items-center gap-1 text-muted-foreground hover:text-primary"
-          >
-            Tout voir <ChevronRight className="size-4" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 gap-3">
-          {unlockedAchievements.map((a) => (
-            <article
-              key={a.id}
-              className="flex items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4"
+      {mastered.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="display-title text-xl italic">Mes réussites</h2>
+            <Link
+              to="/eleve/reussites"
+              className="mono-label flex items-center gap-1 text-muted-foreground hover:text-primary"
             >
-              <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
-                <Trophy className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold uppercase italic">{a.title}</p>
-                <p className="text-xs text-muted-foreground">{a.detail}</p>
-                <p className="mono-label mt-1 text-primary">{a.date}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+              Tout voir <ChevronRight className="size-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            {mastered.map((mark) => (
+              <article
+                key={mark.competencyId}
+                className="flex items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4"
+              >
+                <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+                  <Trophy className="size-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold uppercase italic">
+                    {mark.competencyLabel}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{mark.activityName}</p>
+                  <p className="mono-label mt-1 text-primary">{mark.levelLabel}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

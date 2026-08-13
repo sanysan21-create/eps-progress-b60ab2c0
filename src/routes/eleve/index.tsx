@@ -31,6 +31,8 @@ export const Route = createFileRoute("/eleve/")({
 
 function StudentHome() {
   const top = studentActivities.slice(0, 2);
+  const latest = studentHistory[0];
+
 
   return (
     <div className="animate-slide-up space-y-8">

@@ -27,13 +27,13 @@ export const Route = createFileRoute("/acces-eleve/")({
   component: StudentAccessPage,
 });
 
-const MESSAGES: Record<RedeemResult extends { ok: false; reason: infer R } ? string & R : never, string> =
-  {
-    invalid: "QR code invalide",
-    revoked:
-      "Ce QR code n'est plus actif. Demande à ton enseignant de générer un nouveau QR code.",
-    unknown: "QR code inconnu",
-  };
+type RedeemFailure = Extract<RedeemResult, { ok: false }>["reason"];
+
+const MESSAGES: Record<RedeemFailure, string> = {
+  invalid: "QR code invalide",
+  revoked: "Ce QR code n'est plus actif. Demande à ton enseignant de générer un nouveau QR code.",
+  unknown: "QR code inconnu",
+};
 
 export function extractToken(text: string): string | null {
   const raw = text.trim();

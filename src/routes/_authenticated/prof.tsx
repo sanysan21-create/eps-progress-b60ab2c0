@@ -1,5 +1,13 @@
 import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
-import { Users, Dumbbell, ListChecks, UserRound, ClipboardList, CalendarDays } from "lucide-react";
+import {
+  Users,
+  Dumbbell,
+  ListChecks,
+  UserRound,
+  ClipboardList,
+  CalendarDays,
+  Medal,
+} from "lucide-react";
 
 import { useTeacherProfile } from "@/hooks/use-teacher-profile";
 import { teacherInitials } from "@/lib/teacher-profile";
@@ -15,6 +23,7 @@ const nav = [
   { to: "/prof/competences", label: "Évaluer compétences", icon: ListChecks, exact: false },
   { to: "/prof/activites", label: "Activités & compétences", icon: Dumbbell, exact: false },
   { to: "/prof/notes", label: "Notes", icon: ClipboardList, exact: false },
+  { to: "/prof/reussites", label: "Réussites", icon: Medal, exact: false },
   { to: "/prof/programme", label: "Programme", icon: CalendarDays, exact: false },
   { to: "/prof/profil", label: "Profil de l'enseignant", icon: UserRound, exact: false },
 ] as const;

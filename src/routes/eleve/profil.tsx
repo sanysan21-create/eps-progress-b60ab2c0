@@ -152,11 +152,6 @@ function StudentProfile() {
         <RankJourney state={journey} />
       </Section>
 
-      {/* Réussites personnelles */}
-      <Section title="🏅 Mes réussites">
-        <AchievementBadges achievements={achievements.data ?? []} />
-      </Section>
-
       {/* Progression */}
       <Section title="📈 Ma progression">
         {progress === null ? (

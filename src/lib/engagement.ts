@@ -94,35 +94,34 @@ export function engagementIndicator(code: string): EngagementIndicator | undefin
 
 export type Strength = { code: string; emoji: string; label: string };
 
+/**
+ * Points forts personnels : cette liste est proposée à l'élève, qui choisit lui-même
+ * un seul point fort. L'enseignant ne peut que le consulter, jamais le modifier.
+ */
 export const STRENGTHS: Strength[] = [
   { code: "bon_activite", emoji: "🏅", label: "Bon dans l'activité" },
-  { code: "progression_rapide", emoji: "📈", label: "Progression rapide" },
-  { code: "investissement_duree", emoji: "🔥", label: "Investissement sur la durée" },
   { code: "perseverant", emoji: "💪", label: "Persévérant" },
   { code: "esprit_equipe", emoji: "🤝", label: "Esprit d'équipe" },
   { code: "coach", emoji: "🗣️", label: "Coach affirmé" },
+  { code: "investissement_duree", emoji: "🔥", label: "Investissement sur la durée" },
   { code: "autonome", emoji: "🧠", label: "Autonome" },
-  { code: "entraide", emoji: "🙌", label: "Entraide" },
+  { code: "entraide", emoji: "🙌", label: "J'aide mes camarades" },
   { code: "concentre", emoji: "🎯", label: "Concentré" },
   { code: "dynamique", emoji: "⚡", label: "Dynamique" },
   { code: "responsable_materiel", emoji: "🧰", label: "Responsable du matériel" },
-  { code: "bon_coequipier", emoji: "👥", label: "Bon coéquipier" },
   { code: "communication", emoji: "💬", label: "Bonne communication" },
   { code: "constante_progression", emoji: "🌱", label: "En constante progression" },
-  { code: "depasse_difficultes", emoji: "🏆", label: "Dépasse ses difficultés" },
-  { code: "initiatives", emoji: "🚀", label: "Prend des initiatives" },
-  { code: "emotions", emoji: "🧘", label: "Maîtrise ses émotions" },
-  { code: "regulier", emoji: "🔄", label: "Régulier" },
-  { code: "ne_renonce_pas", emoji: "👊", label: "Ne renonce pas" },
-  { code: "responsabilites", emoji: "🧭", label: "Prend des responsabilités" },
-  { code: "solutions", emoji: "💡", label: "Propose des solutions" },
+  { code: "initiatives", emoji: "🚀", label: "Je prends des initiatives" },
+  { code: "ne_renonce_pas", emoji: "👊", label: "Je ne renonce pas" },
+  { code: "responsabilites", emoji: "🧭", label: "Je prends des responsabilités" },
+  { code: "solutions", emoji: "💡", label: "Je propose des solutions" },
   { code: "positif", emoji: "❤️", label: "Positif avec les autres" },
-  { code: "objectifs", emoji: "🎯", label: "Sait se fixer des objectifs" },
-  { code: "adaptable", emoji: "🤸", label: "S'adapte aux situations" },
-  { code: "engage", emoji: "🏃", label: "S'engage pleinement" },
-  { code: "observe", emoji: "👀", label: "Observe et apprend des autres" },
-  { code: "conseille", emoji: "🧑‍🏫", label: "Sait conseiller ses partenaires" },
-  { code: "encourage", emoji: "🌟", label: "Encourage les autres" },
+  { code: "objectifs", emoji: "🏹", label: "Je sais me fixer des objectifs" },
+  { code: "adaptable", emoji: "🤸", label: "Je m'adapte aux situations" },
+  { code: "engage", emoji: "🏃", label: "Je m'engage pleinement" },
+  { code: "observe", emoji: "👀", label: "J'observe et j'apprends des autres" },
+  { code: "conseille", emoji: "🧑‍🏫", label: "Je sais conseiller mes partenaires" },
+  { code: "encourage", emoji: "🌟", label: "J'encourage les autres" },
 ];
 
 export function strength(code: string): Strength | undefined {

@@ -14,13 +14,15 @@ import {
 } from "@/lib/competencies.functions";
 import {
   listStudentEngagement,
-  listStudentStrengths,
+  getStudentStrengthChoice,
   setStudentEngagement,
   clearStudentEngagement,
-  toggleStudentStrength,
 } from "@/lib/engagement.functions";
-import { ENGAGEMENT_INDICATORS, ENGAGEMENT_LEVELS, STRENGTHS } from "@/lib/engagement";
-
+import {
+  ENGAGEMENT_INDICATORS,
+  ENGAGEMENT_LEVELS,
+  strength as findStrength,
+} from "@/lib/engagement";
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({
   head: () => ({
@@ -34,7 +36,8 @@ export const Route = createFileRoute("/_authenticated/prof/competences")({
       { property: "og:title", content: "Évaluer les compétences — EPS Progress" },
       {
         property: "og:description",
-        content: "Attribution rapide des niveaux par compétence cible, élève par élève ou en groupe.",
+        content:
+          "Attribution rapide des niveaux par compétence cible, élève par élève ou en groupe.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -51,10 +54,9 @@ function QuickCompetencies() {
   const setLevel = useServerFn(setStudentLevel);
   const clearLevel = useServerFn(clearStudentLevel);
   const fetchEngagement = useServerFn(listStudentEngagement);
-  const fetchStrengths = useServerFn(listStudentStrengths);
+  const fetchStrengthChoice = useServerFn(getStudentStrengthChoice);
   const saveEngagement = useServerFn(setStudentEngagement);
   const removeEngagement = useServerFn(clearStudentEngagement);
-  const toggleStrength = useServerFn(toggleStudentStrength);
 
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -74,9 +76,9 @@ function QuickCompetencies() {
     queryFn: () => fetchEngagement({ data: { studentId: soloId! } }),
     enabled: Boolean(soloId),
   });
-  const strengths = useQuery({
-    queryKey: ["student-strengths", soloId],
-    queryFn: () => fetchStrengths({ data: { studentId: soloId! } }),
+  const strengthChoice = useQuery({
+    queryKey: ["student-strength-choice", soloId],
+    queryFn: () => fetchStrengthChoice({ data: { studentId: soloId! } }),
     enabled: Boolean(soloId),
   });
 
@@ -86,7 +88,7 @@ function QuickCompetencies() {
     return map;
   }, [engagement.data]);
 
-  const strengthSet = useMemo(() => new Set(strengths.data ?? []), [strengths.data]);
+  const chosenStrength = strengthChoice.data ? findStrength(strengthChoice.data) : undefined;
 
   async function handleEngagementChange(indicatorCode: string, value: string) {
     if (!selected.length) {
@@ -108,22 +110,6 @@ function QuickCompetencies() {
       toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
     }
   }
-
-  async function handleStrengthToggle(strengthCode: string, isSelected: boolean) {
-    if (!selected.length) {
-      toast.error("Sélectionne au moins un élève");
-      return;
-    }
-    try {
-      await toggleStrength({
-        data: { studentIds: selected, strengthCode, selected: !isSelected },
-      });
-      await queryClient.invalidateQueries({ queryKey: ["student-strengths"] });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
-    }
-  }
-
 
   const activityList = activities.data ?? [];
   const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;
@@ -351,8 +337,8 @@ function QuickCompetencies() {
             <div>
               <h2 className="text-sm font-bold uppercase">Implication en EPS</h2>
               <p className="text-xs text-muted-foreground">
-                Échelle positive de valorisation, sans note. « Non renseigné » n'affiche rien dans le
-                profil élève.
+                Échelle positive de valorisation, sans note. « Non renseigné » n'affiche rien dans
+                le profil élève.
               </p>
             </div>
 
@@ -388,38 +374,32 @@ function QuickCompetencies() {
             </div>
           </section>
 
-          <section className="space-y-4 rounded-3xl border border-border bg-surface p-5">
+          <section className="space-y-3 rounded-3xl border border-border bg-surface p-5">
             <div>
-              <h2 className="text-sm font-bold uppercase">Points forts</h2>
+              <h2 className="text-sm font-bold uppercase">Point fort choisi par l'élève</h2>
               <p className="text-xs text-muted-foreground">
-                Coche uniquement ce qui correspond réellement à l'élève. Rien n'est attribué
-                automatiquement.
+                Consultation uniquement : c'est l'élève qui choisit son point fort depuis son
+                profil.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {STRENGTHS.map((item) => {
-                const isSelected = soloId ? strengthSet.has(item.code) : false;
-                return (
-                  <button
-                    key={item.code}
-                    onClick={() => void handleStrengthToggle(item.code, isSelected)}
-                    aria-pressed={isSelected}
-                    className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors ${
-                      isSelected
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border bg-background text-muted-foreground hover:border-primary/40"
-                    }`}
-                  >
-                    <span aria-hidden>{item.emoji}</span>
-                    {item.label}
-                    {isSelected && <Check className="size-3.5 text-primary" />}
-                  </button>
-                );
-              })}
-            </div>
+            {!soloId ? (
+              <p className="text-sm text-muted-foreground">
+                Sélectionne un seul élève pour voir son point fort.
+              </p>
+            ) : chosenStrength ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-4">
+                <span className="text-2xl" aria-hidden>
+                  {chosenStrength.emoji}
+                </span>
+                <p className="text-base font-semibold">{chosenStrength.label}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                L'élève n'a pas encore choisi son point fort.
+              </p>
+            )}
           </section>
-
 
           {selected.length > 1 && (
             <p className="text-sm text-muted-foreground">

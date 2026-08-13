@@ -2,12 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { getStudentSessionInfo } from "@/lib/student-access.functions";
-import { getMyEngagement, getMyStrengths } from "@/lib/engagement.functions";
+import { getMyEngagement, getMyStrength } from "@/lib/engagement.functions";
 import {
   getMyProfileCompetencies,
   type StudentProfileActivity,
 } from "@/lib/competencies.functions";
-
 
 /**
  * Identité et données de l'élève réellement identifié par le cookie de session
@@ -29,11 +28,11 @@ export function useStudentEngagement() {
   return useQuery({ queryKey: ["my-engagement"], queryFn: () => fetchEngagement() });
 }
 
-export function useStudentStrengths() {
-  const fetchStrengths = useServerFn(getMyStrengths);
-  return useQuery({ queryKey: ["my-strengths"], queryFn: () => fetchStrengths() });
+/** Point fort personnel choisi par l'élève lui-même (unique, modifiable). */
+export function useMyStrength() {
+  const fetchStrength = useServerFn(getMyStrength);
+  return useQuery({ queryKey: ["my-strength"], queryFn: () => fetchStrength() });
 }
-
 
 export type StudentMarkFlat = {
   activityName: string;

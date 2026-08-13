@@ -317,7 +317,7 @@ export type Database = {
           },
         ]
       }
-      student_strengths: {
+      student_strength_choices: {
         Row: {
           created_at: string
           id: string
@@ -331,7 +331,7 @@ export type Database = {
           id?: string
           strength_code: string
           student_id: string
-          teacher_id?: string
+          teacher_id: string
           updated_at?: string
         }
         Update: {
@@ -344,9 +344,9 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "student_strengths_student_id_fkey"
+            foreignKeyName: "student_strength_choices_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "students"
             referencedColumns: ["id"]
           },

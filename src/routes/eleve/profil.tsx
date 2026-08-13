@@ -1,20 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LevelDots } from "@/components/eps/LevelDots";
+import { StrengthPicker } from "@/components/eps/StrengthPicker";
 import {
   ENGAGEMENT_INDICATORS,
   ENGAGEMENT_LEVEL_MAX,
   engagementLevelLabel,
-  strength as findStrength,
 } from "@/lib/engagement";
 import {
   averageProgress,
   flattenActivities,
   initialsOf,
+  useMyStrength,
   useStudentActivities,
   useStudentEngagement,
   useStudentSession,
-  useStudentStrengths,
 } from "@/hooks/use-student-profile";
 
 export const Route = createFileRoute("/eleve/profil")({
@@ -62,13 +62,7 @@ function activityEmoji(name: string) {
   return activityEmojis.find((entry) => normalized.includes(entry.match))?.emoji ?? "🎽";
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
       <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">{title}</h2>
@@ -89,7 +83,7 @@ function StudentProfile() {
   const session = useStudentSession();
   const profile = useStudentActivities();
   const engagement = useStudentEngagement();
-  const strengths = useStudentStrengths();
+  const myStrength = useMyStrength();
 
   const info = session.data;
   const activities = profile.data ?? [];
@@ -97,7 +91,10 @@ function StudentProfile() {
   const progress = averageProgress(marks);
 
   const engagementMarks = (engagement.data ?? [])
-    .map((mark) => ({ ...mark, indicator: ENGAGEMENT_INDICATORS.find((i) => i.code === mark.indicator_code) }))
+    .map((mark) => ({
+      ...mark,
+      indicator: ENGAGEMENT_INDICATORS.find((i) => i.code === mark.indicator_code),
+    }))
     .filter((mark): mark is typeof mark & { indicator: (typeof ENGAGEMENT_INDICATORS)[number] } =>
       Boolean(mark.indicator),
     )
@@ -105,10 +102,6 @@ function StudentProfile() {
       (a, b) =>
         ENGAGEMENT_INDICATORS.indexOf(a.indicator) - ENGAGEMENT_INDICATORS.indexOf(b.indicator),
     );
-
-  const strengthList = (strengths.data ?? [])
-    .map((code) => findStrength(code))
-    .filter((s): s is NonNullable<typeof s> => Boolean(s));
 
   return (
     <div className="animate-slide-up space-y-10 pb-4">
@@ -228,23 +221,9 @@ function StudentProfile() {
         )}
       </Section>
 
-      {/* Points forts */}
-      <Section title="Mes points forts ⭐">
-        {strengthList.length === 0 ? (
-          <EmptyNote>Tes points forts apparaîtront ici.</EmptyNote>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {strengthList.map((item) => (
-              <li
-                key={item.code}
-                className="flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-sm"
-              >
-                <span aria-hidden>{item.emoji}</span>
-                <span className="font-medium">{item.label}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* Point fort personnel : choisi par l'élève lui-même */}
+      <Section title="Mon point fort ⭐">
+        <StrengthPicker current={myStrength.data ?? null} />
       </Section>
     </div>
   );

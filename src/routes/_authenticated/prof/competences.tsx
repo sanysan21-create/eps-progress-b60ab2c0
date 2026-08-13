@@ -14,7 +14,8 @@ import {
 } from "@/lib/competencies.functions";
 import {
   listStudentEngagement,
-  getStudentStrengthChoice,
+  getStudentStrengthChoices,
+  getStudentGoalChoice,
   setStudentEngagement,
   clearStudentEngagement,
 } from "@/lib/engagement.functions";
@@ -22,6 +23,7 @@ import {
   ENGAGEMENT_INDICATORS,
   ENGAGEMENT_LEVELS,
   strength as findStrength,
+  goal as findGoal,
 } from "@/lib/engagement";
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({
@@ -54,7 +56,8 @@ function QuickCompetencies() {
   const setLevel = useServerFn(setStudentLevel);
   const clearLevel = useServerFn(clearStudentLevel);
   const fetchEngagement = useServerFn(listStudentEngagement);
-  const fetchStrengthChoice = useServerFn(getStudentStrengthChoice);
+  const fetchStrengthChoices = useServerFn(getStudentStrengthChoices);
+  const fetchGoalChoice = useServerFn(getStudentGoalChoice);
   const saveEngagement = useServerFn(setStudentEngagement);
   const removeEngagement = useServerFn(clearStudentEngagement);
 
@@ -76,9 +79,14 @@ function QuickCompetencies() {
     queryFn: () => fetchEngagement({ data: { studentId: soloId! } }),
     enabled: Boolean(soloId),
   });
-  const strengthChoice = useQuery({
-    queryKey: ["student-strength-choice", soloId],
-    queryFn: () => fetchStrengthChoice({ data: { studentId: soloId! } }),
+  const strengthChoices = useQuery({
+    queryKey: ["student-strength-choices", soloId],
+    queryFn: () => fetchStrengthChoices({ data: { studentId: soloId! } }),
+    enabled: Boolean(soloId),
+  });
+  const goalChoice = useQuery({
+    queryKey: ["student-goal-choice", soloId],
+    queryFn: () => fetchGoalChoice({ data: { studentId: soloId! } }),
     enabled: Boolean(soloId),
   });
 
@@ -88,7 +96,10 @@ function QuickCompetencies() {
     return map;
   }, [engagement.data]);
 
-  const chosenStrength = strengthChoice.data ? findStrength(strengthChoice.data) : undefined;
+  const chosenStrengths = (strengthChoices.data ?? [])
+    .map((code) => findStrength(code))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const chosenGoal = goalChoice.data ? findGoal(goalChoice.data) : undefined;
 
   async function handleEngagementChange(indicatorCode: string, value: string) {
     if (!selected.length) {

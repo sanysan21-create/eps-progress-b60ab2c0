@@ -18,6 +18,7 @@ import { Route as AccesEleveIndexRouteImport } from './routes/acces-eleve/index'
 import { Route as AccesEleveTokenRouteImport } from './routes/acces-eleve/$token'
 import { Route as EleveIndexRouteImport } from './routes/eleve/index'
 import { Route as EleveActivitesRouteImport } from './routes/eleve/activites'
+import { Route as EleveNotesRouteImport } from './routes/eleve/notes'
 import { Route as EleveObjectifsRouteImport } from './routes/eleve/objectifs'
 import { Route as EleveProfilRouteImport } from './routes/eleve/profil'
 import { Route as EleveProgressionRouteImport } from './routes/eleve/progression'
@@ -70,6 +71,11 @@ const EleveIndexRoute = EleveIndexRouteImport.update({
 const EleveActivitesRoute = EleveActivitesRouteImport.update({
   id: '/activites',
   path: '/activites',
+  getParentRoute: () => EleveRoute,
+} as any)
+const EleveNotesRoute = EleveNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
   getParentRoute: () => EleveRoute,
 } as any)
 const EleveObjectifsRoute = EleveObjectifsRouteImport.update({
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/prof': typeof AuthenticatedProfRouteWithChildren
   '/acces-eleve/$token': typeof AccesEleveTokenRoute
   '/eleve/activites': typeof EleveActivitesRoute
+  '/eleve/notes': typeof EleveNotesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
   '/eleve/progression': typeof EleveProgressionRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/acces-eleve/$token': typeof AccesEleveTokenRoute
   '/eleve/activites': typeof EleveActivitesRoute
+  '/eleve/notes': typeof EleveNotesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
   '/eleve/progression': typeof EleveProgressionRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/_authenticated/prof': typeof AuthenticatedProfRouteWithChildren
   '/acces-eleve/$token': typeof AccesEleveTokenRoute
   '/eleve/activites': typeof EleveActivitesRoute
+  '/eleve/notes': typeof EleveNotesRoute
   '/eleve/objectifs': typeof EleveObjectifsRoute
   '/eleve/profil': typeof EleveProfilRoute
   '/eleve/progression': typeof EleveProgressionRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/prof'
     | '/acces-eleve/$token'
     | '/eleve/activites'
+    | '/eleve/notes'
     | '/eleve/objectifs'
     | '/eleve/profil'
     | '/eleve/progression'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/acces-eleve/$token'
     | '/eleve/activites'
+    | '/eleve/notes'
     | '/eleve/objectifs'
     | '/eleve/profil'
     | '/eleve/progression'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_authenticated/prof'
     | '/acces-eleve/$token'
     | '/eleve/activites'
+    | '/eleve/notes'
     | '/eleve/objectifs'
     | '/eleve/profil'
     | '/eleve/progression'
@@ -309,6 +321,13 @@ declare module '@tanstack/react-router' {
       path: '/activites'
       fullPath: '/eleve/activites'
       preLoaderRoute: typeof EleveActivitesRouteImport
+      parentRoute: typeof EleveRoute
+    }
+    '/eleve/notes': {
+      id: '/eleve/notes'
+      path: '/notes'
+      fullPath: '/eleve/notes'
+      preLoaderRoute: typeof EleveNotesRouteImport
       parentRoute: typeof EleveRoute
     }
     '/eleve/objectifs': {
@@ -409,6 +428,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface EleveRouteChildren {
   EleveActivitesRoute: typeof EleveActivitesRoute
+  EleveNotesRoute: typeof EleveNotesRoute
   EleveObjectifsRoute: typeof EleveObjectifsRoute
   EleveProfilRoute: typeof EleveProfilRoute
   EleveProgressionRoute: typeof EleveProgressionRoute
@@ -418,6 +438,7 @@ interface EleveRouteChildren {
 
 const EleveRouteChildren: EleveRouteChildren = {
   EleveActivitesRoute: EleveActivitesRoute,
+  EleveNotesRoute: EleveNotesRoute,
   EleveObjectifsRoute: EleveObjectifsRoute,
   EleveProfilRoute: EleveProfilRoute,
   EleveProgressionRoute: EleveProgressionRoute,

@@ -24,8 +24,6 @@ import {
   strength as findStrength,
 } from "@/lib/engagement";
 
-
-
 export const Route = createFileRoute("/_authenticated/prof/competences")({
   head: () => ({
     meta: [
@@ -38,7 +36,8 @@ export const Route = createFileRoute("/_authenticated/prof/competences")({
       { property: "og:title", content: "Évaluer les compétences — EPS Progress" },
       {
         property: "og:description",
-        content: "Attribution rapide des niveaux par compétence cible, élève par élève ou en groupe.",
+        content:
+          "Attribution rapide des niveaux par compétence cible, élève par élève ou en groupe.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -58,7 +57,6 @@ function QuickCompetencies() {
   const fetchStrengthChoice = useServerFn(getStudentStrengthChoice);
   const saveEngagement = useServerFn(setStudentEngagement);
   const removeEngagement = useServerFn(clearStudentEngagement);
-
 
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -92,7 +90,6 @@ function QuickCompetencies() {
 
   const chosenStrength = strengthChoice.data ? findStrength(strengthChoice.data) : undefined;
 
-
   async function handleEngagementChange(indicatorCode: string, value: string) {
     if (!selected.length) {
       toast.error("Sélectionne au moins un élève");
@@ -113,9 +110,6 @@ function QuickCompetencies() {
       toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
     }
   }
-
-
-
 
   const activityList = activities.data ?? [];
   const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;
@@ -343,8 +337,8 @@ function QuickCompetencies() {
             <div>
               <h2 className="text-sm font-bold uppercase">Implication en EPS</h2>
               <p className="text-xs text-muted-foreground">
-                Échelle positive de valorisation, sans note. « Non renseigné » n'affiche rien dans le
-                profil élève.
+                Échelle positive de valorisation, sans note. « Non renseigné » n'affiche rien dans
+                le profil élève.
               </p>
             </div>
 
@@ -406,8 +400,6 @@ function QuickCompetencies() {
               </p>
             )}
           </section>
-
-
 
           {selected.length > 1 && (
             <p className="text-sm text-muted-foreground">

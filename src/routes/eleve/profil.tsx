@@ -17,7 +17,6 @@ import {
   useStudentSession,
 } from "@/hooks/use-student-profile";
 
-
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({
     meta: [
@@ -63,13 +62,7 @@ function activityEmoji(name: string) {
   return activityEmojis.find((entry) => normalized.includes(entry.match))?.emoji ?? "🎽";
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
       <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">{title}</h2>
@@ -98,7 +91,10 @@ function StudentProfile() {
   const progress = averageProgress(marks);
 
   const engagementMarks = (engagement.data ?? [])
-    .map((mark) => ({ ...mark, indicator: ENGAGEMENT_INDICATORS.find((i) => i.code === mark.indicator_code) }))
+    .map((mark) => ({
+      ...mark,
+      indicator: ENGAGEMENT_INDICATORS.find((i) => i.code === mark.indicator_code),
+    }))
     .filter((mark): mark is typeof mark & { indicator: (typeof ENGAGEMENT_INDICATORS)[number] } =>
       Boolean(mark.indicator),
     )
@@ -106,9 +102,6 @@ function StudentProfile() {
       (a, b) =>
         ENGAGEMENT_INDICATORS.indexOf(a.indicator) - ENGAGEMENT_INDICATORS.indexOf(b.indicator),
     );
-
-
-
 
   return (
     <div className="animate-slide-up space-y-10 pb-4">
@@ -232,7 +225,6 @@ function StudentProfile() {
       <Section title="Mon point fort ⭐">
         <StrengthPicker current={myStrength.data ?? null} />
       </Section>
-
     </div>
   );
 }

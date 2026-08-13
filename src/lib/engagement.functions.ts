@@ -82,7 +82,6 @@ export const getStudentStrengthChoice = createServerFn({ method: "GET" })
     return row?.strength_code ?? null;
   });
 
-
 /** Lecture seule : implication de l'élève identifié par son cookie de session QR. */
 export const getMyEngagement = createServerFn({ method: "GET" }).handler(
   async (): Promise<EngagementMark[]> => {
@@ -160,4 +159,3 @@ export const setMyStrength = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { strengthCode: data.strengthCode };
   });
-

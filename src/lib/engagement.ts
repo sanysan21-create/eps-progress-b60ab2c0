@@ -124,7 +124,6 @@ export const STRENGTHS: Strength[] = [
   { code: "encourage", emoji: "🌟", label: "J'encourage les autres" },
 ];
 
-
 export function strength(code: string): Strength | undefined {
   return STRENGTHS.find((s) => s.code === code);
 }

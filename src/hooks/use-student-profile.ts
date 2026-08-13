@@ -8,7 +8,6 @@ import {
   type StudentProfileActivity,
 } from "@/lib/competencies.functions";
 
-
 /**
  * Identité et données de l'élève réellement identifié par le cookie de session
  * (créé uniquement après validation serveur du jeton du QR code).
@@ -34,8 +33,6 @@ export function useMyStrength() {
   const fetchStrength = useServerFn(getMyStrength);
   return useQuery({ queryKey: ["my-strength"], queryFn: () => fetchStrength() });
 }
-
-
 
 export type StudentMarkFlat = {
   activityName: string;

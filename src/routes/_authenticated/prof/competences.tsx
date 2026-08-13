@@ -114,20 +114,7 @@ function QuickCompetencies() {
     }
   }
 
-  async function handleStrengthToggle(strengthCode: string, isSelected: boolean) {
-    if (!selected.length) {
-      toast.error("Sélectionne au moins un élève");
-      return;
-    }
-    try {
-      await toggleStrength({
-        data: { studentIds: selected, strengthCode, selected: !isSelected },
-      });
-      await queryClient.invalidateQueries({ queryKey: ["student-strengths"] });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
-    }
-  }
+
 
 
   const activityList = activities.data ?? [];

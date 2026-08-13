@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { studentHistory, progressionSeries } from "@/data/demo";
+import { Flame } from "lucide-react";
+
+import {
+  averageProgress,
+  flattenActivities,
+  useStudentActivities,
+} from "@/hooks/use-student-profile";
 
 export const Route = createFileRoute("/eleve/progression")({
   head: () => ({
@@ -8,62 +14,95 @@ export const Route = createFileRoute("/eleve/progression")({
       {
         name: "description",
         content:
-          "Historique de progression de l'élève en EPS : évolution du niveau moyen et validations mois par mois.",
+          "Progression de l'élève en EPS : niveau atteint par activité et par compétence évaluée.",
       },
       { property: "og:title", content: "Ma progression — EPS Progress" },
       {
         property: "og:description",
-        content: "Évolution du niveau moyen et validations de compétences mois par mois.",
+        content: "Niveau atteint par activité et par compétence évaluée.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: StudentProgress,
 });
 
 function StudentProgress() {
-  const max = 5;
+  const activities = useStudentActivities();
+  const data = activities.data ?? [];
+  const marks = flattenActivities(data);
+  const global = averageProgress(marks);
+
+  const perActivity = data.map((activity) => {
+    const rows = flattenActivities([activity]);
+    return { name: activity.activity_name, value: averageProgress(rows) ?? 0 };
+  });
 
   return (
     <div className="animate-slide-up space-y-8">
       <header className="space-y-1">
-        <p className="mono-label text-primary">Évolution du niveau moyen</p>
+        <p className="mono-label text-primary">Niveaux réellement attribués</p>
         <h1 className="display-title text-4xl">Ma progression</h1>
       </header>
 
-      <section className="rounded-3xl border border-border bg-surface p-5">
-        <div className="flex h-44 items-end gap-3">
-          {progressionSeries.map((p) => (
-            <div key={p.month} className="flex flex-1 flex-col items-center gap-2">
-              <span className="font-mono text-[10px] text-primary">{p.value}</span>
-              <div className="flex w-full flex-1 items-end">
-                <div
-                  className="w-full rounded-t-lg bg-primary/80"
-                  style={{ height: `${(p.value / max) * 100}%` }}
-                />
-              </div>
-              <span className="mono-label text-muted-foreground">{p.month}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      {activities.isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
 
-      <section className="space-y-6">
-        <h2 className="display-title text-xl italic">Historique</h2>
-        <div className="relative space-y-8 pl-8 before:absolute before:bottom-2 before:left-[11px] before:top-2 before:w-px before:bg-border">
-          {studentHistory.map((h) => (
-            <div key={h.id} className="relative">
-              <div
-                className={`absolute -left-[26px] top-1.5 size-2.5 rounded-full ring-4 ring-background ${
-                  h.highlight ? "bg-primary" : "bg-surface-2"
-                }`}
-              />
-              <p className="mono-label text-primary">{h.date}</p>
-              <p className="mt-1 font-bold">{h.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{h.detail}</p>
-            </div>
-          ))}
+      {!activities.isLoading && marks.length === 0 && (
+        <div className="rounded-3xl border border-border bg-surface p-6 text-center">
+          <Flame className="mx-auto size-8 text-primary" />
+          <p className="mt-3 font-bold">Pas encore de progression à afficher.</p>
+          <p className="text-sm text-muted-foreground">
+            Elle apparaîtra dès la première évaluation de ton professeur.
+          </p>
         </div>
-      </section>
+      )}
+
+      {marks.length > 0 && (
+        <>
+          <section className="rounded-3xl border border-border bg-surface p-6 text-center">
+            <p className="mono-label text-muted-foreground">Progression globale</p>
+            <p className="display-title text-5xl text-primary">{global}%</p>
+          </section>
+
+          <section className="rounded-3xl border border-border bg-surface p-5">
+            <div className="flex h-44 items-end gap-3">
+              {perActivity.map((a) => (
+                <div key={a.name} className="flex flex-1 flex-col items-center gap-2">
+                  <span className="font-mono text-[10px] text-primary">{a.value}%</span>
+                  <div className="flex w-full flex-1 items-end">
+                    <div
+                      className="w-full rounded-t-lg bg-primary/80"
+                      style={{ height: `${a.value}%` }}
+                    />
+                  </div>
+                  <span className="mono-label truncate text-muted-foreground">{a.name}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="display-title text-xl italic">Détail par compétence</h2>
+            <div className="space-y-3">
+              {marks.map((mark) => (
+                <div
+                  key={mark.competencyId}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4"
+                >
+                  <div className="min-w-0">
+                    <p className="mono-label text-muted-foreground">{mark.activityName}</p>
+                    <p className="truncate text-sm font-semibold">{mark.competencyLabel}</p>
+                  </div>
+                  <span className="mono-label shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-primary">
+                    Niveau {mark.levelPosition}/{mark.levelMax} — {mark.levelLabel}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }

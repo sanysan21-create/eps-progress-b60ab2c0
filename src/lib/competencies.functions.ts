@@ -32,8 +32,15 @@ export type StudentMark = { competency_id: string; level_id: string };
 export type StudentProfileActivity = {
   activity_id: string;
   activity_name: string;
-  competencies: { id: string; label: string; level_label: string; level_position: number }[];
+  competencies: {
+    id: string;
+    label: string;
+    level_label: string;
+    level_position: number;
+    level_max: number;
+  }[];
 };
+
 
 const labelSchema = z.string().trim().min(1, "Champ requis").max(200);
 
@@ -370,7 +377,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" }).handle
     const { data: rows, error } = await supabaseAdmin
       .from("student_competency_levels")
       .select(
-        "competency_id, competencies(id, label, position, activity_id, activities(id, name)), competency_levels(label, position)",
+        "competency_id, competencies(id, label, position, activity_id, activities(id, name), competency_levels(position)), competency_levels(label, position)",
       )
       .eq("student_id", studentId);
     if (error) throw new Error(error.message);
@@ -382,6 +389,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" }).handle
         label: string;
         position: number;
         activities: { id: string; name: string } | null;
+        competency_levels: { position: number }[] | null;
       } | null;
       const level = row.competency_levels as unknown as { label: string; position: number } | null;
       if (!competency?.activities || !level) continue;
@@ -397,7 +405,12 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" }).handle
         label: competency.label,
         level_label: level.label,
         level_position: level.position,
+        level_max: Math.max(
+          level.position,
+          ...(competency.competency_levels ?? []).map((l) => l.position),
+        ),
       });
+
       grouped.set(activity.id, entry);
     }
 

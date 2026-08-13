@@ -1,4 +1,4 @@
-import type { Level } from "@/data/demo";
+export type Level = 1 | 2 | 3 | 4 | 5;
 
 export function LevelBars({ level, size = "md" }: { level: Level | number; size?: "sm" | "md" }) {
   const h = size === "sm" ? "h-4" : "h-6";

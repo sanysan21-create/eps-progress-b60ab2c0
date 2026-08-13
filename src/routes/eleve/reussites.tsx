@@ -1,54 +1,68 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Trophy, Lock } from "lucide-react";
-import { studentAchievements } from "@/data/demo";
+import { Trophy } from "lucide-react";
+
+import { flattenActivities, useStudentActivities } from "@/hooks/use-student-profile";
 
 export const Route = createFileRoute("/eleve/reussites")({
   head: () => ({
     meta: [
-      { title: "Mes réussites — EPS Progress" },
+      { title: "Mes réussites EPS — EPS Progress" },
       {
         name: "description",
-        content: "Badges et réussites débloqués en EPS : records battus, niveaux validés et défis relevés.",
+        content:
+          "Réussites de l'élève en EPS : compétences dont le niveau maximum a été validé par l'enseignant.",
       },
-      { property: "og:title", content: "Mes réussites — EPS Progress" },
+      { property: "og:title", content: "Mes réussites EPS — EPS Progress" },
       {
         property: "og:description",
-        content: "Badges débloqués, records battus et niveaux validés en EPS.",
+        content: "Compétences dont le niveau maximum a été validé par l'enseignant.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: StudentAchievements,
 });
 
 function StudentAchievements() {
+  const activities = useStudentActivities();
+  const marks = flattenActivities(activities.data ?? []);
+  const unlocked = marks.filter((m) => m.levelPosition >= m.levelMax);
+
   return (
     <div className="animate-slide-up space-y-6">
       <header className="space-y-1">
-        <p className="mono-label text-primary">
-          {studentAchievements.filter((a) => a.unlocked).length} badges débloqués
-        </p>
+        <p className="mono-label text-primary">{unlocked.length} réussite(s) validée(s)</p>
         <h1 className="display-title text-4xl">Mes réussites</h1>
       </header>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {studentAchievements.map((a) => (
+      {activities.isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
+
+      {!activities.isLoading && unlocked.length === 0 && (
+        <div className="rounded-3xl border border-border bg-surface p-6 text-center">
+          <Trophy className="mx-auto size-8 text-primary" />
+          <p className="mt-3 font-bold">Aucune réussite débloquée pour l'instant.</p>
+          <p className="text-sm text-muted-foreground">
+            Atteins le niveau maximum d'une compétence pour débloquer ta première réussite.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {unlocked.map((mark) => (
           <article
-            key={a.id}
-            className={`flex items-center gap-4 rounded-3xl border p-5 ${
-              a.unlocked ? "border-primary/30 bg-primary/5" : "border-border bg-surface opacity-60"
-            }`}
+            key={mark.competencyId}
+            className="flex items-center gap-4 rounded-3xl border border-primary/30 bg-primary/5 p-5"
           >
-            <div
-              className={`grid size-12 shrink-0 place-items-center rounded-full ${
-                a.unlocked ? "bg-primary text-primary-foreground" : "bg-surface-2 text-muted-foreground"
-              }`}
-            >
-              {a.unlocked ? <Trophy className="size-5" /> : <Lock className="size-5" />}
+            <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+              <Trophy className="size-5" />
             </div>
-            <div>
-              <p className="text-sm font-bold uppercase italic">{a.title}</p>
-              <p className="text-xs text-muted-foreground">{a.detail}</p>
-              <p className="mono-label mt-1 text-primary">{a.date}</p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold uppercase italic">{mark.competencyLabel}</p>
+              <p className="text-xs text-muted-foreground">{mark.activityName}</p>
+              <p className="mono-label mt-1 text-primary">
+                Niveau {mark.levelPosition}/{mark.levelMax} — {mark.levelLabel}
+              </p>
             </div>
           </article>
         ))}

@@ -23,9 +23,10 @@ import {
   moveStudent,
   removeFromClass,
   deleteStudent,
-  regenerateQrToken,
   type StudentRow,
 } from "@/lib/classes.functions";
+import { listQrStatuses, generateMissingQrForClass } from "@/lib/student-qr.functions";
+import { StudentQrDialog } from "@/components/eps/StudentQrDialog";
 import {
   Dialog,
   DialogContent,

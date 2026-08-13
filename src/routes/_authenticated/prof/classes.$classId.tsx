@@ -196,14 +196,29 @@ function ClassDetailPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const qrMutation = useMutation({
-    mutationFn: (id: string) => regenerate({ data: { id } }),
-    onSuccess: () => {
-      toast.success("QR code régénéré");
-      refresh();
+  const qrStatusByStudent = useMemo(() => {
+    const map = new Map<string, "active" | "revoked" | "none">();
+    for (const row of qrStatuses.data ?? []) map.set(row.student_id, row.status);
+    return map;
+  }, [qrStatuses.data]);
+
+  const missingQrCount = students.filter(
+    (s) => (qrStatusByStudent.get(s.id) ?? "none") !== "active",
+  ).length;
+
+  const generateMissingMutation = useMutation({
+    mutationFn: () => generateMissing({ data: { classId } }),
+    onSuccess: (result) => {
+      toast.success(
+        result.generated > 0
+          ? `${result.generated} QR code(s) généré(s)`
+          : "Tous les élèves ont déjà un QR code actif",
+      );
+      queryClient.invalidateQueries({ queryKey: ["qr-statuses"] });
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
 
   const importMutation = useMutation({
     mutationFn: () =>

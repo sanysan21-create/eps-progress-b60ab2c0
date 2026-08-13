@@ -20,8 +20,10 @@ import {
   useStudentEngagement,
   useStudentSession,
   useMyMedal,
+  useMyAsMember,
 } from "@/hooks/use-student-profile";
 import { MedalBadge } from "@/components/eps/MedalBadge";
+import { AsBadge } from "@/components/eps/AsBadge";
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({
@@ -92,6 +94,7 @@ function StudentProfile() {
   const myStrengths = useMyStrengths();
   const myGoal = useMyGoal();
   const myMedal = useMyMedal();
+  const myAs = useMyAsMember();
 
   const info = session.data;
   const activities = profile.data ?? [];
@@ -139,11 +142,18 @@ function StudentProfile() {
             {info?.className ? ` · ${info.className}` : ""}
           </p>
         </div>
-        {myMedal.data && (
-          <div className="shrink-0 animate-slide-up text-center">
-            <MedalBadge code={myMedal.data} size={92} withLabel />
-          </div>
-        )}
+        <div className="flex shrink-0 items-center gap-3">
+          {myAs.data && (
+            <div className="animate-slide-up text-center">
+              <AsBadge size={64} />
+            </div>
+          )}
+          {myMedal.data && (
+            <div className="animate-slide-up text-center">
+              <MedalBadge code={myMedal.data} size={92} withLabel />
+            </div>
+          )}
+        </div>
       </header>
 
       <p className="text-sm leading-relaxed text-foreground/80">

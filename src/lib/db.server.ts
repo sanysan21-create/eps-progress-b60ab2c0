@@ -18,10 +18,22 @@ function connectionString(): string {
   return url;
 }
 
+function parseConnectionString(url: string) {
+  const u = new URL(url);
+  return {
+    host: u.hostname,
+    port: Number(u.port) || 5432,
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.replace(/^\//, ""),
+    ssl: "require" as const,
+  };
+}
+
 function rawClient() {
   if (!client) {
-    client = postgres(connectionString(), {
-      ssl: "require",
+    client = postgres({
+      ...parseConnectionString(connectionString()),
       prepare: false,
       max: 1,
       idle_timeout: 20,

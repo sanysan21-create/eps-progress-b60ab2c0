@@ -77,7 +77,7 @@ function StudentProgram() {
                 className="rounded-2xl border border-border bg-surface px-5 py-4"
               >
                 <p className="flex items-center gap-2 text-base font-semibold">
-                  <span aria-hidden>{activityEmoji(sequence.activity_name ?? sequence.name)}</span>
+                  <span aria-hidden className="text-xl leading-none">{activityEmoji(sequence.activity_name ?? sequence.name)}</span>
                   {sequence.name}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -108,7 +108,7 @@ function StudentProgram() {
               <article className="rounded-2xl border border-primary/40 bg-primary/5 p-5">
                 <p className="mono-label text-primary">{sessionWhen(next)}</p>
                 <h3 className="mt-2 flex items-center gap-2 text-xl font-semibold">
-                  <span aria-hidden>{activityEmoji(next.activity_name)}</span>
+                  <span aria-hidden className="text-xl leading-none">{activityEmoji(next.activity_name)}</span>
                   {next.activity_name}
                 </h3>
                 {next.objective && (
@@ -154,7 +154,7 @@ function StudentProgram() {
                     className="rounded-2xl border border-border bg-surface px-5 py-4"
                   >
                     <p className="flex items-center gap-2 text-base font-semibold">
-                      <span aria-hidden>{activityEmoji(session.activity_name)}</span>
+                      <span aria-hidden className="text-xl leading-none">{activityEmoji(session.activity_name)}</span>
                       {session.activity_name}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">{sessionWhen(session)}</p>

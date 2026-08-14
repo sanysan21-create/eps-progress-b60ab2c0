@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Check, ChevronDown, ChevronLeft, Flame, Target } from "lucide-react";
+import { Check, Flame } from "lucide-react";
 
-import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
+import { ActivityEmoji } from "@/components/eps/ActivityEmoji";
 import { RankJourney } from "@/components/eps/RankJourney";
 import { computeProgression } from "@/lib/progression";
+import { goal as goalByCode } from "@/lib/engagement";
 import {
   averageProgress,
   flattenActivities,
@@ -44,89 +45,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-type StudentActivity = ReturnType<typeof useStudentActivities>["data"] extends
-  | (infer T)[]
-  | undefined
-  ? T
-  : never;
-
-/** Carte d'activité cliquable : ouvre le détail des niveaux de compétences. */
-function ActivityPanel({
-  activity,
-  progress,
-  open,
-  onToggle,
-}: {
-  activity: StudentActivity;
-  progress: number;
-  open: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <article className="overflow-hidden rounded-3xl border border-border bg-surface">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-surface-2/60"
-      >
-        <ActivityIconBadge name={activity.activity_name} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-base font-bold">{activity.activity_name}</span>
-          <span className="mono-label text-muted-foreground">
-            Progression {progress}% · {activity.competencies.length} compétence
-            {activity.competencies.length > 1 ? "s" : ""}
-          </span>
-        </span>
-        <ChevronDown
-          className={`size-4 shrink-0 text-muted-foreground transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      <div
-        className={`grid transition-all duration-300 ease-out ${
-          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="space-y-4 border-t border-border/60 px-5 py-4">
-            <p className="mono-label text-primary">Niveaux de compétences</p>
-            {activity.competencies.map((c) => (
-              <div key={c.id} className="space-y-2">
-                <div className="flex items-center justify-between gap-3 text-xs">
-                  <span className="font-semibold">{c.label}</span>
-                  <span className="shrink-0 font-mono text-muted-foreground">
-                    Niveau {c.level_position}/{c.level_max} · {c.level_label}
-                  </span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
-                  <div
-                    className="animate-bar-grow h-full origin-left rounded-full bg-primary"
-                    style={{
-                      width: `${c.level_max > 0 ? (c.level_position / c.level_max) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={onToggle}
-              className="mono-label flex items-center gap-1.5 text-muted-foreground hover:text-primary"
-            >
-              <ChevronLeft className="size-3.5" /> Revenir à la liste des activités
-            </button>
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-}
+type SubTab = "competences" | "objectifs";
 
 function StudentProgress() {
-  const [openActivity, setOpenActivity] = useState<string | null>(null);
   const activities = useStudentActivities();
   const engagement = useStudentEngagement();
   const strengths = useMyStrengths();
@@ -135,7 +56,14 @@ function StudentProgress() {
   const data = activities.data ?? [];
   const marks = flattenActivities(data);
   const global = averageProgress(marks);
-  const done = marks.filter((m) => m.levelPosition >= m.levelMax).length;
+
+  const [activityId, setActivityId] = useState<string | null>(null);
+  const [subTab, setSubTab] = useState<SubTab>("competences");
+
+  const selected = data.find((a) => a.activity_id === activityId) ?? data[0] ?? null;
+  const selectedMarks = selected ? flattenActivities([selected]) : [];
+  const selectedProgress = selected ? (averageProgress(selectedMarks) ?? 0) : 0;
+  const myGoal = goal.data ? goalByCode(goal.data) : undefined;
 
   const journey = computeProgression({
     marks,
@@ -143,11 +71,6 @@ function StudentProgress() {
     strengths: strengths.data ?? [],
     goal: goal.data ?? null,
   });
-
-  const perActivity = data.map((activity) => ({
-    name: activity.activity_name,
-    value: averageProgress(flattenActivities([activity])) ?? 0,
-  }));
 
   return (
     <div className="animate-slide-up space-y-8 pb-4">
@@ -192,94 +115,161 @@ function StudentProgress() {
             <RankJourney state={journey} />
           </Section>
 
-          <Section title="🎯 Mes compétences travaillées">
-            <div className="space-y-3">
-              {data.map((activity) => (
-                <ActivityPanel
-                  key={activity.activity_id}
-                  activity={activity}
-                  progress={
-                    perActivity.find((a) => a.name === activity.activity_name)?.value ?? 0
-                  }
-                  open={openActivity === activity.activity_id}
-                  onToggle={() =>
-                    setOpenActivity((current) =>
-                      current === activity.activity_id ? null : activity.activity_id,
-                    )
-                  }
-                />
-              ))}
-            </div>
-          </Section>
-
-          {/* Prochains paliers à atteindre, compétence par compétence */}
-          <Section title="🧭 Mes objectifs">
-            <p className="mono-label text-muted-foreground">
-              {done} / {marks.length} compétences au niveau maximum
-            </p>
-            <div className="space-y-3">
-              {marks.map((mark) => {
-                const complete = mark.levelPosition >= mark.levelMax;
+          {/* Choix de l'activité, puis sous-onglets Compétences / Objectifs */}
+          <Section title="🏅 Mes activités">
+            <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0">
+              {data.map((activity) => {
+                const active = selected?.activity_id === activity.activity_id;
                 return (
-                  <article
-                    key={mark.competencyId}
-                    className={`flex items-start gap-4 rounded-3xl border p-5 ${
-                      complete ? "border-primary/40 bg-primary/10" : "border-border bg-surface"
+                  <button
+                    key={activity.activity_id}
+                    type="button"
+                    onClick={() => setActivityId(activity.activity_id)}
+                    aria-pressed={active}
+                    className={`flex shrink-0 snap-start items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold transition-colors ${
+                      active
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-border bg-surface text-foreground/80 hover:border-primary/50"
                     }`}
                   >
-                    <div
-                      className={`grid size-10 shrink-0 place-items-center rounded-2xl ${
-                        complete
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-surface-2 text-muted-foreground"
-                      }`}
-                    >
-                      {complete ? (
-                        <Check className="size-5" />
-                      ) : (
-                        <span className="font-mono text-xs">{mark.levelPosition + 1}</span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="mono-label text-muted-foreground">{mark.activityName}</p>
-                      <p className="text-sm font-bold">{mark.competencyLabel}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {complete
-                          ? `Niveau maximum atteint — ${mark.levelLabel}`
-                          : `Niveau ${mark.levelPosition}/${mark.levelMax} — viser le niveau ${
-                              mark.levelPosition + 1
-                            }`}
-                      </p>
-                      {mark.progressTip && (
-                        <p className="mt-1 text-xs font-semibold text-primary">
-                          {mark.progressTip}
-                        </p>
-                      )}
-                      {mark.levelTip && (
-                        <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
-                          <p className="mono-label text-primary">💡 Conseil de ton enseignant</p>
-                          <p className="mt-1 text-xs leading-relaxed text-foreground/80">
-                            {mark.levelTip}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </article>
+                    <ActivityEmoji name={activity.activity_name} className="text-2xl" />
+                    {activity.activity_name}
+                  </button>
                 );
               })}
             </div>
+
+            {selected && (
+              <div className="space-y-4 rounded-3xl border border-border bg-surface p-5">
+                <div className="flex items-center gap-3">
+                  <ActivityEmoji name={selected.activity_name} className="text-4xl" />
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-bold">{selected.activity_name}</p>
+                    <p className="mono-label text-muted-foreground">
+                      Progression {selectedProgress}% · {selectedMarks.length} compétence
+                      {selectedMarks.length > 1 ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Sous-onglets simples */}
+                <div className="grid grid-cols-2 gap-1 rounded-2xl bg-surface-2 p-1">
+                  {(
+                    [
+                      ["competences", "Compétences"],
+                      ["objectifs", "Objectifs & conseils"],
+                    ] as [SubTab, string][]
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setSubTab(key)}
+                      aria-pressed={subTab === key}
+                      className={`rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-tight transition-colors ${
+                        subTab === key
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-primary"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {subTab === "competences" && (
+                  <div className="space-y-4">
+                    <p className="mono-label text-primary">Mes compétences travaillées</p>
+                    {selected.competencies.map((c) => (
+                      <div key={c.id} className="space-y-2">
+                        <div className="flex items-center justify-between gap-3 text-xs">
+                          <span className="font-semibold">{c.label}</span>
+                          <span className="shrink-0 font-mono text-muted-foreground">
+                            Niveau {c.level_position}/{c.level_max} · {c.level_label}
+                          </span>
+                        </div>
+                        <div className="flex gap-1">
+                          {Array.from({ length: c.level_max }).map((_, index) => (
+                            <span
+                              key={index}
+                              className={`h-2 flex-1 rounded-full ${
+                                index < c.level_position ? "bg-primary" : "bg-surface-2"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {subTab === "objectifs" && (
+                  <div className="space-y-4">
+                    {myGoal && (
+                      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                        <p className="mono-label text-primary">🎯 Mon objectif</p>
+                        <p className="mt-1 text-sm font-bold">
+                          {myGoal.emoji} {myGoal.label}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedMarks.map((mark) => {
+                      const complete = mark.levelPosition >= mark.levelMax;
+                      return (
+                        <article key={mark.competencyId} className="flex items-start gap-3">
+                          <span
+                            className={`grid size-9 shrink-0 place-items-center rounded-2xl ${
+                              complete
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-surface-2 text-muted-foreground"
+                            }`}
+                          >
+                            {complete ? (
+                              <Check className="size-4" />
+                            ) : (
+                              <span className="font-mono text-xs">{mark.levelPosition + 1}</span>
+                            )}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold">{mark.competencyLabel}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {complete
+                                ? `Niveau maximum atteint — ${mark.levelLabel}`
+                                : `Niveau ${mark.levelPosition}/${mark.levelMax} — viser le niveau ${
+                                    mark.levelPosition + 1
+                                  }`}
+                            </p>
+                            {mark.progressTip && (
+                              <p className="mt-1 text-xs font-semibold text-primary">
+                                {mark.progressTip}
+                              </p>
+                            )}
+                            {mark.levelTip && (
+                              <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+                                <p className="mono-label text-primary">
+                                  💬 Conseil de ton enseignant
+                                </p>
+                                <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+                                  {mark.levelTip}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+
+                    {!myGoal && selectedMarks.every((m) => !m.progressTip && !m.levelTip) && (
+                      <p className="text-xs text-muted-foreground">
+                        Aucun conseil pour cette activité pour l'instant.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </Section>
         </>
-      )}
-
-      {marks.length === 0 && !activities.isLoading && (
-        <div className="rounded-3xl border border-border bg-surface p-6 text-center">
-          <Target className="mx-auto size-8 text-primary" />
-          <p className="mt-3 font-bold">Aucun objectif pour le moment.</p>
-          <p className="text-sm text-muted-foreground">
-            Tes objectifs se construisent à partir des niveaux attribués par ton professeur.
-          </p>
-        </div>
       )}
     </div>
   );

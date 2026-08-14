@@ -42,7 +42,7 @@ function GradeCard({ grade }: { grade: GradeRow }) {
         className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
       >
         <span className="flex min-w-0 items-center gap-2">
-          <span aria-hidden>{activityEmoji(grade.activity_name)}</span>
+          <span aria-hidden className="text-xl leading-none">{activityEmoji(grade.activity_name)}</span>
           <span className="truncate text-base font-semibold">{grade.activity_name}</span>
         </span>
         <span className="flex shrink-0 items-center gap-2">

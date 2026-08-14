@@ -1,17 +1,15 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { useSession } from "@tanstack/react-start/server";
 
+import type { Db } from "./db.server";
+
 export type StudentSessionData = { studentId?: string };
 
-function sessionSecret(): string {
-  const secret = process.env["STUDENT_SESSION_SECRET"];
-  if (!secret) throw new Error("Configuration de session élève manquante");
-  return secret;
-}
-
 export function getStudentSession() {
+  // Import dynamique différé : appSecret() lit une variable d'environnement serveur.
+  const secretModule = require("./auth.server") as typeof import("./auth.server");
   return useSession<StudentSessionData>({
-    password: sessionSecret(),
+    password: secretModule.appSecret(),
     name: "eps-student-session",
     maxAge: 60 * 60 * 12,
     cookie: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
@@ -24,7 +22,8 @@ export function getStudentSession() {
  * cannot be guessed or recovered from the database alone.
  */
 export function signStudentToken(tokenId: string): string {
-  const mac = createHmac("sha256", sessionSecret()).update(tokenId).digest("base64url");
+  const { appSecret } = require("./auth.server") as typeof import("./auth.server");
+  const mac = createHmac("sha256", appSecret()).update(tokenId).digest("base64url");
   return `${tokenId}.${mac}`;
 }
 
@@ -46,27 +45,25 @@ export type StudentIdentity = {
   className: string | null;
 };
 
-type AdminClient = Awaited<
-  typeof import("@/integrations/supabase/client.server")
->["supabaseAdmin"];
+/** Charge l'identité élève en SQL (jointure via class_students/classes). */
+export async function loadStudentIdentity(sql: Db, studentId: string): Promise<StudentIdentity | null> {
+  const [row] = await sql<
+    { id: string; first_name: string; last_name: string; student_code: string; class_name: string | null }[]
+  >`
+    select s.id, s.first_name, s.last_name, s.student_code, c.name as class_name
+    from students s
+    left join class_students cs on cs.student_id = s.id
+    left join classes c on c.id = cs.class_id
+    where s.id = ${studentId}
+    limit 1
+  `;
+  if (!row) return null;
 
-export async function loadStudentIdentity(
-  admin: AdminClient,
-  studentId: string,
-): Promise<StudentIdentity | null> {
-  const { data, error } = await admin
-    .from("students")
-    .select("id, first_name, last_name, student_code, class_students(classes(name))")
-    .eq("id", studentId)
-    .maybeSingle();
-  if (error || !data) return null;
-
-  const links = data.class_students as unknown as { classes: { name: string } | null }[] | null;
   return {
-    id: data.id,
-    firstName: data.first_name,
-    lastName: data.last_name,
-    studentCode: data.student_code,
-    className: links?.[0]?.classes?.name ?? null,
+    id: row.id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    studentCode: row.student_code,
+    className: row.class_name,
   };
 }

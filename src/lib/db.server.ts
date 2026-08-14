@@ -4,9 +4,21 @@
  * Configuration : secret DATABASE_URL (chaîne de connexion Postgres).
  */
 import postgres from "postgres";
+import { getRequest } from "@tanstack/react-start/server";
 
-let client: ReturnType<typeof postgres> | null = null;
-let schemaReady: Promise<void> | null = null;
+type Sql = ReturnType<typeof postgres>;
+
+/**
+ * Cloudflare Workers interdit de réutiliser des objets liés à une requête
+ * (sockets, streams) d'une requête à l'autre : « Cannot perform I/O on behalf
+ * of a different request ». Le client Postgres ouvre des sockets, il doit donc
+ * être créé une seule fois PAR requête, jamais mis en cache globalement.
+ * On mémorise le client dans une WeakMap indexée par la Request courante :
+ * réutilisable pendant la requête, libéré automatiquement ensuite.
+ */
+const perRequestClients = new WeakMap<object, Sql>();
+/** Simple booléen (aucun objet lié à une requête) : le schéma est idempotent. */
+let schemaApplied = false;
 
 function connectionString(): string {
   const url = process.env["DATABASE_URL"];
@@ -30,34 +42,47 @@ function parseConnectionString(url: string) {
   };
 }
 
-function rawClient() {
-  if (!client) {
-    client = postgres({
-      ...parseConnectionString(connectionString()),
-      prepare: false,
-      max: 1,
-      idle_timeout: 20,
-      connect_timeout: 15,
-    });
+function createClient(): Sql {
+  return postgres({
+    ...parseConnectionString(connectionString()),
+    prepare: false,
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 15,
+  });
+}
+
+/** Contexte de requête courant (undefined hors requête : scripts, build). */
+function requestScope(): object | undefined {
+  try {
+    return getRequest() as unknown as object;
+  } catch {
+    return undefined;
   }
-  return client;
+}
+
+function rawClient(): Sql {
+  const scope = requestScope();
+  if (!scope) return createClient();
+  let existing = perRequestClients.get(scope);
+  if (!existing) {
+    existing = createClient();
+    perRequestClients.set(scope, existing);
+  }
+  return existing;
 }
 
 /** Client SQL prêt à l'emploi (schéma garanti présent). */
 export async function db() {
   const sql = rawClient();
-  if (!schemaReady) {
-    schemaReady = sql.unsafe(SCHEMA_SQL).then(
-      () => undefined,
-      (error) => {
-        schemaReady = null;
-        throw error;
-      },
-    );
+  if (!schemaApplied) {
+    // Exécuté dans le contexte de la requête courante, jamais partagé.
+    await sql.unsafe(SCHEMA_SQL);
+    schemaApplied = true;
   }
-  await schemaReady;
   return sql;
 }
+
 
 export type Db = Awaited<ReturnType<typeof db>>;
 

@@ -352,7 +352,11 @@ create table if not exists medal_thresholds (
   updated_at timestamptz not null default now()
 );
 
+-- Classement des compétences par AFL (compétences existantes rattachées à AFL1).
+alter table competencies add column if not exists afl text not null default 'AFL1';
+
 create index if not exists idx_students_teacher on students(teacher_id);
+
 
 create index if not exists idx_class_students_class on class_students(class_id);
 create index if not exists idx_qr_tokens_hash on student_qr_tokens(token_hash);

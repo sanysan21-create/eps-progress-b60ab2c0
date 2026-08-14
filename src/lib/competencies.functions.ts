@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireTeacher, withDb } from "./auth-middleware";
 import { DEFAULT_LEVELS } from "@/lib/levels";
+import { AFL_CODES, type AflCode, toAfl } from "@/lib/afl";
 
 export type CompetencyLevel = {
   id: string;
@@ -13,6 +14,7 @@ export type CompetencyLevel = {
 export type Competency = {
   id: string;
   label: string;
+  afl: AflCode;
   position: number;
   progress_tip: string | null;
   levels: CompetencyLevel[];
@@ -41,6 +43,7 @@ export type StudentProfileActivity = {
   competencies: {
     id: string;
     label: string;
+    afl: AflCode;
     level_label: string;
     level_position: number;
     level_max: number;
@@ -62,6 +65,7 @@ export const listActivities = createServerFn({ method: "GET" })
         competency_id: string | null;
         competency_label: string | null;
         competency_position: number | null;
+        competency_afl: string | null;
         progress_tip: string | null;
         level_id: string | null;
         level_label: string | null;
@@ -76,6 +80,7 @@ export const listActivities = createServerFn({ method: "GET" })
         c.id as competency_id,
         c.label as competency_label,
         c.position as competency_position,
+        c.afl as competency_afl,
         c.progress_tip,
         l.id as level_id,
         l.label as level_label,
@@ -85,7 +90,7 @@ export const listActivities = createServerFn({ method: "GET" })
       left join competencies c on c.activity_id = a.id
       left join competency_levels l on l.competency_id = c.id
       where a.teacher_id = ${context.userId}
-      order by a.name asc, c.position asc, l.position asc
+      order by a.name asc, c.afl asc, c.position asc, l.position asc
     `;
 
     const activities = new Map<string, ActivityTree>();
@@ -109,6 +114,7 @@ export const listActivities = createServerFn({ method: "GET" })
         competency = {
           id: row.competency_id,
           label: row.competency_label ?? "",
+          afl: toAfl(row.competency_afl),
           position: row.competency_position ?? 0,
           progress_tip: row.progress_tip ?? null,
           levels: [],
@@ -182,19 +188,20 @@ export const deleteActivity = createServerFn({ method: "POST" })
 /** Crée une compétence cible avec ses propres niveaux (par défaut, personnalisables ensuite). */
 export const createCompetency = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
-  .inputValidator((input: { activityId: string; label: string; levels?: string[] }) =>
+  .inputValidator((input: { activityId: string; label: string; afl?: string; levels?: string[] }) =>
     z
       .object({
         activityId: z.string().uuid(),
         label: labelSchema,
+        afl: z.enum(AFL_CODES).optional(),
         levels: z.array(z.string().trim().max(200)).max(20).optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const [row] = await context.sql<{ id: string }[]>`
-      insert into competencies (activity_id, teacher_id, label, position)
-      select ${data.activityId}, ${context.userId}, ${data.label},
+      insert into competencies (activity_id, teacher_id, label, afl, position)
+      select ${data.activityId}, ${context.userId}, ${data.label}, ${data.afl ?? "AFL1"},
              coalesce((select max(position) from competencies where activity_id = ${data.activityId}), 0) + 1
       where exists (
         select 1 from activities where id = ${data.activityId} and teacher_id = ${context.userId}
@@ -217,20 +224,23 @@ export const createCompetency = createServerFn({ method: "POST" })
 
 export const updateCompetency = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
-  .inputValidator((input: { id: string; label?: string; progressTip?: string | null }) =>
+  .inputValidator((input: { id: string; label?: string; afl?: string; progressTip?: string | null }) =>
     z
       .object({
         id: z.string().uuid(),
         label: labelSchema.optional(),
+        afl: z.enum(AFL_CODES).optional(),
         progressTip: z.string().trim().max(300).nullable().optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    if (data.label === undefined && data.progressTip === undefined) return { ok: true };
+    if (data.label === undefined && data.afl === undefined && data.progressTip === undefined)
+      return { ok: true };
     await context.sql`
       update competencies set
         label = coalesce(${data.label ?? null}, label),
+        afl = coalesce(${data.afl ?? null}, afl),
         progress_tip = case when ${data.progressTip !== undefined} then ${data.progressTip || null} else progress_tip end,
         updated_at = now()
       where id = ${data.id} and teacher_id = ${context.userId}
@@ -420,6 +430,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
         activity_name: string;
         competency_id: string;
         competency_label: string;
+        competency_afl: string | null;
         progress_tip: string | null;
         level_label: string;
         level_position: number;
@@ -432,6 +443,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
         a.name as activity_name,
         c.id as competency_id,
         c.label as competency_label,
+        c.afl as competency_afl,
         c.progress_tip,
         l.label as level_label,
         l.position as level_position,
@@ -442,7 +454,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
       join activities a on a.id = c.activity_id
       join competency_levels l on l.id = scl.level_id
       where scl.student_id = ${studentId}
-      order by a.name asc, c.label asc
+      order by a.name asc, c.afl asc, c.position asc, c.label asc
     `;
 
     const grouped = new Map<string, StudentProfileActivity>();
@@ -455,6 +467,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
       entry.competencies.push({
         id: row.competency_id,
         label: row.competency_label,
+        afl: toAfl(row.competency_afl),
         level_label: row.level_label,
         level_position: row.level_position,
         level_max: Math.max(row.level_position, Number(row.level_max) || 0),

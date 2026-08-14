@@ -21,6 +21,7 @@ import {
   type Competency,
 } from "@/lib/competencies.functions";
 import { DEFAULT_LEVELS } from "@/lib/levels";
+import { AFL_CODES, AFL_HINTS, type AflCode } from "@/lib/afl";
 import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
 
 export const Route = createFileRoute("/_authenticated/prof/activites")({
@@ -150,6 +151,7 @@ function ActivityCard({
   const addCompetency = useServerFn(createCompetency);
 
   const [newCompetency, setNewCompetency] = useState("");
+  const [newAfl, setNewAfl] = useState<AflCode>("AFL1");
 
   async function handleAddCompetency() {
     const value = newCompetency.trim();
@@ -159,7 +161,7 @@ function ActivityCard({
     }
     try {
       await addCompetency({
-        data: { activityId: activity.id, label: value, levels: [...DEFAULT_LEVELS] },
+        data: { activityId: activity.id, label: value, afl: newAfl, levels: [...DEFAULT_LEVELS] },
       });
       setNewCompetency("");
       await onChanged();
@@ -245,6 +247,18 @@ function ActivityCard({
             placeholder="Ex. Savoir nager 25 mètres sans s'arrêter"
             className="min-w-[240px] flex-1 rounded-xl border border-dashed border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
           />
+          <select
+            value={newAfl}
+            onChange={(e) => setNewAfl(e.target.value as AflCode)}
+            aria-label="Catégorie AFL de la nouvelle compétence"
+            className="rounded-xl border border-border bg-background px-3 py-2.5 font-mono text-xs uppercase outline-none focus:border-primary"
+          >
+            {AFL_CODES.map((code) => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
           <button
             onClick={() => void handleAddCompetency()}
             className="flex items-center gap-2 rounded-xl border border-primary px-4 py-2.5 text-xs font-bold uppercase text-primary"
@@ -303,6 +317,27 @@ function CompetencyCard({
           }}
           className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-bold outline-none focus:border-primary"
         />
+        <select
+          value={competency.afl}
+          onChange={async (e) => {
+            try {
+              await patchCompetency({ data: { id: competency.id, afl: e.target.value as AflCode } });
+              await onChanged();
+              toast.success(`Compétence classée dans ${e.target.value}`);
+            } catch (error) {
+              fail(error);
+            }
+          }}
+          aria-label={`Catégorie AFL — ${competency.label}`}
+          title={AFL_HINTS[competency.afl]}
+          className="rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 font-mono text-xs font-bold uppercase text-primary outline-none focus:border-primary"
+        >
+          {AFL_CODES.map((code) => (
+            <option key={code} value={code}>
+              {code}
+            </option>
+          ))}
+        </select>
         <button
           onClick={async () => {
             if (!window.confirm(`Supprimer la compétence « ${competency.label} » ?`)) return;

@@ -6,6 +6,8 @@ import { ActivityEmoji } from "@/components/eps/ActivityEmoji";
 import { RankJourney } from "@/components/eps/RankJourney";
 import { computeProgression } from "@/lib/progression";
 import { goal as goalByCode } from "@/lib/engagement";
+import { AFL_HINTS, groupByAfl } from "@/lib/afl";
+
 import {
   averageProgress,
   flattenActivities,
@@ -177,30 +179,43 @@ function StudentProgress() {
                 </div>
 
                 {subTab === "competences" && (
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <p className="mono-label text-primary">Mes compétences travaillées</p>
-                    {selected.competencies.map((c) => (
-                      <div key={c.id} className="space-y-2">
-                        <div className="flex items-center justify-between gap-3 text-xs">
-                          <span className="font-semibold">{c.label}</span>
-                          <span className="shrink-0 font-mono text-muted-foreground">
-                            Niveau {c.level_position}/{c.level_max} · {c.level_label}
+                    {groupByAfl(selected.competencies, (c) => c.afl).map((group) => (
+                      <div key={group.afl} className="space-y-3">
+                        <div className="flex items-baseline gap-2">
+                          <span className="rounded-lg bg-primary/15 px-2 py-1 font-mono text-[0.7rem] font-bold uppercase text-primary">
+                            {group.afl}
+                          </span>
+                          <span className="text-[0.7rem] text-muted-foreground">
+                            {AFL_HINTS[group.afl]}
                           </span>
                         </div>
-                        <div className="flex gap-1">
-                          {Array.from({ length: c.level_max }).map((_, index) => (
-                            <span
-                              key={index}
-                              className={`h-2 flex-1 rounded-full ${
-                                index < c.level_position ? "bg-primary" : "bg-surface-2"
-                              }`}
-                            />
-                          ))}
-                        </div>
+                        {group.items.map((c) => (
+                          <div key={c.id} className="space-y-2">
+                            <div className="flex items-center justify-between gap-3 text-xs">
+                              <span className="font-semibold">{c.label}</span>
+                              <span className="shrink-0 font-mono text-muted-foreground">
+                                Niveau {c.level_position}/{c.level_max} · {c.level_label}
+                              </span>
+                            </div>
+                            <div className="flex gap-1">
+                              {Array.from({ length: c.level_max }).map((_, index) => (
+                                <span
+                                  key={index}
+                                  className={`h-2 flex-1 rounded-full ${
+                                    index < c.level_position ? "bg-primary" : "bg-surface-2"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>
                 )}
+
 
                 {subTab === "objectifs" && (
                   <div className="space-y-4">

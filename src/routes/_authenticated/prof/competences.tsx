@@ -12,6 +12,7 @@ import {
   setStudentLevel,
   clearStudentLevel,
 } from "@/lib/competencies.functions";
+import { AFL_HINTS, groupByAfl } from "@/lib/afl";
 import {
   listStudentEngagement,
   getStudentStrengthChoices,
@@ -353,48 +354,61 @@ function QuickCompetencies() {
               </p>
             )}
 
-            <div className="space-y-3">
-              {activity?.competencies.map((competency) => {
-                const currentLevelId = soloId ? (markByCompetency.get(competency.id) ?? "") : "";
-                return (
-                  <article
-                    key={competency.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background p-4"
-                  >
-                    <div className="min-w-[200px] flex-1">
-                      <p className="text-sm font-bold">{competency.label}</p>
-                      <p className="mono-label text-muted-foreground">
-                        {competency.levels.length} niveaux
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={currentLevelId}
-                        onChange={(e) => void handleChange(competency.id, e.target.value)}
-                        disabled={competency.levels.length === 0}
-                        className="min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50"
+            <div className="space-y-5">
+              {groupByAfl(activity?.competencies ?? [], (c) => c.afl).map((group) => (
+                <div key={group.afl} className="space-y-3">
+                  <div className="flex items-baseline gap-2">
+                    <span className="rounded-lg bg-primary/15 px-2 py-1 font-mono text-xs font-bold uppercase text-primary">
+                      {group.afl}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{AFL_HINTS[group.afl]}</span>
+                  </div>
+                  {group.items.map((competency) => {
+                    const currentLevelId = soloId
+                      ? (markByCompetency.get(competency.id) ?? "")
+                      : "";
+                    return (
+                      <article
+                        key={competency.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background p-4"
                       >
-                        <option value="">Non renseigné</option>
-                        {competency.levels.map((level, index) => (
-                          <option key={level.id} value={level.id}>
-                            Niveau {index + 1} — {level.label}
-                          </option>
-                        ))}
-                      </select>
-                      {soloId && currentLevelId && (
-                        <button
-                          onClick={() => void handleChange(competency.id, "")}
-                          aria-label="Retirer le niveau attribué"
-                          className="rounded-xl border border-border p-2 text-muted-foreground hover:text-primary"
-                        >
-                          <X className="size-4" />
-                        </button>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
+                        <div className="min-w-[200px] flex-1">
+                          <p className="text-sm font-bold">{competency.label}</p>
+                          <p className="mono-label text-muted-foreground">
+                            {competency.levels.length} niveaux
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={currentLevelId}
+                            onChange={(e) => void handleChange(competency.id, e.target.value)}
+                            disabled={competency.levels.length === 0}
+                            className="min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50"
+                          >
+                            <option value="">Non renseigné</option>
+                            {competency.levels.map((level, index) => (
+                              <option key={level.id} value={level.id}>
+                                Niveau {index + 1} — {level.label}
+                              </option>
+                            ))}
+                          </select>
+                          {soloId && currentLevelId && (
+                            <button
+                              onClick={() => void handleChange(competency.id, "")}
+                              aria-label="Retirer le niveau attribué"
+                              className="rounded-xl border border-border p-2 text-muted-foreground hover:text-primary"
+                            >
+                              <X className="size-4" />
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
+
 
             <p className="mono-label text-muted-foreground">
               « Non renseigné » n'attribue rien : la compétence n'apparaît pas dans le profil élève.

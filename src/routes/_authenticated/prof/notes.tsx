@@ -92,6 +92,8 @@ function TeacherGrades() {
   const student = (students.data ?? []).find((row) => row.id === studentId) ?? null;
   const activity = (activities.data ?? []).find((row) => row.id === activityId) ?? null;
   const competencies = activity?.competencies ?? [];
+  /** Compétences classées dans l'AFL actif (catégorie choisie à la création). */
+  const aflCompetencies = competencies.filter((competency) => competency.afl === activeAfl);
 
   const classNames = useMemo(() => {
     const set = new Set<string>();
@@ -410,7 +412,7 @@ function TeacherGrades() {
                         Compétences évaluées dans {activeAfl}
                       </p>
                       <ul className="space-y-2">
-                        {competencies.map((competency) => {
+                        {aflCompetencies.map((competency) => {
                           const score = activeGroup[competency.id];
                           const checked = Boolean(score);
                           return (
@@ -471,10 +473,15 @@ function TeacherGrades() {
                           );
                         })}
                       </ul>
-                      {Object.keys(activeGroup).length === 0 && (
+                      {aflCompetencies.length === 0 && (
                         <p className="text-xs text-muted-foreground">
-                          Coche les compétences réellement évaluées dans {activeAfl}. Une même
-                          compétence peut être sélectionnée dans plusieurs AFL.
+                          Aucune compétence classée dans {activeAfl} pour cette activité. Choisis la
+                          catégorie AFL de tes compétences dans Activités &amp; compétences.
+                        </p>
+                      )}
+                      {aflCompetencies.length > 0 && Object.keys(activeGroup).length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Coche les compétences réellement évaluées dans {activeAfl}.
                         </p>
                       )}
                     </div>

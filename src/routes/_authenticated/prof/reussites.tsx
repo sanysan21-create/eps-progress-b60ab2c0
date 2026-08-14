@@ -14,6 +14,7 @@ import {
   listClassStudents,
 } from "@/lib/achievements.functions";
 import { MedalAssign } from "@/components/eps/MedalAssign";
+import { MedalThresholds } from "@/components/eps/MedalThresholds";
 
 export const Route = createFileRoute("/_authenticated/prof/reussites")({
   head: () => ({
@@ -380,6 +381,8 @@ function TeacherAchievements() {
           )}
         </div>
       </section>
+
+      <MedalThresholds />
 
       <MedalAssign />
 

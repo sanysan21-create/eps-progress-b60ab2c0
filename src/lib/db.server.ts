@@ -343,7 +343,17 @@ create table if not exists student_qr_tokens (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists medal_thresholds (
+  teacher_id uuid primary key references teachers(id) on delete cascade,
+  bronze smallint not null default 5,
+  silver smallint not null default 10,
+  gold smallint not null default 15,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_students_teacher on students(teacher_id);
+
 create index if not exists idx_class_students_class on class_students(class_id);
 create index if not exists idx_qr_tokens_hash on student_qr_tokens(token_hash);
 `;

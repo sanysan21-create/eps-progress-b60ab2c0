@@ -11,16 +11,16 @@ import { activityEmoji } from "@/lib/activity-emoji";
 export const Route = createFileRoute("/eleve/notes")({
   head: () => ({
     meta: [
-      { title: "Mes notes EPS — EPS Progress" },
+      { title: "Mes résultats EPS — EPS Progress" },
       {
         name: "description",
         content:
-          "Notes d'EPS de l'élève : note globale par activité et détail des AFL renseignés par l'enseignant.",
+          "Notes d'EPS de l'élève : résultat global par activité et détail des AFL renseignés par l'enseignant.",
       },
-      { property: "og:title", content: "Mes notes EPS — EPS Progress" },
+      { property: "og:title", content: "Mes résultats EPS — EPS Progress" },
       {
         property: "og:description",
-        content: "Note globale par activité et détail de chaque AFL, en lecture seule.",
+        content: "Résultat global par activité et détail de chaque AFL, en lecture seule.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -94,9 +94,9 @@ function StudentGrades() {
   return (
     <div className="animate-slide-up space-y-6 pb-4">
       <header className="space-y-1">
-        <h1 className="display-title text-2xl leading-tight">📝 Mes notes</h1>
+        <h1 className="display-title text-2xl leading-tight">📊 Mes résultats</h1>
         <p className="text-sm text-muted-foreground">
-          Les notes sont attribuées par ton enseignant. Tu peux uniquement les consulter.
+          Les résultats sont attribués par ton enseignant. Tu peux uniquement les consulter.
         </p>
       </header>
 
@@ -104,8 +104,8 @@ function StudentGrades() {
         <div className="h-24 animate-pulse rounded-2xl border border-border bg-surface" />
       ) : rows.length === 0 ? (
         <div className="space-y-2 rounded-2xl border border-border/60 bg-surface/60 px-5 py-6 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Aucune note disponible pour le moment.</p>
-          <p>Les notes apparaîtront ici lorsque ton enseignant aura évalué tes activités.</p>
+          <p className="font-medium text-foreground">Aucun résultat disponible pour le moment.</p>
+          <p>Les résultats apparaîtront ici lorsque ton enseignant aura évalué tes activités.</p>
         </div>
       ) : (
         <div className="space-y-3">

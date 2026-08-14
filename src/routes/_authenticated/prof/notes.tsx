@@ -18,17 +18,17 @@ import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 export const Route = createFileRoute("/_authenticated/prof/notes")({
   head: () => ({
     meta: [
-      { title: "Attribuer les notes — EPS Progress" },
+      { title: "Attribuer les résultats — EPS Progress" },
       {
         name: "description",
         content:
           "Notez un élève sur une activité : sélectionnez sous AFL1, AFL2, AFL3 les compétences réellement évaluées, saisissez les points, le résultat global se calcule automatiquement.",
       },
-      { property: "og:title", content: "Attribuer les notes — EPS Progress" },
+      { property: "og:title", content: "Attribuer les résultats — EPS Progress" },
       {
         property: "og:description",
         content:
-          "Saisie rapide des notes AFL1, AFL2, AFL3 à partir des compétences déjà créées dans l'onglet Compétences.",
+          "Saisie rapide des résultats AFL1, AFL2, AFL3 à partir des compétences déjà créées dans l'onglet Compétences.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

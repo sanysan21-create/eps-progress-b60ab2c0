@@ -149,7 +149,50 @@ function AuthPage() {
             {mode === "signin" ? "Connexion" : "Créer mon compte enseignant"}
           </h1>
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
+          {mode === "signup" && !codeVerified && (
+            <form onSubmit={verifyCode} className="mt-6 space-y-4">
+              <div>
+                <label className="mono-label text-muted-foreground" htmlFor="accessCode">
+                  Code d'accès enseignant
+                </label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Un code d'accès est nécessaire pour créer un compte enseignant.
+                </p>
+                <input
+                  id="accessCode"
+                  required
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={accessCode}
+                  onChange={(e) => {
+                    setAccessCode(e.target.value);
+                    setCodeError(null);
+                  }}
+                  className="mt-2 w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm tracking-[0.3em] outline-none focus:border-primary"
+                />
+              </div>
+              {codeError && <p className="text-xs font-bold text-destructive">❌ {codeError}</p>}
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full rounded-xl bg-primary px-4 py-3 text-xs font-bold uppercase text-primary-foreground disabled:opacity-60"
+              >
+                Continuer
+              </button>
+            </form>
+          )}
+
+          {mode === "signup" && codeVerified && (
+            <p className="mono-label mt-4 text-primary">✓ Code valide</p>
+          )}
+
+          <form
+            onSubmit={submit}
+            className={
+              mode === "signup" && !codeVerified ? "hidden" : "mt-6 space-y-4"
+            }
+          >
+
             {mode === "signup" && (
               <>
                 <div>

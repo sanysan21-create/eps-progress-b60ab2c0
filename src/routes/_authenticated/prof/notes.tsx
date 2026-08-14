@@ -1,3 +1,4 @@
+import { ActivityIcon } from "@/components/eps/ActivityIcon";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -526,7 +527,7 @@ function TeacherGrades() {
                         >
                           <div className="flex items-center justify-between gap-3">
                             <p className="flex items-center gap-2 font-semibold">
-                              <span aria-hidden>{activityEmoji(grade.activity_name)}</span>
+                              <ActivityIcon name={grade.activity_name} className="size-4 text-primary" />
                               {grade.activity_name}
                             </p>
                             <div className="flex items-center gap-3">

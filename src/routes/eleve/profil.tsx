@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { activityEmoji } from "@/lib/activity-emoji";
 
 import { LevelDots } from "@/components/eps/LevelDots";
 import { StrengthPicker } from "@/components/eps/StrengthPicker";
@@ -44,30 +45,6 @@ export const Route = createFileRoute("/eleve/profil")({
   }),
   component: StudentProfile,
 });
-
-const activityEmojis: { match: string; emoji: string }[] = [
-  { match: "natation", emoji: "🏊" },
-  { match: "nage", emoji: "🏊" },
-  { match: "basket", emoji: "🏀" },
-  { match: "hand", emoji: "🤾" },
-  { match: "foot", emoji: "⚽" },
-  { match: "volley", emoji: "🏐" },
-  { match: "badminton", emoji: "🏸" },
-  { match: "tennis", emoji: "🎾" },
-  { match: "course", emoji: "🏃" },
-  { match: "athl", emoji: "🏃" },
-  { match: "gym", emoji: "🤸" },
-  { match: "danse", emoji: "💃" },
-  { match: "escalade", emoji: "🧗" },
-  { match: "muscu", emoji: "🏋️" },
-  { match: "vélo", emoji: "🚴" },
-  { match: "rugby", emoji: "🏉" },
-];
-
-function activityEmoji(name: string) {
-  const normalized = name.toLowerCase();
-  return activityEmojis.find((entry) => normalized.includes(entry.match))?.emoji ?? "🎽";
-}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -197,7 +174,7 @@ function StudentProfile() {
                 className="rounded-2xl border border-border bg-surface p-5"
               >
                 <h3 className="flex items-center gap-2 text-base font-semibold">
-                  <span aria-hidden>{activityEmoji(activity.activity_name)}</span>
+                  <span aria-hidden className="text-2xl leading-none">{activityEmoji(activity.activity_name)}</span>
                   {activity.activity_name}
                 </h3>
                 <ul className="mt-4 space-y-4">

@@ -33,21 +33,43 @@ function toAccount(row: TeacherRow): TeacherAccount {
   };
 }
 
+/** Vérifie le code d'accès enseignant. Le code n'est jamais envoyé au navigateur. */
+export const checkTeacherAccessCode = createServerFn({ method: "POST" })
+  .inputValidator((input: { accessCode: string }) =>
+    z.object({ accessCode: z.string().trim().min(1).max(64) }).parse(input),
+  )
+  .handler(async ({ data }): Promise<{ valid: boolean }> => {
+    const { teacherCodeMatches } = await import("./auth.server");
+    return { valid: await teacherCodeMatches(data.accessCode) };
+  });
+
 export const signUpTeacher = createServerFn({ method: "POST" })
   .middleware([withDb])
   .inputValidator(
-    (input: { email: string; password: string; firstName: string; lastName: string }) =>
+    (input: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      accessCode: string;
+    }) =>
       z
         .object({
           email: emailSchema,
           password: passwordSchema,
           firstName: nameSchema,
           lastName: nameSchema,
+          accessCode: z.string().trim().min(1).max(64),
         })
         .parse(input),
   )
   .handler(async ({ data, context }): Promise<TeacherAccount> => {
-    const { hashPassword, getTeacherSession } = await import("./auth.server");
+    const { hashPassword, getTeacherSession, teacherCodeMatches } = await import("./auth.server");
+
+    if (!(await teacherCodeMatches(data.accessCode))) {
+      throw new Error("Code d'accès incorrect.");
+    }
+
 
     const existing = await context.sql<{ id: string }[]>`
       select id from teachers where email = ${data.email} limit 1

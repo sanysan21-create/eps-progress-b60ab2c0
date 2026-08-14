@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Medal,
   Info,
+  LogOut,
 } from "lucide-react";
 
 import { useTeacherProfile } from "@/hooks/use-teacher-profile";

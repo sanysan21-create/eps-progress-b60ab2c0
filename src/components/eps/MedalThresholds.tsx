@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
 import { getMedalThresholds, setMedalThresholds } from "@/lib/medals.functions";
+import { NumberField } from "@/components/eps/NumberField";
+
 
 /**
  * Seuils de réussites définis par l'enseignant. Ils servent uniquement de repère

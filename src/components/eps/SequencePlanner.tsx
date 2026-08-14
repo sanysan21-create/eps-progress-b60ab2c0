@@ -13,6 +13,8 @@ import { sequenceRange } from "@/lib/program-sequences";
 import { listActivities } from "@/lib/competencies.functions";
 import { listClasses } from "@/lib/classes.functions";
 import { ActivityIcon } from "@/components/eps/ActivityIcon";
+import { NumberField } from "@/components/eps/NumberField";
+
 
 type Draft = {
   id: string | null;

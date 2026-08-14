@@ -5,7 +5,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { listActivities, listTeacherStudents } from "@/lib/competencies.functions";
+import {
+  listActivities,
+  listStudentMarks,
+  listTeacherStudents,
+} from "@/lib/competencies.functions";
 import { deleteStudentGrade, listStudentGrades, saveStudentGrade } from "@/lib/grades.functions";
 import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
 import { activityEmoji } from "@/lib/activity-emoji";
@@ -56,6 +60,7 @@ function TeacherGrades() {
   const fetchStudents = useServerFn(listTeacherStudents);
   const fetchActivities = useServerFn(listActivities);
   const fetchGrades = useServerFn(listStudentGrades);
+  const fetchMarks = useServerFn(listStudentMarks);
   const saveGrade = useServerFn(saveStudentGrade);
   const removeGrade = useServerFn(deleteStudentGrade);
 
@@ -75,6 +80,12 @@ function TeacherGrades() {
   const grades = useQuery({
     queryKey: ["student-grades", studentId],
     queryFn: () => fetchGrades({ data: { studentId: studentId! } }),
+    enabled: Boolean(studentId),
+  });
+  /** Niveaux réellement attribués dans « Évaluer compétences » (source de vérité). */
+  const marks = useQuery({
+    queryKey: ["student-marks", studentId],
+    queryFn: () => fetchMarks({ data: { studentId: studentId! } }),
     enabled: Boolean(studentId),
   });
 
@@ -152,6 +163,10 @@ function TeacherGrades() {
 
   const focusedCompetency =
     competencies.find((row) => row.id === focusedEntry?.competencyId) ?? null;
+
+  const focusedAssignedLevelId =
+    (marks.data ?? []).find((mark) => mark.competency_id === focusedCompetency?.id)?.level_id ??
+    null;
 
   function toggleCompetency(aflLabel: string, competencyId: string) {
     setAfl((current) => {
@@ -557,6 +572,8 @@ function TeacherGrades() {
           <LevelHintPanel
             studentName={`${student.first_name} ${student.last_name}`}
             competency={focusedCompetency}
+            activityName={activity?.name ?? null}
+            assignedLevelId={focusedAssignedLevelId}
             aflLabel={focusedEntry?.afl ?? null}
             points={focusedEntry?.points ?? 0}
             maxPoints={focusedEntry?.maxPoints ?? 0}

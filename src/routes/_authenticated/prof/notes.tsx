@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/prof/notes")({
       {
         name: "description",
         content:
-          "Notez un élève sur une activité : sélectionnez sous AFL1, AFL2, AFL3 les compétences réellement évaluées, saisissez les points, la note globale se calcule automatiquement.",
+          "Notez un élève sur une activité : sélectionnez sous AFL1, AFL2, AFL3 les compétences réellement évaluées, saisissez les points, le résultat global se calcule automatiquement.",
       },
       { property: "og:title", content: "Attribuer les notes — EPS Progress" },
       {
@@ -223,7 +223,7 @@ function TeacherGrades() {
           items: flatItems,
         },
       });
-      toast.success("Note enregistrée");
+      toast.success("Résultat enregistré");
       await queryClient.invalidateQueries({ queryKey: ["student-grades", studentId] });
       resetForm();
     } catch (error) {
@@ -237,7 +237,7 @@ function TeacherGrades() {
     try {
       await removeGrade({ data: { id } });
       await queryClient.invalidateQueries({ queryKey: ["student-grades", studentId] });
-      toast.success("Note supprimée");
+      toast.success("Résultat supprimé");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Suppression impossible");
     }
@@ -248,7 +248,7 @@ function TeacherGrades() {
   return (
     <div className="space-y-8 p-6 lg:p-10">
       <header className="space-y-1">
-        <h1 className="display-title text-3xl italic tracking-tighter">Notes</h1>
+        <h1 className="display-title text-3xl italic tracking-tighter">Résultats</h1>
         <p className="text-sm text-muted-foreground">
           Élève → activité → AFL1 / AFL2 / AFL3 → coche les compétences évaluées (créées dans
           « Compétences ») → points. Le total se calcule automatiquement.
@@ -508,7 +508,7 @@ function TeacherGrades() {
 
               {/* Historique */}
               <div className="space-y-3">
-                <h2 className="mono-label text-muted-foreground">Notes déjà enregistrées</h2>
+                <h2 className="mono-label text-muted-foreground">Résultats déjà enregistrés</h2>
                 {grades.isPending ? (
                   <div className="h-20 animate-pulse rounded-2xl border border-border bg-surface" />
                 ) : (grades.data ?? []).length === 0 ? (
@@ -536,7 +536,7 @@ function TeacherGrades() {
                               <button
                                 type="button"
                                 onClick={() => void handleDelete(grade.id)}
-                                aria-label={`Supprimer la note de ${grade.activity_name}`}
+                                aria-label={`Supprimer le résultat de ${grade.activity_name}`}
                                 className="text-muted-foreground hover:text-destructive"
                               >
                                 <Trash2 className="size-4" />

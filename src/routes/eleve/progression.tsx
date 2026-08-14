@@ -1,25 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Flame } from "lucide-react";
+import { Check, Flame, Target } from "lucide-react";
 
+import { RankJourney } from "@/components/eps/RankJourney";
+import { computeProgression } from "@/lib/progression";
 import {
   averageProgress,
   flattenActivities,
+  useMyGoal,
+  useMyStrengths,
   useStudentActivities,
+  useStudentEngagement,
 } from "@/hooks/use-student-profile";
 
 export const Route = createFileRoute("/eleve/progression")({
   head: () => ({
     meta: [
-      { title: "Ma progression — EPS Progress" },
+      { title: "Mes progrès — EPS Progress" },
       {
         name: "description",
         content:
-          "Progression de l'élève en EPS : niveau atteint par activité et par compétence évaluée.",
+          "Toute la progression de l'élève réunie : pourcentage global, parcours, activités, compétences et prochains objectifs.",
       },
-      { property: "og:title", content: "Ma progression — EPS Progress" },
+      { property: "og:title", content: "Mes progrès — EPS Progress" },
       {
         property: "og:description",
-        content: "Niveau atteint par activité et par compétence évaluée.",
+        content: "Progression globale, activités travaillées, compétences et prochains objectifs.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -28,22 +33,43 @@ export const Route = createFileRoute("/eleve/progression")({
   component: StudentProgress,
 });
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
 function StudentProgress() {
   const activities = useStudentActivities();
+  const engagement = useStudentEngagement();
+  const strengths = useMyStrengths();
+  const goal = useMyGoal();
+
   const data = activities.data ?? [];
   const marks = flattenActivities(data);
   const global = averageProgress(marks);
+  const done = marks.filter((m) => m.levelPosition >= m.levelMax).length;
 
-  const perActivity = data.map((activity) => {
-    const rows = flattenActivities([activity]);
-    return { name: activity.activity_name, value: averageProgress(rows) ?? 0 };
+  const journey = computeProgression({
+    marks,
+    engagement: engagement.data ?? [],
+    strengths: strengths.data ?? [],
+    goal: goal.data ?? null,
   });
 
+  const perActivity = data.map((activity) => ({
+    name: activity.activity_name,
+    value: averageProgress(flattenActivities([activity])) ?? 0,
+  }));
+
   return (
-    <div className="animate-slide-up space-y-8">
+    <div className="animate-slide-up space-y-8 pb-4">
       <header className="space-y-1">
-        <p className="mono-label text-primary">Niveaux réellement attribués</p>
-        <h1 className="display-title text-4xl">Ma progression</h1>
+        <p className="mono-label text-primary">Tout ton suivi au même endroit</p>
+        <h1 className="display-title text-4xl">Mes progrès</h1>
       </header>
 
       {activities.isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
@@ -60,48 +86,150 @@ function StudentProgress() {
 
       {marks.length > 0 && (
         <>
-          <section className="rounded-3xl border border-border bg-surface p-6 text-center">
-            <p className="mono-label text-muted-foreground">Progression globale</p>
-            <p className="display-title text-5xl text-primary">{global}%</p>
-          </section>
-
-          <section className="rounded-3xl border border-border bg-surface p-5">
-            <div className="flex h-44 items-end gap-3">
-              {perActivity.map((a) => (
-                <div key={a.name} className="flex flex-1 flex-col items-center gap-2">
-                  <span className="font-mono text-[10px] text-primary">{a.value}%</span>
-                  <div className="flex w-full flex-1 items-end">
-                    <div
-                      className="w-full rounded-t-lg bg-primary/80"
-                      style={{ height: `${a.value}%` }}
-                    />
-                  </div>
-                  <span className="mono-label truncate text-muted-foreground">{a.name}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="space-y-4">
-            <h2 className="display-title text-xl italic">Détail par compétence</h2>
-            <div className="space-y-3">
-              {marks.map((mark) => (
+          {/* Pourcentage de progression, calculé sur les niveaux réellement attribués */}
+          <Section title="📈 Ma progression">
+            <div className="rounded-3xl border border-border bg-surface p-6">
+              <p className="display-title text-5xl text-primary">{global}%</p>
+              <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-surface-2">
                 <div
-                  key={mark.competencyId}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4"
-                >
-                  <div className="min-w-0">
-                    <p className="mono-label text-muted-foreground">{mark.activityName}</p>
-                    <p className="truncate text-sm font-semibold">{mark.competencyLabel}</p>
+                  className="animate-bar-grow h-full origin-left rounded-full bg-primary"
+                  style={{ width: `${global}%` }}
+                />
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Moyenne de tes niveaux sur {marks.length} compétence{marks.length > 1 ? "s" : ""}{" "}
+                évaluée{marks.length > 1 ? "s" : ""}. Ce repère ne concerne que toi.
+              </p>
+            </div>
+          </Section>
+
+          {/* Étape du parcours personnel (aucun classement) */}
+          <Section title="🚀 Mon parcours">
+            <RankJourney state={journey} />
+          </Section>
+
+          <Section title="🎽 Mes activités">
+            <div className="rounded-3xl border border-border bg-surface p-5">
+              <div className="flex h-44 items-end gap-3">
+                {perActivity.map((a) => (
+                  <div key={a.name} className="flex flex-1 flex-col items-center gap-2">
+                    <span className="font-mono text-[10px] text-primary">{a.value}%</span>
+                    <div className="flex w-full flex-1 items-end">
+                      <div
+                        className="w-full rounded-t-lg bg-primary/80"
+                        style={{ height: `${a.value}%` }}
+                      />
+                    </div>
+                    <span className="mono-label truncate text-muted-foreground">{a.name}</span>
                   </div>
-                  <span className="mono-label shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-primary">
-                    Niveau {mark.levelPosition}/{mark.levelMax} — {mark.levelLabel}
-                  </span>
-                </div>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section title="🎯 Mes compétences travaillées">
+            <div className="space-y-4">
+              {data.map((activity) => (
+                <article
+                  key={activity.activity_id}
+                  className="rounded-3xl border border-border bg-surface p-5"
+                >
+                  <h3 className="display-title text-xl italic">{activity.activity_name}</h3>
+                  <div className="mt-4 space-y-4">
+                    {activity.competencies.map((c) => (
+                      <div key={c.id} className="space-y-2">
+                        <div className="flex items-center justify-between gap-3 text-xs">
+                          <span className="font-semibold">{c.label}</span>
+                          <span className="shrink-0 font-mono text-muted-foreground">
+                            Niv. {c.level_position}/{c.level_max} · {c.level_label}
+                          </span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+                          <div
+                            className="animate-bar-grow h-full origin-left rounded-full bg-primary"
+                            style={{
+                              width: `${
+                                c.level_max > 0 ? (c.level_position / c.level_max) * 100 : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </article>
               ))}
             </div>
-          </section>
+          </Section>
+
+          {/* Prochains paliers à atteindre, compétence par compétence */}
+          <Section title="🧭 Mes objectifs">
+            <p className="mono-label text-muted-foreground">
+              {done} / {marks.length} compétences au niveau maximum
+            </p>
+            <div className="space-y-3">
+              {marks.map((mark) => {
+                const complete = mark.levelPosition >= mark.levelMax;
+                return (
+                  <article
+                    key={mark.competencyId}
+                    className={`flex items-start gap-4 rounded-3xl border p-5 ${
+                      complete ? "border-primary/40 bg-primary/10" : "border-border bg-surface"
+                    }`}
+                  >
+                    <div
+                      className={`grid size-10 shrink-0 place-items-center rounded-2xl ${
+                        complete
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-surface-2 text-muted-foreground"
+                      }`}
+                    >
+                      {complete ? (
+                        <Check className="size-5" />
+                      ) : (
+                        <span className="font-mono text-xs">{mark.levelPosition + 1}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="mono-label text-muted-foreground">{mark.activityName}</p>
+                      <p className="text-sm font-bold">{mark.competencyLabel}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {complete
+                          ? `Niveau maximum atteint — ${mark.levelLabel}`
+                          : `Niveau ${mark.levelPosition}/${mark.levelMax} — viser le niveau ${
+                              mark.levelPosition + 1
+                            }`}
+                      </p>
+                      {mark.progressTip && (
+                        <p className="mt-1 text-xs font-semibold text-primary">
+                          {mark.progressTip}
+                        </p>
+                      )}
+                      {mark.levelTip && (
+                        <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+                          <p className="mono-label text-primary">💡 Conseil de ton enseignant</p>
+                          <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+                            {mark.levelTip}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </Section>
         </>
+      )}
+
+      {marks.length === 0 && !activities.isLoading && (
+        <div className="rounded-3xl border border-border bg-surface p-6 text-center">
+          <Target className="mx-auto size-8 text-primary" />
+          <p className="mt-3 font-bold">Aucun objectif pour le moment.</p>
+          <p className="text-sm text-muted-foreground">
+            Tes objectifs se construisent à partir des niveaux attribués par ton professeur.
+          </p>
+        </div>
       )}
     </div>
   );

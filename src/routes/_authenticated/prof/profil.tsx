@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Mail, Trash2, Upload, UserRound } from "lucide-react";
+import { ThemeSetting } from "@/components/eps/ThemeSetting";
 import { toast } from "sonner";
 
 import { teacherProfileKey, useTeacherProfile } from "@/hooks/use-teacher-profile";
@@ -292,6 +293,11 @@ function TeacherProfilePage() {
             {savingEmail ? "Modification…" : "Modifier l'e-mail"}
           </button>
         </form>
+      </section>
+
+      <section className="rounded-3xl border border-border bg-surface p-6">
+        <h2 className="display-title text-xl">🌗 Apparence de l'application</h2>
+        <ThemeSetting className="mt-5" />
       </section>
     </div>
   );

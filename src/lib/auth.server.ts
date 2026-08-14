@@ -5,7 +5,9 @@
  */
 import { useSession } from "@tanstack/react-start/server";
 
-const PBKDF2_ITERATIONS = 120_000;
+// Cloudflare Workers limite PBKDF2 à 100 000 itérations maximum.
+const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_MAX_ITERATIONS = 100_000;
 
 export function appSecret(): string {
   const secret = process.env["APP_SESSION_SECRET"] ?? process.env["STUDENT_SESSION_SECRET"];

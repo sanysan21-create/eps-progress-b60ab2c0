@@ -9,13 +9,14 @@ import {
 } from "lucide-react";
 
 const items = [
-  { to: "/eleve/programme", label: "Programme", icon: CalendarDays },
+  { to: "/eleve/profil", label: "Profil", icon: User },
   { to: "/eleve/progression", label: "Progrès", icon: TrendingUp },
   { to: "/eleve/reussites", label: "Réussites", icon: Trophy },
+  { to: "/eleve/programme", label: "Programme", icon: CalendarDays },
   { to: "/eleve/notes", label: "Notes", icon: ClipboardList },
-  { to: "/eleve/profil", label: "Profil", icon: User },
   { to: "/eleve/parametres", label: "Paramètres", icon: Settings },
 ] as const;
+
 
 export function StudentNav() {
   return (

@@ -1,0 +1,12 @@
+name = "eps-progress"
+main = ".output/server/index.mjs"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".output/public"
+binding = "ASSETS"
+
+# Variables à définir avec :
+#   wrangler secret put DATABASE_URL
+#   wrangler secret put APP_SESSION_SECRET

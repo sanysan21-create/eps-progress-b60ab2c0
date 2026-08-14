@@ -551,6 +551,16 @@ function TeacherGrades() {
             </>
           )}
         </section>
+
+        {student && activityId && (
+          <LevelHintPanel
+            studentName={`${student.first_name} ${student.last_name}`}
+            competency={focusedCompetency}
+            aflLabel={focusedEntry?.afl ?? null}
+            points={focusedEntry?.points ?? 0}
+            maxPoints={focusedEntry?.maxPoints ?? 0}
+          />
+        )}
       </div>
     </div>
   );

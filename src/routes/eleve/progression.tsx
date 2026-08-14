@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Flame, Target } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronDown, ChevronLeft, Flame, Target } from "lucide-react";
 
+import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
 import { RankJourney } from "@/components/eps/RankJourney";
 import { computeProgression } from "@/lib/progression";
 import {
@@ -42,7 +44,89 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+type StudentActivity = ReturnType<typeof useStudentActivities>["data"] extends
+  | (infer T)[]
+  | undefined
+  ? T
+  : never;
+
+/** Carte d'activité cliquable : ouvre le détail des niveaux de compétences. */
+function ActivityPanel({
+  activity,
+  progress,
+  open,
+  onToggle,
+}: {
+  activity: StudentActivity;
+  progress: number;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <article className="overflow-hidden rounded-3xl border border-border bg-surface">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-surface-2/60"
+      >
+        <ActivityIconBadge name={activity.activity_name} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-base font-bold">{activity.activity_name}</span>
+          <span className="mono-label text-muted-foreground">
+            Progression {progress}% · {activity.competencies.length} compétence
+            {activity.competencies.length > 1 ? "s" : ""}
+          </span>
+        </span>
+        <ChevronDown
+          className={`size-4 shrink-0 text-muted-foreground transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <div
+        className={`grid transition-all duration-300 ease-out ${
+          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="space-y-4 border-t border-border/60 px-5 py-4">
+            <p className="mono-label text-primary">Niveaux de compétences</p>
+            {activity.competencies.map((c) => (
+              <div key={c.id} className="space-y-2">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="font-semibold">{c.label}</span>
+                  <span className="shrink-0 font-mono text-muted-foreground">
+                    Niveau {c.level_position}/{c.level_max} · {c.level_label}
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+                  <div
+                    className="animate-bar-grow h-full origin-left rounded-full bg-primary"
+                    style={{
+                      width: `${c.level_max > 0 ? (c.level_position / c.level_max) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={onToggle}
+              className="mono-label flex items-center gap-1.5 text-muted-foreground hover:text-primary"
+            >
+              <ChevronLeft className="size-3.5" /> Revenir à la liste des activités
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function StudentProgress() {
+  const [openActivity, setOpenActivity] = useState<string | null>(null);
   const activities = useStudentActivities();
   const engagement = useStudentEngagement();
   const strengths = useMyStrengths();

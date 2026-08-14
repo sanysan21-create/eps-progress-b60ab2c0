@@ -3,7 +3,13 @@ import { useEffect, useState } from "react";
 import { GraduationCap, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
-import { getTeacherAccount, signInTeacher, signUpTeacher } from "@/lib/auth.functions";
+import {
+  checkTeacherAccessCode,
+  getTeacherAccount,
+  signInTeacher,
+  signUpTeacher,
+} from "@/lib/auth.functions";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({

@@ -79,19 +79,6 @@ function AuthPage() {
   }
 
 
-  async function google() {
-    setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      setBusy(false);
-      toast.error("Connexion Google impossible");
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/prof" });
-  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">

@@ -127,6 +127,49 @@
   --sidebar-ring: oklch(0.885 0.215 117);
 }
 
+/*
+ * Thème clair : même identité (volt/vert comme accent, interface sportive épurée),
+ * mais fonds clairs et contrastes retravaillés (pas une simple inversion).
+ */
+.light {
+  --background: oklch(0.975 0.005 285);
+  --foreground: oklch(0.19 0.012 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.012 285);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.955 0.006 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.012 285);
+  /* Volt assombri pour rester lisible sur fond clair, même famille de teinte. */
+  --primary: oklch(0.58 0.155 128);
+  --primary-foreground: oklch(0.99 0.01 117);
+  --secondary: oklch(0.945 0.006 285);
+  --secondary-foreground: oklch(0.24 0.012 285);
+  --muted: oklch(0.945 0.006 285);
+  --muted-foreground: oklch(0.48 0.012 285);
+  --accent: oklch(0.925 0.02 117);
+  --accent-foreground: oklch(0.22 0.012 285);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.885 0.008 285);
+  --input: oklch(0.885 0.008 285);
+  --ring: oklch(0.58 0.155 128);
+  --chart-1: oklch(0.58 0.155 128);
+  --chart-2: oklch(0.55 0.13 220);
+  --chart-3: oklch(0.6 0.15 60);
+  --chart-4: oklch(0.52 0.18 300);
+  --chart-5: oklch(0.58 0.19 20);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.19 0.012 285);
+  --sidebar-primary: oklch(0.58 0.155 128);
+  --sidebar-primary-foreground: oklch(0.99 0.01 117);
+  --sidebar-accent: oklch(0.945 0.006 285);
+  --sidebar-accent-foreground: oklch(0.22 0.012 285);
+  --sidebar-border: oklch(0.885 0.008 285);
+  --sidebar-ring: oklch(0.58 0.155 128);
+}
+
+
 @layer base {
   * {
     border-color: var(--color-border);

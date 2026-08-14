@@ -1,31 +1,29 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireTeacher, withDb } from "./auth-middleware";
 import type { GradeRow } from "@/lib/grades";
 
-/** Notes d'un élève (lecture enseignant, uniquement ses propres élèves via RLS). */
+/** Notes d'un élève (lecture enseignant, restreinte à ses propres élèves). */
 export const listStudentGrades = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }): Promise<GradeRow[]> => {
-    const { mapGradeRows } = await import("./grades.server");
-    const { data: rows, error } = await context.supabase
-      .from("student_grades")
-      .select(
-        "id, student_id, activity_id, evaluated_on, comment, activities(name), student_grade_items(id, position, label, competency_id, points, max_points, competencies(label))",
-      )
-      .eq("student_id", data.studentId)
-      .order("evaluated_on", { ascending: false });
-    if (error) throw new Error(error.message);
-    return mapGradeRows(rows);
+    const [owned] = await context.sql<{ id: string }[]>`
+      select id from students
+      where id = ${data.studentId} and teacher_id = ${context.userId} limit 1
+    `;
+    if (!owned) return [];
+
+    const { loadStudentGrades } = await import("./grades.server");
+    return loadStudentGrades(context.sql, data.studentId);
   });
 
 /** Crée ou met à jour la note d'un élève pour une activité (AFL1/AFL2/AFL3). */
 export const saveStudentGrade = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator(
     (input: {
       studentIds: string[];
@@ -66,52 +64,48 @@ export const saveStudentGrade = createServerFn({ method: "POST" })
       }
     }
 
+    const evaluatedOn = data.evaluatedOn ?? new Date().toISOString().slice(0, 10);
+    let saved = 0;
+
     for (const studentId of data.studentIds) {
-      const { data: grade, error } = await context.supabase
-        .from("student_grades")
-        .upsert(
-          {
-            student_id: studentId,
-            activity_id: data.activityId,
-            teacher_id: context.userId,
-            evaluated_on: data.evaluatedOn ?? new Date().toISOString().slice(0, 10),
-            comment: data.comment ?? null,
-          },
-          { onConflict: "student_id,activity_id" },
+      const [grade] = await context.sql<{ id: string }[]>`
+        insert into student_grades (student_id, activity_id, teacher_id, evaluated_on, comment)
+        select ${studentId}, ${data.activityId}, ${context.userId}, ${evaluatedOn}, ${data.comment ?? null}
+        where exists (
+          select 1 from students where id = ${studentId} and teacher_id = ${context.userId}
         )
-        .select("id")
-        .single();
-      if (error) throw new Error(error.message);
+        on conflict (student_id, activity_id) do update
+          set evaluated_on = excluded.evaluated_on,
+              comment = excluded.comment,
+              updated_at = now()
+        returning id
+      `;
+      if (!grade) continue;
 
-      const { error: clearError } = await context.supabase
-        .from("student_grade_items")
-        .delete()
-        .eq("grade_id", grade.id);
-      if (clearError) throw new Error(clearError.message);
-
-      const { error: insertError } = await context.supabase.from("student_grade_items").insert(
-        data.items.map((item, index) => ({
-          grade_id: grade.id,
-          teacher_id: context.userId,
-          position: index + 1,
-          label: item.label,
-          competency_id: item.competencyId,
-          points: item.points,
-          max_points: item.maxPoints,
-        })),
-      );
-      if (insertError) throw new Error(insertError.message);
+      await context.sql`delete from student_grade_items where grade_id = ${grade.id}`;
+      let position = 0;
+      for (const item of data.items) {
+        position += 1;
+        await context.sql`
+          insert into student_grade_items
+            (grade_id, teacher_id, position, label, competency_id, points, max_points)
+          values (${grade.id}, ${context.userId}, ${position}, ${item.label},
+                  ${item.competencyId}, ${item.points}, ${item.maxPoints})
+        `;
+      }
+      saved += 1;
     }
 
-    return { saved: data.studentIds.length };
+    return { saved };
   });
 
 export const deleteStudentGrade = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("student_grades").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    await context.sql`
+      delete from student_grades where id = ${data.id} and teacher_id = ${context.userId}
+    `;
     return { ok: true };
   });
 
@@ -120,23 +114,14 @@ export const deleteStudentGrade = createServerFn({ method: "POST" })
  * L'identifiant vient exclusivement du cookie signé, jamais du navigateur,
  * un élève ne peut donc pas consulter les notes d'un autre élève.
  */
-export const getMyGrades = createServerFn({ method: "GET" }).handler(
-  async (): Promise<GradeRow[]> => {
+export const getMyGrades = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(async ({ context }): Promise<GradeRow[]> => {
     const { getStudentSession } = await import("./student-qr.server");
-    const { mapGradeRows } = await import("./grades.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
     if (!studentId) return [];
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin
-      .from("student_grades")
-      .select(
-        "id, student_id, activity_id, evaluated_on, comment, activities(name), student_grade_items(id, position, label, competency_id, points, max_points, competencies(label))",
-      )
-      .eq("student_id", studentId)
-      .order("evaluated_on", { ascending: false });
-    if (error) throw new Error(error.message);
-    return mapGradeRows(rows);
-  },
-);
+    const { loadStudentGrades } = await import("./grades.server");
+    return loadStudentGrades(context.sql, studentId);
+  });

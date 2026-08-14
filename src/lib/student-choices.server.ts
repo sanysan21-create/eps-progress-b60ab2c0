@@ -8,14 +8,13 @@ export async function resolveStudent(): Promise<{ studentId: string; teacherId: 
   const studentId = session.data.studentId;
   if (!studentId) throw new Error("Session élève expirée");
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: student, error } = await supabaseAdmin
-    .from("students")
-    .select("teacher_id")
-    .eq("id", studentId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
+  const { db } = await import("./db.server");
+  const sql = await db();
+  const [student] = await sql<{ teacher_id: string }[]>`
+    select teacher_id from students where id = ${studentId} limit 1
+  `;
   if (!student) throw new Error("Élève introuvable");
 
   return { studentId, teacherId: student.teacher_id };
+
 }

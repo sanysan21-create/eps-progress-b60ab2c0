@@ -1,67 +1,101 @@
 import type { ProgramSession } from "./program";
+import type { Db } from "./db.server";
 
-type RawSession = {
+const SELECT_SESSIONS = (sql: Db) => sql;
+
+export type ProgramRow = {
   id: string;
   class_id: string | null;
+  class_name: string | null;
   activity_id: string | null;
   activity_name: string | null;
-  session_date: string | null;
+  fallback_name: string | null;
+  session_date: Date | string | null;
   period_label: string | null;
   objective: string | null;
   description: string | null;
-  scale_image_path?: string | null;
-  scale_activity_id?: string | null;
-  classes: { name: string } | null;
-  activities: { name: string } | null;
-  scale_activity?: { name: string } | null;
+  scale_file_id: string | null;
+  scale_activity_id: string | null;
+  scale_activity_name: string | null;
 };
 
-export const PROGRAM_SCALES_BUCKET = "program-scales";
+function toDateString(value: Date | string | null): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
 
-/** Normalise les lignes Supabase du programme. */
-export function mapProgramRows(rows: unknown): ProgramSession[] {
-  return ((rows ?? []) as RawSession[]).map((row) => ({
+/** Normalise les lignes SQL du programme. */
+export function mapProgramRows(rows: ProgramRow[]): ProgramSession[] {
+  return rows.map((row) => ({
     id: row.id,
     class_id: row.class_id,
-    class_name: row.classes?.name ?? null,
+    class_name: row.class_name ?? null,
     activity_id: row.activity_id,
-    activity_name: row.activities?.name ?? row.activity_name ?? "Activité",
-    session_date: row.session_date,
+    activity_name: row.activity_name ?? row.fallback_name ?? "Activité",
+    session_date: toDateString(row.session_date),
     period_label: row.period_label,
     objective: row.objective,
     description: row.description,
-    scale_image_path: row.scale_image_path ?? null,
-    scale_image_url: null,
+    scale_image_path: row.scale_file_id ?? null,
+    scale_image_url: row.scale_file_id ? `/api/files/${row.scale_file_id}` : null,
     scale_activity_id: row.scale_activity_id ?? null,
-    scale_activity_name: row.scale_activity?.name ?? null,
+    scale_activity_name: row.scale_activity_name ?? null,
   }));
 }
 
-/**
- * Le bucket des barèmes est privé : on génère des URLs signées côté serveur
- * pour que l'enseignant comme l'élève puissent afficher l'image.
- */
-export async function withSignedScaleUrls(sessions: ProgramSession[]): Promise<ProgramSession[]> {
-  const paths = [
-    ...new Set(sessions.map((s) => s.scale_image_path).filter((p): p is string => Boolean(p))),
-  ];
-  if (paths.length === 0) return sessions;
+/** Charge les séances d'un enseignant, éventuellement restreintes à des classes. */
+export async function loadProgramSessions(
+  sql: Db,
+  teacherId: string,
+  classIds?: string[],
+): Promise<ProgramSession[]> {
+  SELECT_SESSIONS(sql);
+  const rows = await sql<ProgramRow[]>`
+    select
+      p.id,
+      p.class_id,
+      c.name as class_name,
+      p.activity_id,
+      a.name as activity_name,
+      p.activity_name as fallback_name,
+      p.session_date,
+      p.period_label,
+      p.objective,
+      p.description,
+      p.scale_file_id,
+      p.scale_activity_id,
+      sa.name as scale_activity_name
+    from program_sessions p
+    left join classes c on c.id = p.class_id
+    left join activities a on a.id = p.activity_id
+    left join activities sa on sa.id = p.scale_activity_id
+    where p.teacher_id = ${teacherId}
+      ${
+        classIds === undefined
+          ? sql``
+          : classIds.length > 0
+            ? sql`and (p.class_id is null or p.class_id = any(${classIds}::uuid[]))`
+            : sql`and p.class_id is null`
+      }
+    order by p.session_date asc nulls last, p.created_at asc
+  `;
+  return mapProgramRows(rows);
+}
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const signed = new Map<string, string>();
-  await Promise.all(
-    paths.map(async (path) => {
-      const { data } = await supabaseAdmin.storage
-        .from(PROGRAM_SCALES_BUCKET)
-        .createSignedUrl(path, 60 * 60 * 6);
-      if (data?.signedUrl) signed.set(path, data.signedUrl);
-    }),
-  );
-
-  return sessions.map((session) => ({
-    ...session,
-    scale_image_url: session.scale_image_path
-      ? (signed.get(session.scale_image_path) ?? null)
-      : null,
-  }));
+/** Enseignant et classes d'un élève (pour les lectures côté élève). */
+export async function loadStudentScope(
+  sql: Db,
+  studentId: string,
+): Promise<{ teacherId: string; classIds: string[] } | null> {
+  const rows = await sql<{ teacher_id: string; class_ids: string[] | null }[]>`
+    select s.teacher_id, array_remove(array_agg(cs.class_id), null) as class_ids
+    from students s
+    left join class_students cs on cs.student_id = s.id
+    where s.id = ${studentId}
+    group by s.teacher_id
+  `;
+  const row = rows[0];
+  if (!row) return null;
+  return { teacherId: row.teacher_id, classIds: row.class_ids ?? [] };
 }

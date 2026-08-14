@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireTeacher, withDb } from "./auth-middleware";
 
 export type AchievementRow = {
   id: string;
@@ -31,28 +31,37 @@ const labelSchema = z.string().trim().min(1, "Champ requis").max(80);
 
 /** Réussites possibles créées par l'enseignant. */
 export const listAchievements = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .handler(async ({ context }): Promise<AchievementRow[]> => {
-    const { data, error } = await context.supabase
-      .from("achievements")
-      .select("id, name, description, icon, student_achievements(count)")
-      .order("created_at", { ascending: true });
-    if (error) throw new Error(error.message);
+    const rows = await context.sql<
+      {
+        id: string;
+        name: string;
+        description: string | null;
+        icon: string | null;
+        awarded_count: string | number;
+      }[]
+    >`
+      select a.id, a.name, a.description, a.icon,
+             count(sa.id) as awarded_count
+      from achievements a
+      left join student_achievements sa on sa.achievement_id = a.id
+      where a.teacher_id = ${context.userId}
+      group by a.id
+      order by a.created_at asc
+    `;
 
-    return (data ?? []).map((row) => {
-      const counts = row.student_achievements as unknown as { count: number }[] | null;
-      return {
-        id: row.id,
-        name: row.name,
-        description: row.description ?? "",
-        icon: row.icon ?? "🏅",
-        awarded_count: counts?.[0]?.count ?? 0,
-      };
-    });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description ?? "",
+      icon: row.icon ?? "🏅",
+      awarded_count: Number(row.awarded_count) || 0,
+    }));
   });
 
 export const createAchievement = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { name: string; description: string; icon: string }) =>
     z
       .object({
@@ -63,148 +72,133 @@ export const createAchievement = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: row, error } = await context.supabase
-      .from("achievements")
-      .insert({
-        name: data.name,
-        description: data.description,
-        icon: data.icon,
-        teacher_id: context.userId,
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
+    const [row] = await context.sql<{ id: string }[]>`
+      insert into achievements (name, description, icon, teacher_id)
+      values (${data.name}, ${data.description}, ${data.icon}, ${context.userId})
+      returning id
+    `;
+    if (!row) throw new Error("Création impossible");
     return { id: row.id };
   });
 
 export const deleteAchievement = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { achievementId: string }) =>
     z.object({ achievementId: idSchema }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("achievements")
-      .delete()
-      .eq("id", data.achievementId);
-    if (error) throw new Error(error.message);
+    await context.sql`
+      delete from achievements
+      where id = ${data.achievementId} and teacher_id = ${context.userId}
+    `;
     return { ok: true };
   });
 
 /** Élèves inscrits dans une classe de l'enseignant. */
 export const listClassStudents = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { classId: string }) => z.object({ classId: idSchema }).parse(input))
   .handler(async ({ data, context }): Promise<ClassStudentPick[]> => {
-    const { data: rows, error } = await context.supabase
-      .from("class_students")
-      .select("students(id, first_name, last_name)")
-      .eq("class_id", data.classId);
-    if (error) throw new Error(error.message);
-
-    return (rows ?? [])
-      .map((row) => row.students as unknown as ClassStudentPick | null)
-      .filter((student): student is ClassStudentPick => Boolean(student))
-      .sort((a, b) =>
-        `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, "fr"),
-      );
+    return await context.sql<ClassStudentPick[]>`
+      select s.id, s.first_name, s.last_name
+      from class_students cs
+      join students s on s.id = cs.student_id
+      where cs.class_id = ${data.classId} and cs.teacher_id = ${context.userId}
+      order by s.last_name asc, s.first_name asc
+    `;
   });
 
 /** Attribution manuelle : l'enseignant reconnaît la réussite pour les élèves choisis. */
 export const awardAchievement = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { achievementId: string; studentIds: string[] }) =>
     z
       .object({ achievementId: idSchema, studentIds: z.array(idSchema).min(1).max(200) })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("student_achievements").upsert(
-      data.studentIds.map((studentId) => ({
-        student_id: studentId,
-        achievement_id: data.achievementId,
-        teacher_id: context.userId,
-      })),
-      { onConflict: "student_id,achievement_id" },
-    );
-    if (error) throw new Error(error.message);
+    await context.sql`
+      insert into student_achievements (student_id, achievement_id, teacher_id)
+      select s.id, ${data.achievementId}, ${context.userId}
+      from students s
+      where s.teacher_id = ${context.userId}
+        and s.id = any(${data.studentIds}::uuid[])
+        and exists (
+          select 1 from achievements a
+          where a.id = ${data.achievementId} and a.teacher_id = ${context.userId}
+        )
+      on conflict (student_id, achievement_id) do nothing
+    `;
     return { saved: data.studentIds.length };
   });
 
 export const revokeAchievement = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { achievementId: string; studentIds: string[] }) =>
     z
       .object({ achievementId: idSchema, studentIds: z.array(idSchema).min(1).max(200) })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("student_achievements")
-      .delete()
-      .eq("achievement_id", data.achievementId)
-      .in("student_id", data.studentIds);
-    if (error) throw new Error(error.message);
+    await context.sql`
+      delete from student_achievements
+      where teacher_id = ${context.userId}
+        and achievement_id = ${data.achievementId}
+        and student_id = any(${data.studentIds}::uuid[])
+    `;
     return { ok: true };
   });
 
 /** Réussites déjà attribuées à un élève (vue enseignant). */
 export const listStudentAchievements = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: idSchema }).parse(input),
   )
   .handler(async ({ data, context }): Promise<string[]> => {
-    const { data: rows, error } = await context.supabase
-      .from("student_achievements")
-      .select("achievement_id")
-      .eq("student_id", data.studentId);
-    if (error) throw new Error(error.message);
-    return (rows ?? []).map((row) => row.achievement_id);
+    const rows = await context.sql<{ achievement_id: string }[]>`
+      select achievement_id from student_achievements
+      where student_id = ${data.studentId} and teacher_id = ${context.userId}
+    `;
+    return rows.map((row) => row.achievement_id);
   });
 
 /**
  * Vue élève : toutes les réussites proposées par son enseignant, avec l'état
  * « obtenue » ou « à découvrir ». L'élève est identifié par le cookie de session QR.
  */
-export const getMyAchievements = createServerFn({ method: "GET" }).handler(
-  async (): Promise<StudentAchievementView[]> => {
+export const getMyAchievements = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(async ({ context }): Promise<StudentAchievementView[]> => {
     const { getStudentSession } = await import("./student-qr.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
     if (!studentId) return [];
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: student, error: studentError } = await supabaseAdmin
-      .from("students")
-      .select("teacher_id")
-      .eq("id", studentId)
-      .maybeSingle();
-    if (studentError) throw new Error(studentError.message);
-    if (!student) return [];
+    const rows = await context.sql<
+      {
+        id: string;
+        name: string;
+        description: string | null;
+        icon: string | null;
+        earned: boolean;
+      }[]
+    >`
+      select a.id, a.name, a.description, a.icon,
+             (sa.id is not null) as earned
+      from students s
+      join achievements a on a.teacher_id = s.teacher_id
+      left join student_achievements sa
+        on sa.achievement_id = a.id and sa.student_id = s.id
+      where s.id = ${studentId}
+      order by a.created_at asc
+    `;
 
-    const [{ data: available, error: availableError }, { data: earned, error: earnedError }] =
-      await Promise.all([
-        supabaseAdmin
-          .from("achievements")
-          .select("id, name, description, icon")
-          .eq("teacher_id", student.teacher_id)
-          .order("created_at", { ascending: true }),
-        supabaseAdmin
-          .from("student_achievements")
-          .select("achievement_id")
-          .eq("student_id", studentId),
-      ]);
-    if (availableError) throw new Error(availableError.message);
-    if (earnedError) throw new Error(earnedError.message);
-
-    const earnedIds = new Set((earned ?? []).map((row) => row.achievement_id));
-    return (available ?? []).map((row) => ({
+    return rows.map((row) => ({
       id: row.id,
       name: row.name,
       description: row.description ?? "",
       icon: row.icon ?? "🏅",
-      earned: earnedIds.has(row.id),
+      earned: row.earned,
     }));
-  },
-);
+  });

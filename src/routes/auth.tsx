@@ -93,7 +93,9 @@ function AuthPage() {
             password,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
+            accessCode,
           },
+
         });
         toast.success("Compte créé. Vous êtes connecté.");
       } else {

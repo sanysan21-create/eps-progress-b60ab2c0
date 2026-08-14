@@ -145,7 +145,7 @@ function StudentProfile() {
         <div className="flex shrink-0 items-center gap-3">
           {myAs.data && (
             <div className="animate-slide-up text-center">
-              <AsBadge size={64} />
+              <AsBadge size={48} />
             </div>
           )}
           {myMedal.data && (

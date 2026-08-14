@@ -2,11 +2,10 @@
  * Badge « AS » (Association Sportive) affiché uniquement lorsque l'enseignant
  * a inscrit l'élève à l'AS depuis la gestion des classes.
  */
-export function AsBadge({ size = 64 }: { size?: number }) {
-  const large = size >= 56;
+export function AsBadge({ size = 48 }: { size?: number }) {
   return (
     <span
-      className={`inline-flex items-center align-middle ${large ? "flex-col gap-1" : "flex-row gap-1.5"}`}
+      className="inline-flex items-center align-middle"
       title="Inscrit à l'Association Sportive"
     >
       <span
@@ -22,11 +21,6 @@ export function AsBadge({ size = 64 }: { size?: number }) {
           AS
         </span>
       </span>
-      {large && (
-        <span className="mono-label text-[11px] font-bold uppercase tracking-widest text-foreground/80">
-          Association Sportive
-        </span>
-      )}
     </span>
   );
 }

@@ -5,7 +5,9 @@
  */
 import { useSession } from "@tanstack/react-start/server";
 
-const PBKDF2_ITERATIONS = 120_000;
+// Cloudflare Workers limite PBKDF2 à 100 000 itérations maximum.
+const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_MAX_ITERATIONS = 100_000;
 
 export function appSecret(): string {
   const secret = process.env["APP_SESSION_SECRET"] ?? process.env["STUDENT_SESSION_SECRET"];
@@ -31,7 +33,11 @@ function fromBase64(value: string): Uint8Array {
   return out;
 }
 
-async function derive(password: string, salt: Uint8Array): Promise<string> {
+async function derive(
+  password: string,
+  salt: Uint8Array,
+  iterations: number = PBKDF2_ITERATIONS,
+): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password),
@@ -40,7 +46,12 @@ async function derive(password: string, salt: Uint8Array): Promise<string> {
     ["deriveBits"],
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt: salt as unknown as BufferSource, iterations: PBKDF2_ITERATIONS },
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: salt as unknown as BufferSource,
+      iterations: Math.min(iterations, PBKDF2_MAX_ITERATIONS),
+    },
     key,
     256,
   );
@@ -54,9 +65,10 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [scheme, , saltB64, expected] = stored.split("$");
+  const [scheme, iterStr, saltB64, expected] = stored.split("$");
   if (scheme !== "pbkdf2" || !saltB64 || !expected) return false;
-  const actual = await derive(password, fromBase64(saltB64));
+  const iterations = Number(iterStr) || PBKDF2_ITERATIONS;
+  const actual = await derive(password, fromBase64(saltB64), iterations);
   if (actual.length !== expected.length) return false;
   let diff = 0;
   for (let i = 0; i < actual.length; i++) diff |= actual.charCodeAt(i) ^ expected.charCodeAt(i);

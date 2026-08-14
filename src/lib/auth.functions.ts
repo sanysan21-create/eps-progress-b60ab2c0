@@ -55,11 +55,12 @@ export const signUpTeacher = createServerFn({ method: "POST" })
     if (existing.length > 0) throw new Error("Cette adresse e-mail possède déjà un compte.");
 
     const hash = await hashPassword(data.password);
-    const [row] = await context.sql<TeacherRow[]>`
+    const [inserted] = await context.sql<TeacherRow[]>`
       insert into teachers (email, password_hash, first_name, last_name)
       values (${data.email}, ${hash}, ${data.firstName}, ${data.lastName})
       returning id, email, first_name, last_name, avatar_file_id
     `;
+    const row = inserted!;
 
     const session = await getTeacherSession();
     await session.update({ teacherId: row.id });
@@ -175,11 +176,12 @@ export const uploadTeacherAvatarFn = createServerFn({ method: "POST" })
     const bytes = Uint8Array.from(atob(data.dataBase64), (c) => c.charCodeAt(0));
     if (bytes.byteLength > 3 * 1024 * 1024) throw new Error("Image trop lourde (3 Mo maximum).");
 
-    const [file] = await context.sql<{ id: string }[]>`
+    const [inserted] = await context.sql<{ id: string }[]>`
       insert into app_files (teacher_id, content_type, data)
       values (${context.userId}, ${data.contentType}, ${bytes})
       returning id
     `;
+    const file = inserted!;
     const [previous] = await context.sql<{ avatar_file_id: string | null }[]>`
       select avatar_file_id from teachers where id = ${context.userId}
     `;

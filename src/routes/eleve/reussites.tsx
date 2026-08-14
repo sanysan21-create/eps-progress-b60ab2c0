@@ -63,6 +63,30 @@ function StudentAchievements() {
         </p>
       </header>
 
+      {/* Médaille distincte : décidée manuellement par l'enseignant */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+          🎖️ Ma médaille attribuée
+        </h2>
+        <div className="flex items-center gap-4 rounded-3xl border border-primary/40 bg-primary/10 p-6">
+          {assigned ? (
+            <>
+              <MedalBadge code={assigned.code} size={80} />
+              <div>
+                <p className="text-sm font-bold">Médaille {assigned.label}</p>
+                <p className="text-xs text-muted-foreground">
+                  Choisie par ton enseignant, indépendamment du nombre de réussites.
+                </p>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Aucune médaille attribuée pour le moment. Elle est décidée par ton enseignant.
+            </p>
+          )}
+        </div>
+      </section>
+
       {/* Statut automatique, calculé sur le nombre de réussites obtenues */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
@@ -117,30 +141,6 @@ function StudentAchievements() {
           <p className="mono-label mt-4 text-muted-foreground">
             Paliers définis par ton enseignant · calcul automatique
           </p>
-        </div>
-      </section>
-
-      {/* Médaille distincte : décidée manuellement par l'enseignant */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          🎖️ Ma médaille attribuée
-        </h2>
-        <div className="flex items-center gap-4 rounded-3xl border border-border bg-surface p-6">
-          {assigned ? (
-            <>
-              <MedalBadge code={assigned.code} size={80} />
-              <div>
-                <p className="text-sm font-bold">Médaille {assigned.label}</p>
-                <p className="text-xs text-muted-foreground">
-                  Choisie par ton enseignant, indépendamment du nombre de réussites.
-                </p>
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Aucune médaille attribuée pour le moment. Elle est décidée par ton enseignant.
-            </p>
-          )}
         </div>
       </section>
 

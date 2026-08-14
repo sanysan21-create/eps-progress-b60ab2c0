@@ -252,8 +252,43 @@ create table if not exists student_grades (
   evaluated_on date not null default current_date,
   comment text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (student_id, activity_id)
 );
+
+-- Bases existantes créées avant l'ajout de la contrainte : on l'ajoute après
+-- dédoublonnage (nécessaire pour l'upsert on conflict (student_id, activity_id)).
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'student_grades'::regclass
+      and contype = 'u'
+      and conkey = array[
+        (select attnum from pg_attribute where attrelid = 'student_grades'::regclass and attname = 'student_id'),
+        (select attnum from pg_attribute where attrelid = 'student_grades'::regclass and attname = 'activity_id')
+      ]::smallint[]
+  ) then
+    delete from student_grade_items where grade_id in (
+      select id from (
+        select id, row_number() over (
+          partition by student_id, activity_id
+          order by updated_at desc, created_at desc, id
+        ) rn from student_grades
+      ) r where rn > 1
+    );
+    delete from student_grades where id in (
+      select id from (
+        select id, row_number() over (
+          partition by student_id, activity_id
+          order by updated_at desc, created_at desc, id
+        ) rn from student_grades
+      ) r where rn > 1
+    );
+    alter table student_grades
+      add constraint student_grades_student_activity_key unique (student_id, activity_id);
+  end if;
+end $$;
 
 create table if not exists student_grade_items (
   id uuid primary key default gen_random_uuid(),

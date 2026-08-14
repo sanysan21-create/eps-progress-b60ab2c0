@@ -39,7 +39,30 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
+  const [codeVerified, setCodeVerified] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setCodeError(null);
+    try {
+      const { valid } = await checkTeacherAccessCode({ data: { accessCode } });
+      if (valid) {
+        setCodeVerified(true);
+      } else {
+        setCodeVerified(false);
+        setCodeError("Code d'accès incorrect.");
+      }
+    } catch {
+      setCodeError("Vérification impossible. Réessayez.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   useEffect(() => {
     getTeacherAccount()

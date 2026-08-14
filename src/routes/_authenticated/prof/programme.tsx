@@ -15,7 +15,6 @@ import {
   uploadScaleImage,
 } from "@/lib/program.functions";
 import { sessionWhen } from "@/lib/program";
-import { activityEmoji } from "@/lib/activity-emoji";
 
 import { SequencePlanner } from "@/components/eps/SequencePlanner";
 

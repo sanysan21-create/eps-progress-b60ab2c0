@@ -12,7 +12,6 @@ import {
 import { sequenceRange } from "@/lib/program-sequences";
 import { listActivities } from "@/lib/competencies.functions";
 import { listClasses } from "@/lib/classes.functions";
-import { activityEmoji } from "@/lib/activity-emoji";
 import { ActivityIcon } from "@/components/eps/ActivityIcon";
 
 type Draft = {

@@ -1,54 +1,34 @@
-import {
-  Activity,
-  Bike,
-  Dumbbell,
-  Footprints,
-  Medal,
-  Music,
-  Mountain,
-  Target,
-  Waves,
-  type LucideIcon,
-} from "lucide-react";
+import { activityEmoji } from "@/lib/activity-emoji";
 
-/** Icône vectorielle déduite du nom de l'activité renseigné par l'enseignant. */
-const ICONS: { match: string; icon: LucideIcon }[] = [
-  { match: "natation", icon: Waves },
-  { match: "nage", icon: Waves },
-  { match: "basket", icon: Target },
-  { match: "hand", icon: Target },
-  { match: "foot", icon: Footprints },
-  { match: "volley", icon: Target },
-  { match: "badminton", icon: Activity },
-  { match: "tennis", icon: Activity },
-  { match: "course", icon: Footprints },
-  { match: "athl", icon: Footprints },
-  { match: "gym", icon: Activity },
-  { match: "danse", icon: Music },
-  { match: "escalade", icon: Mountain },
-  { match: "muscu", icon: Dumbbell },
-  { match: "vélo", icon: Bike },
-  { match: "velo", icon: Bike },
-  { match: "rugby", icon: Medal },
-];
+/**
+ * Visuel d'activité unique dans toute l'application : les émojis de l'espace
+ * élève sont la référence, y compris côté enseignant.
+ * L'API est conservée pour ne rien casser dans les écrans existants.
+ */
 
-export function activityIcon(name: string): LucideIcon {
-  const normalized = (name ?? "").toLowerCase();
-  return ICONS.find((entry) => normalized.includes(entry.match))?.icon ?? Medal;
+/** Retire les classes de dimension (size-4…) inadaptées à un émoji texte. */
+function withoutSize(className: string): string {
+  return className
+    .split(/\s+/)
+    .filter((token) => token && !/^(size|h|w)-/.test(token))
+    .join(" ");
 }
 
 export function ActivityIcon({
   name,
-  className = "size-5",
+  className = "",
 }: {
   name: string;
   className?: string;
 }) {
-  const Icon = activityIcon(name);
-  return <Icon aria-hidden className={className} />;
+  return (
+    <span aria-hidden className={`inline-block leading-none ${withoutSize(className)}`}>
+      {activityEmoji(name)}
+    </span>
+  );
 }
 
-/** Pastille d'icône homogène, utilisée dans les listes d'activités. */
+/** Pastille homogène contenant l'émoji, utilisée dans les listes d'activités. */
 export function ActivityIconBadge({
   name,
   className = "",
@@ -58,7 +38,7 @@ export function ActivityIconBadge({
 }) {
   return (
     <span
-      className={`grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary ${className}`}
+      className={`grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-xl ${className}`}
     >
       <ActivityIcon name={name} />
     </span>

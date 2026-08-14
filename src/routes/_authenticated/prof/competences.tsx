@@ -12,6 +12,7 @@ import {
   setStudentLevel,
   clearStudentLevel,
 } from "@/lib/competencies.functions";
+import { AFL_HINTS, groupByAfl } from "@/lib/afl";
 import {
   listStudentEngagement,
   getStudentStrengthChoices,

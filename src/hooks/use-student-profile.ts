@@ -62,6 +62,7 @@ export function useMyAsMember() {
 
 export type StudentMarkFlat = {
   activityName: string;
+  afl: string;
   competencyId: string;
   competencyLabel: string;
   levelLabel: string;
@@ -75,6 +76,7 @@ export function flattenActivities(activities: StudentProfileActivity[]): Student
   return activities.flatMap((activity) =>
     activity.competencies.map((competency) => ({
       activityName: activity.activity_name,
+      afl: competency.afl,
       competencyId: competency.id,
       competencyLabel: competency.label,
       levelLabel: competency.level_label,

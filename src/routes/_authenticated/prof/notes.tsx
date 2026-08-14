@@ -66,6 +66,8 @@ function TeacherGrades() {
   const [activeAfl, setActiveAfl] = useState<string>(AFL_LABELS[0] ?? "AFL1");
   const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
+  /** Dernière compétence saisie : alimente le panneau de niveau à droite. */
+  const [focused, setFocused] = useState<{ afl: string; competencyId: string } | null>(null);
 
   const students = useQuery({ queryKey: ["teacher-students"], queryFn: () => fetchStudents() });
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });

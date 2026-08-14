@@ -70,6 +70,9 @@ export type StudentMarkFlat = {
   levelMax: number;
   progressTip: string | null;
   levelTip: string | null;
+  /** Niveau N+1 à acquérir (null si niveau maximum atteint). */
+  nextLevelLabel: string | null;
+  nextLevelTip: string | null;
 };
 
 export function flattenActivities(activities: StudentProfileActivity[]): StudentMarkFlat[] {
@@ -84,9 +87,12 @@ export function flattenActivities(activities: StudentProfileActivity[]): Student
       levelMax: competency.level_max,
       progressTip: competency.progress_tip,
       levelTip: competency.level_tip,
+      nextLevelLabel: competency.next_level_label,
+      nextLevelTip: competency.next_level_tip,
     })),
   );
 }
+
 
 /** Moyenne de progression (0-100) sur l'ensemble des compétences évaluées. */
 export function averageProgress(marks: StudentMarkFlat[]): number | null {

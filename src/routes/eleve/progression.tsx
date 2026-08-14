@@ -6,6 +6,8 @@ import { ActivityEmoji } from "@/components/eps/ActivityEmoji";
 import { RankJourney } from "@/components/eps/RankJourney";
 import { computeProgression } from "@/lib/progression";
 import { goal as goalByCode } from "@/lib/engagement";
+import { AFL_HINTS, groupByAfl } from "@/lib/afl";
+
 import {
   averageProgress,
   flattenActivities,

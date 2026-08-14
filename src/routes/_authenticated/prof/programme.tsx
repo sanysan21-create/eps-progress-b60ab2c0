@@ -11,10 +11,11 @@ import {
   deleteProgramSession,
   listProgramSessions,
   saveProgramSession,
+  uploadScaleImage,
 } from "@/lib/program.functions";
 import { sessionWhen } from "@/lib/program";
 import { activityEmoji } from "@/lib/activity-emoji";
-import { supabase } from "@/integrations/supabase/client";
+
 import { SequencePlanner } from "@/components/eps/SequencePlanner";
 
 export const Route = createFileRoute("/_authenticated/prof/programme")({

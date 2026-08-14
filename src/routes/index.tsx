@@ -109,9 +109,6 @@ function Landing() {
           </Link>
         </div>
 
-        <p className="mono-label text-center text-xs text-muted-foreground">
-          Version de démonstration · données fictives
-        </p>
       </div>
     </div>
   );

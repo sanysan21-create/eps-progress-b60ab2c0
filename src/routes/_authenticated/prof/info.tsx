@@ -47,7 +47,7 @@ function TeacherInfoPage() {
               <Code2 className="size-4" />
               <span className="mono-label text-xs font-bold uppercase">Version</span>
             </div>
-            <p className="mt-3 text-2xl font-bold">1.0</p>
+            <p className="mt-3 text-2xl font-bold">0.5</p>
           </div>
 
           <div className="rounded-2xl border border-border bg-surface-2 p-5">

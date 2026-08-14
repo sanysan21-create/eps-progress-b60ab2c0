@@ -60,8 +60,10 @@ export function LevelHintPanel({
 
           {!match ? (
             <p className="rounded-xl border border-border/60 bg-background px-4 py-3 text-sm text-muted-foreground">
-              Les niveaux de cette compétence n'ont pas encore été configurés.
+              Niveaux de compétence non configurés pour cette compétence. Configure-les depuis
+              l'onglet « Évaluer compétences ».
             </p>
+
           ) : (
             <div className="space-y-3">
               <div className="rounded-xl border border-primary/50 bg-primary/10 px-4 py-3">

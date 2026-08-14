@@ -9,6 +9,7 @@ import { listActivities, listTeacherStudents } from "@/lib/competencies.function
 import { deleteStudentGrade, listStudentGrades, saveStudentGrade } from "@/lib/grades.functions";
 import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
 import { activityEmoji } from "@/lib/activity-emoji";
+import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 
 export const Route = createFileRoute("/_authenticated/prof/notes")({
   head: () => ({

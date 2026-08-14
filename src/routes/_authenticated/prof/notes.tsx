@@ -239,7 +239,7 @@ function TeacherGrades() {
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[300px_1fr] xl:grid-cols-[300px_1fr_320px]">
         {/* Élèves */}
         <section className="space-y-3 rounded-2xl border border-border bg-surface p-5">
           <h2 className="mono-label text-muted-foreground">1 · Classe puis élève</h2>

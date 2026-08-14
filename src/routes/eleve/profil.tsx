@@ -163,10 +163,8 @@ function StudentProfile() {
           : "Ton parcours se construira au fil des séances. Chaque étape compte."}
       </p>
 
-      {/* Parcours de progression : étape personnelle, jamais un classement */}
-      <Section title="🚀 Mon parcours">
-        <RankJourney state={journey} />
-      </Section>
+      {/* Progression synthétique — le détail est dans l'onglet Progrès */}
+
 
       {/* Progression */}
       <Section title="📈 Ma progression">

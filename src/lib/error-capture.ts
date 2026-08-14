@@ -4,8 +4,22 @@
 let lastCapturedError: { error: unknown; at: number } | undefined;
 const TTL_MS = 5_000;
 
+// Ne jamais conserver un objet lié à la requête (Request/Response/stream) dans
+// un état global : Cloudflare Workers lève « Cannot perform I/O on behalf of a
+// different request » si un tel objet est réutilisé lors d'une autre requête.
+function isRequestBound(value: unknown): boolean {
+  if (value == null || typeof value !== "object") return false;
+  return (
+    value instanceof Response ||
+    value instanceof Request ||
+    (typeof ReadableStream !== "undefined" && value instanceof ReadableStream) ||
+    (typeof WritableStream !== "undefined" && value instanceof WritableStream)
+  );
+}
+
 function record(error: unknown) {
-  lastCapturedError = { error, at: Date.now() };
+  if (isRequestBound(error)) return;
+  lastCapturedError = { error: error instanceof Error ? error : String(error), at: Date.now() };
 }
 
 // h3's HTTPError serializes to {"status":500,"unhandled":true,"message":"HTTPError"} —

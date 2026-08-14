@@ -293,6 +293,11 @@ function TeacherProfilePage() {
           </button>
         </form>
       </section>
+
+      <section className="rounded-3xl border border-border bg-surface p-6">
+        <h2 className="display-title text-xl">🌗 Apparence de l'application</h2>
+        <ThemeSetting className="mt-5" />
+      </section>
     </div>
   );
 }

@@ -115,6 +115,17 @@ function TeacherLayout() {
           <main className="flex-1 space-y-8 p-4 lg:p-10">
             <Outlet />
           </main>
+          <footer className="border-t border-border p-4 lg:p-10 lg:pt-6">
+            <button
+              onClick={async () => {
+                await signOutTeacher({});
+                window.location.href = "/auth";
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-sidebar px-4 py-3 text-xs font-bold uppercase tracking-tight text-muted-foreground transition-colors hover:border-primary hover:text-primary lg:w-auto"
+            >
+              <LogOut className="size-4" /> Se déconnecter
+            </button>
+          </footer>
         </div>
       </div>
     </div>

@@ -228,59 +228,50 @@ function StudentProgress() {
                       </div>
                     )}
 
-                    {selectedMarks.map((mark) => {
-                      const complete = mark.levelPosition >= mark.levelMax;
-                      return (
-                        <article key={mark.competencyId} className="flex items-start gap-3">
-                          <span
-                            className={`grid size-9 shrink-0 place-items-center rounded-2xl ${
-                              complete
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-surface-2 text-muted-foreground"
-                            }`}
-                          >
-                            {complete ? (
-                              <Check className="size-4" />
-                            ) : (
-                              <span className="font-mono text-xs">{mark.levelPosition + 1}</span>
-                            )}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold">{mark.competencyLabel}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {complete
-                                ? `Niveau maximum atteint — ${mark.levelLabel}`
-                                : `Niveau ${mark.levelPosition}/${mark.levelMax} — viser le niveau ${
-                                    mark.levelPosition + 1
-                                  }`}
-                            </p>
-                            {mark.progressTip && (
-                              <p className="mt-1 text-xs font-semibold text-primary">
-                                {mark.progressTip}
-                              </p>
-                            )}
-                            {mark.levelTip && (
-                              <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
-                                <p className="mono-label text-primary">
-                                  💬 Conseil de ton enseignant
-                                </p>
-                                <p className="mt-1 text-xs leading-relaxed text-foreground/80">
-                                  {mark.levelTip}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </article>
-                      );
-                    })}
+                    {nextCompetency ? (
+                      <article className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                        <p className="mono-label text-primary">🎯 Ma prochaine compétence</p>
+                        <div>
+                          <p className="text-sm font-bold">
+                            Niveau {nextCompetency.levelPosition + 1}
+                            {nextCompetency.nextLevelLabel
+                              ? ` — ${nextCompetency.nextLevelLabel}`
+                              : ""}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {nextCompetency.competencyLabel}
+                          </p>
+                        </div>
 
-                    {!myGoal && selectedMarks.every((m) => !m.progressTip && !m.levelTip) && (
-                      <p className="text-xs text-muted-foreground">
-                        Aucun conseil pour cette activité pour l'instant.
-                      </p>
+                        <div className="rounded-xl border border-border bg-surface px-3 py-2">
+                          <p className="mono-label text-primary">💬 Conseil du professeur</p>
+                          {nextCompetency.nextLevelTip ?? nextCompetency.progressTip ? (
+                            <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+                              {nextCompetency.nextLevelTip ?? nextCompetency.progressTip}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-xs italic text-muted-foreground">
+                              Aucun conseil renseigné pour l'instant.
+                            </p>
+                          )}
+                        </div>
+                      </article>
+                    ) : (
+                      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-center">
+                        <p className="text-2xl" aria-hidden>
+                          🏆
+                        </p>
+                        <p className="mt-1 text-sm font-bold">
+                          Toutes les compétences sont acquises !
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Tu as atteint le niveau maximum prévu pour cette activité.
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}
+
               </div>
             )}
           </Section>

@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LevelDots } from "@/components/eps/LevelDots";
-import { RankJourney } from "@/components/eps/RankJourney";
 import { StrengthPicker } from "@/components/eps/StrengthPicker";
-import { ThemeSetting } from "@/components/eps/ThemeSetting";
 import { GoalPicker } from "@/components/eps/GoalPicker";
 import { computeProgression } from "@/lib/progression";
 import {
@@ -273,10 +271,6 @@ function StudentProfile() {
       {/* Objectif : point à travailler choisi par l'élève lui-même */}
       <Section title="🚀 Mon objectif">
         <GoalPicker current={goal} />
-      </Section>
-
-      <Section title="🌗 Apparence">
-        <ThemeSetting />
       </Section>
     </div>
   );

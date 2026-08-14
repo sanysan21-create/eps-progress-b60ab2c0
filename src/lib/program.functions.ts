@@ -1,26 +1,45 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireTeacher, withDb } from "./auth-middleware";
 import type { ProgramSession } from "@/lib/program";
+
+const SCALE_MIME = ["image/png", "image/jpeg", "image/webp"];
 
 /** Programme renseigné par l'enseignant (toutes ses séances planifiées). */
 export const listProgramSessions = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .handler(async ({ context }): Promise<ProgramSession[]> => {
-    const { mapProgramRows, withSignedScaleUrls } = await import("./program.server");
-    const { data, error } = await context.supabase
-      .from("program_sessions")
-      .select(
-        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, scale_image_path, scale_activity_id, classes(name), activities!program_sessions_activity_id_fkey(name), scale_activity:activities!program_sessions_scale_activity_id_fkey(name)",
-      )
-      .order("session_date", { ascending: true, nullsFirst: false });
-    if (error) throw new Error(error.message);
-    return withSignedScaleUrls(mapProgramRows(data));
+    const { loadProgramSessions } = await import("./program.server");
+    return loadProgramSessions(context.sql, context.userId);
+  });
+
+/** Envoie une image de barème et renvoie son identifiant de fichier. */
+export const uploadScaleImage = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { contentType: string; dataBase64: string }) =>
+    z
+      .object({
+        contentType: z.string().refine((v) => SCALE_MIME.includes(v), "Format d'image non permis"),
+        dataBase64: z.string().min(1).max(9_000_000),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const bytes = Uint8Array.from(atob(data.dataBase64), (c) => c.charCodeAt(0));
+    if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("Image trop lourde (5 Mo maximum).");
+
+    const [file] = await context.sql<{ id: string }[]>`
+      insert into app_files (teacher_id, content_type, data)
+      values (${context.userId}, ${data.contentType}, ${bytes})
+      returning id
+    `;
+    if (!file) throw new Error("Envoi impossible");
+    return { fileId: file.id, url: `/api/files/${file.id}` };
   });
 
 export const saveProgramSession = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator(
     (input: {
       id?: string | null;
@@ -57,84 +76,62 @@ export const saveProgramSession = createServerFn({ method: "POST" })
       throw new Error("Renseigne une date ou une période.");
     }
 
-    const payload = {
-      class_id: data.classId,
-      activity_id: data.activityId,
-      activity_name: data.activityName ?? "",
-      session_date: data.sessionDate,
-      period_label: data.periodLabel ?? null,
-      objective: data.objective ?? null,
-      description: data.description ?? null,
-      scale_image_path: data.scaleImagePath ?? null,
-      scale_activity_id: data.scaleImagePath ? (data.scaleActivityId ?? null) : null,
-      teacher_id: context.userId,
-    };
+    const scaleFileId = data.scaleImagePath ?? null;
+    const scaleActivityId = scaleFileId ? (data.scaleActivityId ?? null) : null;
 
     if (data.id) {
-      const { error } = await context.supabase
-        .from("program_sessions")
-        .update(payload)
-        .eq("id", data.id);
-      if (error) throw new Error(error.message);
+      await context.sql`
+        update program_sessions set
+          class_id = ${data.classId},
+          activity_id = ${data.activityId},
+          activity_name = ${data.activityName ?? "Activité"},
+          session_date = ${data.sessionDate}::date,
+          period_label = ${data.periodLabel ?? null},
+          objective = ${data.objective ?? null},
+          description = ${data.description ?? null},
+          scale_file_id = ${scaleFileId},
+          scale_activity_id = ${scaleActivityId},
+          updated_at = now()
+        where id = ${data.id} and teacher_id = ${context.userId}
+      `;
       return { id: data.id };
     }
 
-    const { data: row, error } = await context.supabase
-      .from("program_sessions")
-      .insert(payload)
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
+    const [row] = await context.sql<{ id: string }[]>`
+      insert into program_sessions
+        (teacher_id, class_id, activity_id, activity_name, session_date, period_label, objective, description, scale_file_id, scale_activity_id)
+      values (
+        ${context.userId}, ${data.classId}, ${data.activityId}, ${data.activityName ?? "Activité"},
+        ${data.sessionDate}::date, ${data.periodLabel ?? null}, ${data.objective ?? null},
+        ${data.description ?? null}, ${scaleFileId}, ${scaleActivityId}
+      )
+      returning id
+    `;
+    if (!row) throw new Error("Enregistrement impossible");
     return { id: row.id };
   });
 
 export const deleteProgramSession = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("program_sessions").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    await context.sql`
+      delete from program_sessions where id = ${data.id} and teacher_id = ${context.userId}
+    `;
     return { ok: true };
   });
 
-/**
- * Lecture seule : programme destiné à l'élève identifié par son cookie de session QR.
- * On ne renvoie que les séances de son enseignant, pour sa classe (ou communes).
- */
-export const getMyProgram = createServerFn({ method: "GET" }).handler(
-  async (): Promise<ProgramSession[]> => {
+/** Lecture seule : programme destiné à l'élève identifié par son cookie de session QR. */
+export const getMyProgram = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(async ({ context }): Promise<ProgramSession[]> => {
     const { getStudentSession } = await import("./student-qr.server");
-    const { mapProgramRows, withSignedScaleUrls } = await import("./program.server");
+    const { loadProgramSessions, loadStudentScope } = await import("./program.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
     if (!studentId) return [];
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: student, error: studentError } = await supabaseAdmin
-      .from("students")
-      .select("teacher_id, class_students(class_id)")
-      .eq("id", studentId)
-      .maybeSingle();
-    if (studentError) throw new Error(studentError.message);
-    if (!student) return [];
-
-    const classIds = ((student.class_students ?? []) as { class_id: string }[]).map(
-      (link) => link.class_id,
-    );
-
-    const query = supabaseAdmin
-      .from("program_sessions")
-      .select(
-        "id, class_id, activity_id, activity_name, session_date, period_label, objective, description, scale_image_path, scale_activity_id, classes(name), activities!program_sessions_activity_id_fkey(name), scale_activity:activities!program_sessions_scale_activity_id_fkey(name)",
-      )
-      .eq("teacher_id", student.teacher_id)
-      .order("session_date", { ascending: true, nullsFirst: false });
-
-    const { data: rows, error } =
-      classIds.length > 0
-        ? await query.or(`class_id.is.null,class_id.in.(${classIds.join(",")})`)
-        : await query.is("class_id", null);
-    if (error) throw new Error(error.message);
-    return withSignedScaleUrls(mapProgramRows(rows));
-  },
-);
+    const scope = await loadStudentScope(context.sql, studentId);
+    if (!scope) return [];
+    return loadProgramSessions(context.sql, scope.teacherId, scope.classIds);
+  });

@@ -1,31 +1,49 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireTeacher, withDb } from "./auth-middleware";
+import type { Db } from "./db.server";
 import type { ProgramSequence } from "@/lib/program-sequences";
-
-const SELECT =
-  "id, class_id, activity_id, name, from_session, to_session, position, classes(name), activities(name)";
 
 type Raw = {
   id: string;
   class_id: string | null;
+  class_name: string | null;
   activity_id: string | null;
+  activity_name: string | null;
   name: string;
   from_session: number | null;
   to_session: number | null;
   position: number | null;
-  classes: { name: string } | null;
-  activities: { name: string } | null;
 };
 
-function mapRows(rows: unknown): ProgramSequence[] {
-  return ((rows ?? []) as Raw[]).map((row) => ({
+async function loadSequences(
+  sql: Db,
+  teacherId: string,
+  classIds?: string[],
+): Promise<ProgramSequence[]> {
+  const rows = await sql<Raw[]>`
+    select s.id, s.class_id, c.name as class_name, s.activity_id, a.name as activity_name,
+           s.name, s.from_session, s.to_session, s.position
+    from program_sequences s
+    left join classes c on c.id = s.class_id
+    left join activities a on a.id = s.activity_id
+    where s.teacher_id = ${teacherId}
+      ${
+        classIds === undefined
+          ? sql``
+          : classIds.length > 0
+            ? sql`and (s.class_id is null or s.class_id = any(${classIds}::uuid[]))`
+            : sql`and s.class_id is null`
+      }
+    order by s.position asc, s.from_session asc nulls last
+  `;
+  return rows.map((row) => ({
     id: row.id,
     class_id: row.class_id,
-    class_name: row.classes?.name ?? null,
+    class_name: row.class_name ?? null,
     activity_id: row.activity_id,
-    activity_name: row.activities?.name ?? null,
+    activity_name: row.activity_name ?? null,
     name: row.name,
     from_session: row.from_session,
     to_session: row.to_session,
@@ -35,19 +53,13 @@ function mapRows(rows: unknown): ProgramSequence[] {
 
 /** Séquences programmées par l'enseignant connecté. */
 export const listProgramSequences = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .handler(async ({ context }): Promise<ProgramSequence[]> => {
-    const { data, error } = await context.supabase
-      .from("program_sequences")
-      .select(SELECT)
-      .order("position", { ascending: true })
-      .order("from_session", { ascending: true, nullsFirst: false });
-    if (error) throw new Error(error.message);
-    return mapRows(data);
+    return loadSequences(context.sql, context.userId);
   });
 
 export const saveProgramSequence = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator(
     (input: {
       id?: string | null;
@@ -71,76 +83,55 @@ export const saveProgramSequence = createServerFn({ method: "POST" })
         .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const payload = {
-      name: data.name,
-      class_id: data.classId,
-      activity_id: data.activityId,
-      from_session: data.fromSession,
-      to_session: data.toSession,
-      position: data.position ?? data.fromSession ?? 0,
-      teacher_id: context.userId,
-    };
+    const position = data.position ?? data.fromSession ?? 0;
 
     if (data.id) {
-      const { error } = await context.supabase
-        .from("program_sequences")
-        .update(payload)
-        .eq("id", data.id);
-      if (error) throw new Error(error.message);
+      await context.sql`
+        update program_sequences set
+          name = ${data.name},
+          class_id = ${data.classId},
+          activity_id = ${data.activityId},
+          from_session = ${data.fromSession},
+          to_session = ${data.toSession},
+          position = ${position},
+          updated_at = now()
+        where id = ${data.id} and teacher_id = ${context.userId}
+      `;
       return { id: data.id };
     }
 
-    const { data: row, error } = await context.supabase
-      .from("program_sequences")
-      .insert(payload)
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
+    const [row] = await context.sql<{ id: string }[]>`
+      insert into program_sequences
+        (teacher_id, name, class_id, activity_id, from_session, to_session, position)
+      values (${context.userId}, ${data.name}, ${data.classId}, ${data.activityId},
+              ${data.fromSession}, ${data.toSession}, ${position})
+      returning id
+    `;
+    if (!row) throw new Error("Enregistrement impossible");
     return { id: row.id };
   });
 
 export const deleteProgramSequence = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("program_sequences").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    await context.sql`
+      delete from program_sequences where id = ${data.id} and teacher_id = ${context.userId}
+    `;
     return { ok: true };
   });
 
 /** Lecture seule : séquences visibles par l'élève identifié par sa session QR. */
-export const getMyProgramSequences = createServerFn({ method: "GET" }).handler(
-  async (): Promise<ProgramSequence[]> => {
+export const getMyProgramSequences = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(async ({ context }): Promise<ProgramSequence[]> => {
     const { getStudentSession } = await import("./student-qr.server");
+    const { loadStudentScope } = await import("./program.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
     if (!studentId) return [];
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: student, error: studentError } = await supabaseAdmin
-      .from("students")
-      .select("teacher_id, class_students(class_id)")
-      .eq("id", studentId)
-      .maybeSingle();
-    if (studentError) throw new Error(studentError.message);
-    if (!student) return [];
-
-    const classIds = ((student.class_students ?? []) as { class_id: string }[]).map(
-      (link) => link.class_id,
-    );
-
-    const query = supabaseAdmin
-      .from("program_sequences")
-      .select(SELECT)
-      .eq("teacher_id", student.teacher_id)
-      .order("position", { ascending: true })
-      .order("from_session", { ascending: true, nullsFirst: false });
-
-    const { data: rows, error } =
-      classIds.length > 0
-        ? await query.or(`class_id.is.null,class_id.in.(${classIds.join(",")})`)
-        : await query.is("class_id", null);
-    if (error) throw new Error(error.message);
-    return mapRows(rows);
-  },
-);
+    const scope = await loadStudentScope(context.sql, studentId);
+    if (!scope) return [];
+    return loadSequences(context.sql, scope.teacherId, scope.classIds);
+  });

@@ -37,27 +37,24 @@ export const redeemStudentQr = createServerFn({ method: "POST" })
       return { ok: false, reason: "invalid" };
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row } = await supabaseAdmin
-      .from("student_qr_tokens")
-      .select("student_id, active")
-      .eq("token_hash", hashStudentToken(data.token))
-      .maybeSingle();
+    const { db } = await import("./db.server");
+    const sql = await db();
+    const [row] = await sql<{ student_id: string; active: boolean }[]>`
+      select student_id, active from student_qr_tokens
+      where token_hash = ${hashStudentToken(data.token)} limit 1
+    `;
 
     if (!row) return { ok: false, reason: "unknown" };
     if (!row.active) return { ok: false, reason: "revoked" };
 
-    const identity = await loadStudentIdentity(supabaseAdmin, row.student_id);
+    const identity = await loadStudentIdentity(sql, row.student_id);
     if (!identity) return { ok: false, reason: "unknown" };
 
     const session = await getStudentSession();
     await session.update({ studentId: identity.id });
 
     // Trace de la dernière connexion réussie (visible par l'enseignant).
-    await supabaseAdmin
-      .from("students")
-      .update({ last_login_at: new Date().toISOString() })
-      .eq("id", identity.id);
+    await sql`update students set last_login_at = now() where id = ${identity.id}`;
 
     return { ok: true };
   });
@@ -70,13 +67,12 @@ export const getMyAsMember = createServerFn({ method: "GET" }).handler(
     const studentId = session.data.studentId;
     if (!studentId) return false;
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
-      .from("students")
-      .select("as_member")
-      .eq("id", studentId)
-      .maybeSingle();
-    return Boolean(data?.as_member);
+    const { db } = await import("./db.server");
+    const sql = await db();
+    const [row] = await sql<{ as_member: boolean }[]>`
+      select as_member from students where id = ${studentId} limit 1
+    `;
+    return Boolean(row?.as_member);
   },
 );
 
@@ -89,8 +85,8 @@ export const getStudentSessionInfo = createServerFn({ method: "GET" }).handler(
     const studentId = session.data.studentId;
     if (!studentId) return null;
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const identity = await loadStudentIdentity(supabaseAdmin, studentId);
+    const { db } = await import("./db.server");
+    const identity = await loadStudentIdentity(await db(), studentId);
     if (!identity) {
       await session.clear();
       return null;

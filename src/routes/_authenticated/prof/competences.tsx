@@ -27,6 +27,7 @@ import {
 } from "@/lib/engagement";
 import { listClasses } from "@/lib/classes.functions";
 import { listClassStudents } from "@/lib/achievements.functions";
+import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({
   head: () => ({
@@ -321,6 +322,7 @@ function QuickCompetencies() {
                         }`}
                 </p>
               </div>
+              {activity && <ActivityIconBadge name={activity.name} />}
               <select
                 value={activity?.id ?? ""}
                 onChange={(e) => setActivityId(e.target.value)}

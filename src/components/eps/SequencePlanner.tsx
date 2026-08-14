@@ -12,7 +12,7 @@ import {
 import { sequenceRange } from "@/lib/program-sequences";
 import { listActivities } from "@/lib/competencies.functions";
 import { listClasses } from "@/lib/classes.functions";
-import { activityEmoji } from "@/lib/activity-emoji";
+import { ActivityIcon } from "@/components/eps/ActivityIcon";
 
 type Draft = {
   id: string | null;
@@ -179,7 +179,7 @@ export function SequencePlanner() {
             >
               <div className="min-w-0">
                 <p className="flex items-center gap-2 text-sm font-semibold">
-                  <span aria-hidden>{activityEmoji(sequence.activity_name ?? sequence.name)}</span>
+                  <ActivityIcon name={sequence.activity_name ?? sequence.name} className="size-4 text-primary" />
                   {sequence.name}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">

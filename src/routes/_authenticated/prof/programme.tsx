@@ -1,3 +1,4 @@
+import { ActivityIcon } from "@/components/eps/ActivityIcon";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +15,6 @@ import {
   uploadScaleImage,
 } from "@/lib/program.functions";
 import { sessionWhen } from "@/lib/program";
-import { activityEmoji } from "@/lib/activity-emoji";
 
 import { SequencePlanner } from "@/components/eps/SequencePlanner";
 
@@ -381,7 +381,7 @@ function TeacherProgram() {
                     <div className="min-w-0">
                       <p className="mono-label text-primary">{sessionWhen(session)}</p>
                       <p className="mt-1 flex items-center gap-2 text-base font-semibold">
-                        <span aria-hidden>{activityEmoji(session.activity_name)}</span>
+                        <ActivityIcon name={session.activity_name} className="size-4 text-primary" />
                         {session.activity_name}
                       </p>
                       <p className="text-xs text-muted-foreground">

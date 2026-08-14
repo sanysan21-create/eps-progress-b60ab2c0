@@ -21,6 +21,7 @@ import {
   type Competency,
 } from "@/lib/competencies.functions";
 import { DEFAULT_LEVELS } from "@/lib/levels";
+import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
 
 export const Route = createFileRoute("/_authenticated/prof/activites")({
   head: () => ({
@@ -171,6 +172,7 @@ function ActivityCard({
   return (
     <section className="space-y-5 rounded-3xl border border-border bg-surface-2/40 p-5 lg:p-6">
       <div className="flex flex-wrap items-start gap-3">
+        <ActivityIconBadge name={activity.name} className="mt-1 size-12" />
         <div className="min-w-[240px] flex-1 space-y-2">
           <input
             defaultValue={activity.name}

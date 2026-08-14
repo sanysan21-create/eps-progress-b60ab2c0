@@ -66,7 +66,7 @@ export function LevelHintPanel({
           </div>
 
           <div className="rounded-xl border border-border/70 bg-background px-4 py-3">
-            <p className="mono-label text-muted-foreground">Note</p>
+            <p className="mono-label text-muted-foreground">Résultat</p>
             <p className="display-title text-3xl text-primary">
               {formatPoints(points)} / {formatPoints(maxPoints)}
             </p>

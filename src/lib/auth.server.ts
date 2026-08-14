@@ -90,3 +90,16 @@ export async function currentTeacherId(): Promise<string | null> {
   const session = await getTeacherSession();
   return session.data.teacherId ?? null;
 }
+
+/** Vérifie le code d'accès enseignant (comparaison à temps constant, côté serveur). */
+export async function teacherCodeMatches(input: string): Promise<boolean> {
+  const expected = process.env["TEACHER_SIGNUP_CODE"];
+  if (!expected) throw new Error("Code d'accès enseignant non configuré côté serveur.");
+  const digest = async (value: string) =>
+    toBase64(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+  const a = await digest(input.trim());
+  const b = await digest(expected.trim());
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i % b.length);
+  return diff === 0;
+}

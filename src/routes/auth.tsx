@@ -3,7 +3,13 @@ import { useEffect, useState } from "react";
 import { GraduationCap, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
-import { getTeacherAccount, signInTeacher, signUpTeacher } from "@/lib/auth.functions";
+import {
+  checkTeacherAccessCode,
+  getTeacherAccount,
+  signInTeacher,
+  signUpTeacher,
+} from "@/lib/auth.functions";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -33,7 +39,30 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
+  const [codeVerified, setCodeVerified] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setCodeError(null);
+    try {
+      const { valid } = await checkTeacherAccessCode({ data: { accessCode } });
+      if (valid) {
+        setCodeVerified(true);
+      } else {
+        setCodeVerified(false);
+        setCodeError("Code d'accès incorrect.");
+      }
+    } catch {
+      setCodeError("Vérification impossible. Réessayez.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   useEffect(() => {
     getTeacherAccount()
@@ -64,7 +93,9 @@ function AuthPage() {
             password,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
+            accessCode,
           },
+
         });
         toast.success("Compte créé. Vous êtes connecté.");
       } else {
@@ -118,7 +149,50 @@ function AuthPage() {
             {mode === "signin" ? "Connexion" : "Créer mon compte enseignant"}
           </h1>
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
+          {mode === "signup" && !codeVerified && (
+            <form onSubmit={verifyCode} className="mt-6 space-y-4">
+              <div>
+                <label className="mono-label text-muted-foreground" htmlFor="accessCode">
+                  Code d'accès enseignant
+                </label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Un code d'accès est nécessaire pour créer un compte enseignant.
+                </p>
+                <input
+                  id="accessCode"
+                  required
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={accessCode}
+                  onChange={(e) => {
+                    setAccessCode(e.target.value);
+                    setCodeError(null);
+                  }}
+                  className="mt-2 w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm tracking-[0.3em] outline-none focus:border-primary"
+                />
+              </div>
+              {codeError && <p className="text-xs font-bold text-destructive">❌ {codeError}</p>}
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full rounded-xl bg-primary px-4 py-3 text-xs font-bold uppercase text-primary-foreground disabled:opacity-60"
+              >
+                Continuer
+              </button>
+            </form>
+          )}
+
+          {mode === "signup" && codeVerified && (
+            <p className="mono-label mt-4 text-primary">✓ Code valide</p>
+          )}
+
+          <form
+            onSubmit={submit}
+            className={
+              mode === "signup" && !codeVerified ? "hidden" : "mt-6 space-y-4"
+            }
+          >
+
             {mode === "signup" && (
               <>
                 <div>

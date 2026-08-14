@@ -74,6 +74,7 @@ function TeacherProgram() {
   const fetchClasses = useServerFn(listClasses);
   const save = useServerFn(saveProgramSession);
   const remove = useServerFn(deleteProgramSession);
+  const upload = useServerFn(uploadScaleImage);
 
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [saving, setSaving] = useState(false);
@@ -91,22 +92,19 @@ function TeacherProgram() {
     }
     setUploading(true);
     try {
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth.user?.id;
-      if (!userId) throw new Error("Session expirée, reconnecte-toi.");
-      const extension = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-      const path = `${userId}/${crypto.randomUUID()}.${extension}`;
-      const { error } = await supabase.storage
-        .from("program-scales")
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (error) throw new Error(error.message);
-      const { data: signed } = await supabase.storage
-        .from("program-scales")
-        .createSignedUrl(path, 60 * 60);
+      const buffer = await file.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      }
+      const result = await upload({
+        data: { contentType: file.type, dataBase64: btoa(binary) },
+      });
       setDraft((current) => ({
         ...current,
-        scaleImagePath: path,
-        scaleImageUrl: signed?.signedUrl ?? null,
+        scaleImagePath: result.fileId,
+        scaleImageUrl: result.url,
       }));
       toast.success("Barème ajouté");
     } catch (error) {
@@ -115,6 +113,7 @@ function TeacherProgram() {
       setUploading(false);
     }
   }
+
 
   const sessions = useQuery({ queryKey: ["program-sessions"], queryFn: () => fetchSessions() });
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });

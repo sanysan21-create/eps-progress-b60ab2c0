@@ -32,6 +32,7 @@ import { Route as AuthenticatedProfNotesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedProfProfilRouteImport } from './routes/_authenticated/prof/profil'
 import { Route as AuthenticatedProfProgrammeRouteImport } from './routes/_authenticated/prof/programme'
 import { Route as AuthenticatedProfReussitesRouteImport } from './routes/_authenticated/prof/reussites'
+import { Route as ApiFilesIdRouteImport } from './routes/api/files.$id'
 import { Route as AuthenticatedProfClassesClassIdRouteImport } from './routes/_authenticated/prof/classes.$classId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -152,6 +153,11 @@ const AuthenticatedProfReussitesRoute =
     path: '/reussites',
     getParentRoute: () => AuthenticatedProfRoute,
   } as any)
+const ApiFilesIdRoute = ApiFilesIdRouteImport.update({
+  id: '/api/files/$id',
+  path: '/api/files/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedProfClassesClassIdRoute =
   AuthenticatedProfClassesClassIdRouteImport.update({
     id: '/classes/$classId',
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/prof/profil': typeof AuthenticatedProfProfilRoute
   '/prof/programme': typeof AuthenticatedProfProgrammeRoute
   '/prof/reussites': typeof AuthenticatedProfReussitesRoute
+  '/api/files/$id': typeof ApiFilesIdRoute
   '/prof/': typeof AuthenticatedProfIndexRoute
   '/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -204,6 +211,7 @@ export interface FileRoutesByTo {
   '/prof/profil': typeof AuthenticatedProfProfilRoute
   '/prof/programme': typeof AuthenticatedProfProgrammeRoute
   '/prof/reussites': typeof AuthenticatedProfReussitesRoute
+  '/api/files/$id': typeof ApiFilesIdRoute
   '/prof': typeof AuthenticatedProfIndexRoute
   '/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -231,6 +239,7 @@ export interface FileRoutesById {
   '/_authenticated/prof/profil': typeof AuthenticatedProfProfilRoute
   '/_authenticated/prof/programme': typeof AuthenticatedProfProgrammeRoute
   '/_authenticated/prof/reussites': typeof AuthenticatedProfReussitesRoute
+  '/api/files/$id': typeof ApiFilesIdRoute
   '/_authenticated/prof/': typeof AuthenticatedProfIndexRoute
   '/_authenticated/prof/classes/$classId': typeof AuthenticatedProfClassesClassIdRoute
 }
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/prof/profil'
     | '/prof/programme'
     | '/prof/reussites'
+    | '/api/files/$id'
     | '/prof/'
     | '/prof/classes/$classId'
   fileRoutesByTo: FileRoutesByTo
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/prof/profil'
     | '/prof/programme'
     | '/prof/reussites'
+    | '/api/files/$id'
     | '/prof'
     | '/prof/classes/$classId'
   id:
@@ -307,6 +318,7 @@ export interface FileRouteTypes {
     | '/_authenticated/prof/profil'
     | '/_authenticated/prof/programme'
     | '/_authenticated/prof/reussites'
+    | '/api/files/$id'
     | '/_authenticated/prof/'
     | '/_authenticated/prof/classes/$classId'
   fileRoutesById: FileRoutesById
@@ -318,6 +330,7 @@ export interface RootRouteChildren {
   EleveRoute: typeof EleveRouteWithChildren
   AccesEleveTokenRoute: typeof AccesEleveTokenRoute
   AccesEleveIndexRoute: typeof AccesEleveIndexRoute
+  ApiFilesIdRoute: typeof ApiFilesIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfReussitesRouteImport
       parentRoute: typeof AuthenticatedProfRoute
     }
+    '/api/files/$id': {
+      id: '/api/files/$id'
+      path: '/api/files/$id'
+      fullPath: '/api/files/$id'
+      preLoaderRoute: typeof ApiFilesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/prof/classes/$classId': {
       id: '/_authenticated/prof/classes/$classId'
       path: '/classes/$classId'
@@ -562,6 +582,7 @@ const rootRouteChildren: RootRouteChildren = {
   EleveRoute: EleveRouteWithChildren,
   AccesEleveTokenRoute: AccesEleveTokenRoute,
   AccesEleveIndexRoute: AccesEleveIndexRoute,
+  ApiFilesIdRoute: ApiFilesIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

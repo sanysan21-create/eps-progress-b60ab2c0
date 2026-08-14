@@ -53,6 +53,15 @@ function StudentLayout() {
           </div>
         </div>
         <Outlet />
+
+        <div className="mt-10 border-t border-border pt-6">
+          <button
+            onClick={() => void handleSignOut()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-xs font-bold uppercase tracking-tight text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            <LogOut className="size-4" /> Se déconnecter
+          </button>
+        </div>
       </div>
       <StudentNav />
     </div>

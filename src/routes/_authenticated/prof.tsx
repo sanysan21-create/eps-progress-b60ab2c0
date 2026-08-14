@@ -13,7 +13,7 @@ import {
 import { useTeacherProfile } from "@/hooks/use-teacher-profile";
 import { teacherInitials } from "@/lib/teacher-profile";
 
-import { supabase } from "@/integrations/supabase/client";
+import { signOutTeacher } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/_authenticated/prof")({
   component: TeacherLayout,
@@ -67,7 +67,7 @@ function TeacherLayout() {
             </Link>
             <button
               onClick={async () => {
-                await supabase.auth.signOut();
+                await signOutTeacher({});
                 window.location.href = "/auth";
               }}
               className="mono-label block text-muted-foreground hover:text-primary"

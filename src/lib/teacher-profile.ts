@@ -1,6 +1,12 @@
-import { supabase } from "@/integrations/supabase/client";
+import {
+  changeTeacherEmailFn,
+  changeTeacherPassword,
+  getTeacherAccount,
+  removeTeacherAvatarFn,
+  updateTeacherIdentity,
+  uploadTeacherAvatarFn,
+} from "./auth.functions";
 
-export const AVATAR_BUCKET = "teacher-avatars";
 export const AVATAR_MAX_BYTES = 3 * 1024 * 1024;
 export const AVATAR_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
@@ -23,89 +29,34 @@ export function teacherDisplayName(profile: TeacherProfile) {
   return full || profile.email;
 }
 
-async function signedAvatarUrl(path: string | null): Promise<string | null> {
-  if (!path) return null;
-  const { data } = await supabase.storage.from(AVATAR_BUCKET).createSignedUrl(path, 60 * 60);
-  return data?.signedUrl ?? null;
-}
-
-/**
- * Charge le profil enseignant du compte connecté et le crée à la volée si le
- * compte a été créé avant l'existence du profil (ou via Google).
- */
+/** Charge le profil de l'enseignant connecté (session cookie). */
 export async function fetchTeacherProfile(): Promise<TeacherProfile> {
-  const { data: auth, error: authError } = await supabase.auth.getUser();
-  if (authError || !auth.user) throw new Error("Session enseignant introuvable");
-  const user = auth.user;
-
-  const { data: row, error } = await supabase
-    .from("teacher_profiles")
-    .select("id, first_name, last_name, email, avatar_path")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-
-  const metadata = user.user_metadata ?? {};
-  let profile = row;
-
-  if (!profile) {
-    const { data: created, error: insertError } = await supabase
-      .from("teacher_profiles")
-      .insert({
-        id: user.id,
-        first_name: String(metadata["first_name"] ?? metadata["given_name"] ?? ""),
-        last_name: String(metadata["last_name"] ?? metadata["family_name"] ?? ""),
-        email: user.email ?? "",
-      })
-      .select("id, first_name, last_name, email, avatar_path")
-      .single();
-    if (insertError) throw new Error(insertError.message);
-    profile = created;
-  } else if (user.email && profile.email !== user.email) {
-    // Le compte d'authentification reste la source de vérité pour l'e-mail.
-    const { data: synced } = await supabase
-      .from("teacher_profiles")
-      .update({ email: user.email })
-      .eq("id", user.id)
-      .select("id, first_name, last_name, email, avatar_path")
-      .single();
-    if (synced) profile = synced;
-  }
-
+  const account = await getTeacherAccount();
+  if (!account) throw new Error("Session enseignant introuvable");
   return {
-    id: profile.id,
-    firstName: profile.first_name,
-    lastName: profile.last_name,
-    email: profile.email,
-    avatarPath: profile.avatar_path,
-    avatarUrl: await signedAvatarUrl(profile.avatar_path),
+    id: account.id,
+    firstName: account.firstName,
+    lastName: account.lastName,
+    email: account.email,
+    avatarPath: account.avatarUrl,
+    avatarUrl: account.avatarUrl,
   };
 }
 
-/** Enregistre le prénom et le nom (l'e-mail est géré séparément par le compte). */
 export async function saveTeacherIdentity(input: { firstName: string; lastName: string }) {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) throw new Error("Session enseignant introuvable");
-  const { error } = await supabase
-    .from("teacher_profiles")
-    .update({ first_name: input.firstName.trim(), last_name: input.lastName.trim() })
-    .eq("id", auth.user.id);
-  if (error) throw new Error(error.message);
+  await updateTeacherIdentity({ data: input });
 }
 
-/**
- * Modifie l'e-mail dans le système d'authentification puis, si le changement est
- * immédiatement effectif, dans le profil — évitant toute désynchronisation.
- */
 export async function changeTeacherEmail(email: string): Promise<{ pending: boolean }> {
-  const next = email.trim().toLowerCase();
-  const { data, error } = await supabase.auth.updateUser({ email: next });
-  if (error) throw new Error(error.message);
-  const confirmed = data.user?.email?.toLowerCase() === next;
-  if (confirmed && data.user) {
-    await supabase.from("teacher_profiles").update({ email: next }).eq("id", data.user.id);
-  }
-  return { pending: !confirmed };
+  await changeTeacherEmailFn({ data: { email: email.trim().toLowerCase() } });
+  return { pending: false };
+}
+
+export async function changeTeacherPasswordRequest(input: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  await changeTeacherPassword({ data: input });
 }
 
 export function validateAvatarFile(file: File): string | null {
@@ -116,39 +67,25 @@ export function validateAvatarFile(file: File): string | null {
   return null;
 }
 
-export async function uploadTeacherAvatar(file: File, previousPath: string | null) {
-  const problem = validateAvatarFile(file);
-  if (problem) throw new Error(problem);
-
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) throw new Error("Session enseignant introuvable");
-
-  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-  const path = `${auth.user.id}/avatar-${Date.now()}.${extension}`;
-
-  const { error } = await supabase.storage
-    .from(AVATAR_BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: true });
-  if (error) throw new Error(error.message);
-
-  const { error: saveError } = await supabase
-    .from("teacher_profiles")
-    .update({ avatar_path: path })
-    .eq("id", auth.user.id);
-  if (saveError) throw new Error(saveError.message);
-
-  if (previousPath && previousPath !== path) {
-    await supabase.storage.from(AVATAR_BUCKET).remove([previousPath]);
+/** Encode un fichier en base64 pour l'envoyer à la server function. */
+export async function fileToBase64(file: File): Promise<string> {
+  const buffer = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < buffer.length; i += chunk) {
+    binary += String.fromCharCode(...buffer.subarray(i, i + chunk));
   }
+  return btoa(binary);
 }
 
-export async function removeTeacherAvatar(path: string | null) {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) throw new Error("Session enseignant introuvable");
-  const { error } = await supabase
-    .from("teacher_profiles")
-    .update({ avatar_path: null })
-    .eq("id", auth.user.id);
-  if (error) throw new Error(error.message);
-  if (path) await supabase.storage.from(AVATAR_BUCKET).remove([path]);
+export async function uploadTeacherAvatar(file: File, _previousPath?: string | null) {
+  const problem = validateAvatarFile(file);
+  if (problem) throw new Error(problem);
+  await uploadTeacherAvatarFn({
+    data: { contentType: file.type, dataBase64: await fileToBase64(file) },
+  });
+}
+
+export async function removeTeacherAvatar(_path?: string | null) {
+  await removeTeacherAvatarFn({});
 }

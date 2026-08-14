@@ -15,7 +15,7 @@ export const Route = createFileRoute("/eleve/notes")({
       {
         name: "description",
         content:
-          "Notes d'EPS de l'élève : résultat global par activité et détail des AFL renseignés par l'enseignant.",
+          "Résultats d'EPS de l'élève : résultat global par activité et détail des AFL renseignés par l'enseignant.",
       },
       { property: "og:title", content: "Mes résultats EPS — EPS Progress" },
       {

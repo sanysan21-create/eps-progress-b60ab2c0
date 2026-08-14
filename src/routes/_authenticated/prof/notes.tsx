@@ -14,6 +14,8 @@ import {
 import { deleteStudentGrade, listStudentGrades, saveStudentGrade } from "@/lib/grades.functions";
 import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
+import { NumberField } from "@/components/eps/NumberField";
+
 
 export const Route = createFileRoute("/_authenticated/prof/notes")({
   head: () => ({
@@ -440,13 +442,13 @@ function TeacherGrades() {
                                     <span className="text-xs text-muted-foreground">
                                       Points obtenus
                                     </span>
-                                    <input
-                                      inputMode="decimal"
+                                    <NumberField
                                       value={score.points}
-                                      onChange={(event) =>
-                                        patchScore(activeAfl, competency.id, {
-                                          points: event.target.value,
-                                        })
+                                      min={0}
+                                      max={Number(score.maxPoints.replace(",", ".")) || 20}
+                                      step={0.5}
+                                      onValueChange={(points) =>
+                                        patchScore(activeAfl, competency.id, { points })
                                       }
                                       aria-label={`Points ${activeAfl} — ${competency.label}`}
                                       className="w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
@@ -455,13 +457,13 @@ function TeacherGrades() {
                                   <span className="pb-2 text-muted-foreground">/</span>
                                   <label className="block space-y-1">
                                     <span className="text-xs text-muted-foreground">Barème</span>
-                                    <input
-                                      inputMode="decimal"
+                                    <NumberField
                                       value={score.maxPoints}
-                                      onChange={(event) =>
-                                        patchScore(activeAfl, competency.id, {
-                                          maxPoints: event.target.value,
-                                        })
+                                      min={1}
+                                      max={100}
+                                      step={1}
+                                      onValueChange={(maxPoints) =>
+                                        patchScore(activeAfl, competency.id, { maxPoints })
                                       }
                                       aria-label={`Barème ${activeAfl} — ${competency.label}`}
                                       className="w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
@@ -469,6 +471,7 @@ function TeacherGrades() {
                                   </label>
                                 </div>
                               )}
+
                             </li>
                           );
                         })}

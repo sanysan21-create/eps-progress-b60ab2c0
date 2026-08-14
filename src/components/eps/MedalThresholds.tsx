@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
 import { getMedalThresholds, setMedalThresholds } from "@/lib/medals.functions";
+import { NumberField } from "@/components/eps/NumberField";
+
 
 /**
  * Seuils de réussites définis par l'enseignant. Ils servent uniquement de repère
@@ -64,14 +66,16 @@ export function MedalThresholds() {
             <span className="mono-label text-muted-foreground">
               <span aria-hidden>{field.emoji}</span> {field.label}
             </span>
-            <input
-              type="number"
+            <NumberField
+              value={String(field.value)}
               min={1}
               max={200}
-              value={field.value}
-              onChange={(event) => field.set(event.target.value)}
+              step={1}
+              onValueChange={(next) => field.set(next)}
+              aria-label={field.label}
               className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm"
             />
+
           </label>
         ))}
       </div>

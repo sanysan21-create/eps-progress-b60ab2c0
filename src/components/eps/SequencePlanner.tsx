@@ -13,6 +13,8 @@ import { sequenceRange } from "@/lib/program-sequences";
 import { listActivities } from "@/lib/competencies.functions";
 import { listClasses } from "@/lib/classes.functions";
 import { ActivityIcon } from "@/components/eps/ActivityIcon";
+import { NumberField } from "@/components/eps/NumberField";
+
 
 type Draft = {
   id: string | null;
@@ -137,22 +139,27 @@ export function SequencePlanner() {
             </option>
           ))}
         </select>
-        <input
-          type="number"
+        <NumberField
           min={1}
+          max={40}
+          step={1}
           value={draft.fromSession}
-          onChange={(event) => setDraft({ ...draft, fromSession: event.target.value })}
+          onValueChange={(fromSession) => setDraft({ ...draft, fromSession })}
           placeholder="De"
+          aria-label="Première séance"
           className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
-        <input
-          type="number"
+        <NumberField
           min={1}
+          max={40}
+          step={1}
           value={draft.toSession}
-          onChange={(event) => setDraft({ ...draft, toSession: event.target.value })}
+          onValueChange={(toSession) => setDraft({ ...draft, toSession })}
           placeholder="À"
+          aria-label="Dernière séance"
           className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
+
         <button
           type="button"
           onClick={() => void handleSave()}

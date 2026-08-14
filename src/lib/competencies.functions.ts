@@ -49,8 +49,12 @@ export type StudentProfileActivity = {
     level_max: number;
     progress_tip: string | null;
     level_tip: string | null;
+    /** Niveau immédiatement supérieur (N+1) tel que configuré par l'enseignant. */
+    next_level_label: string | null;
+    next_level_tip: string | null;
   }[];
 };
+
 
 const labelSchema = z.string().trim().min(1, "Champ requis").max(200);
 
@@ -436,6 +440,8 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
         level_position: number;
         level_tip: string | null;
         level_max: number | string;
+        next_level_label: string | null;
+        next_level_tip: string | null;
       }[]
     >`
       select
@@ -448,7 +454,13 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
         l.label as level_label,
         l.position as level_position,
         l.tip as level_tip,
-        (select max(position) from competency_levels where competency_id = c.id) as level_max
+        (select max(position) from competency_levels where competency_id = c.id) as level_max,
+        (select nl.label from competency_levels nl
+           where nl.competency_id = c.id and nl.position > l.position
+           order by nl.position asc limit 1) as next_level_label,
+        (select nl.tip from competency_levels nl
+           where nl.competency_id = c.id and nl.position > l.position
+           order by nl.position asc limit 1) as next_level_tip
       from student_competency_levels scl
       join competencies c on c.id = scl.competency_id
       join activities a on a.id = c.activity_id
@@ -473,9 +485,12 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
         level_max: Math.max(row.level_position, Number(row.level_max) || 0),
         progress_tip: row.progress_tip ?? null,
         level_tip: row.level_tip ?? null,
+        next_level_label: row.next_level_label ?? null,
+        next_level_tip: row.next_level_tip ?? null,
       });
       grouped.set(row.activity_id, entry);
     }
+
 
     return Array.from(grouped.values());
   });

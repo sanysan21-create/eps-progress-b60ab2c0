@@ -108,56 +108,22 @@ function StudentProgress() {
             <RankJourney state={journey} />
           </Section>
 
-          <Section title="🎽 Mes activités">
-            <div className="rounded-3xl border border-border bg-surface p-5">
-              <div className="flex h-44 items-end gap-3">
-                {perActivity.map((a) => (
-                  <div key={a.name} className="flex flex-1 flex-col items-center gap-2">
-                    <span className="font-mono text-[10px] text-primary">{a.value}%</span>
-                    <div className="flex w-full flex-1 items-end">
-                      <div
-                        className="w-full rounded-t-lg bg-primary/80"
-                        style={{ height: `${a.value}%` }}
-                      />
-                    </div>
-                    <span className="mono-label truncate text-muted-foreground">{a.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Section>
-
           <Section title="🎯 Mes compétences travaillées">
-            <div className="space-y-4">
+            <div className="space-y-3">
               {data.map((activity) => (
-                <article
+                <ActivityPanel
                   key={activity.activity_id}
-                  className="rounded-3xl border border-border bg-surface p-5"
-                >
-                  <h3 className="display-title text-xl italic">{activity.activity_name}</h3>
-                  <div className="mt-4 space-y-4">
-                    {activity.competencies.map((c) => (
-                      <div key={c.id} className="space-y-2">
-                        <div className="flex items-center justify-between gap-3 text-xs">
-                          <span className="font-semibold">{c.label}</span>
-                          <span className="shrink-0 font-mono text-muted-foreground">
-                            Niv. {c.level_position}/{c.level_max} · {c.level_label}
-                          </span>
-                        </div>
-                        <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
-                          <div
-                            className="animate-bar-grow h-full origin-left rounded-full bg-primary"
-                            style={{
-                              width: `${
-                                c.level_max > 0 ? (c.level_position / c.level_max) * 100 : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </article>
+                  activity={activity}
+                  progress={
+                    perActivity.find((a) => a.name === activity.activity_name)?.value ?? 0
+                  }
+                  open={openActivity === activity.activity_id}
+                  onToggle={() =>
+                    setOpenActivity((current) =>
+                      current === activity.activity_id ? null : activity.activity_id,
+                    )
+                  }
+                />
               ))}
             </div>
           </Section>

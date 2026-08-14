@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireTeacher, withDb } from "./auth-middleware";
 
 export type EngagementMark = { indicator_code: string; level: number };
 
@@ -10,21 +10,19 @@ const studentIdsSchema = z.array(z.string().uuid()).min(1).max(200);
 
 /** Implication renseignée par l'enseignant pour un élève. */
 export const listStudentEngagement = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }): Promise<EngagementMark[]> => {
-    const { data: rows, error } = await context.supabase
-      .from("student_engagement")
-      .select("indicator_code, level")
-      .eq("student_id", data.studentId);
-    if (error) throw new Error(error.message);
-    return rows ?? [];
+    return await context.sql<EngagementMark[]>`
+      select indicator_code, level from student_engagement
+      where student_id = ${data.studentId} and teacher_id = ${context.userId}
+    `;
   });
 
 export const setStudentEngagement = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { studentIds: string[]; indicatorCode: string; level: number }) =>
     z
       .object({
@@ -35,31 +33,29 @@ export const setStudentEngagement = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("student_engagement").upsert(
-      data.studentIds.map((studentId) => ({
-        student_id: studentId,
-        indicator_code: data.indicatorCode,
-        level: data.level,
-        teacher_id: context.userId,
-      })),
-      { onConflict: "student_id,indicator_code" },
-    );
-    if (error) throw new Error(error.message);
+    await context.sql`
+      insert into student_engagement (student_id, teacher_id, indicator_code, level)
+      select s.id, ${context.userId}, ${data.indicatorCode}, ${data.level}
+      from students s
+      where s.teacher_id = ${context.userId} and s.id = any(${data.studentIds}::uuid[])
+      on conflict (student_id, indicator_code)
+      do update set level = excluded.level, updated_at = now()
+    `;
     return { saved: data.studentIds.length };
   });
 
 export const clearStudentEngagement = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { studentIds: string[]; indicatorCode: string }) =>
     z.object({ studentIds: studentIdsSchema, indicatorCode: codeSchema }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("student_engagement")
-      .delete()
-      .eq("indicator_code", data.indicatorCode)
-      .in("student_id", data.studentIds);
-    if (error) throw new Error(error.message);
+    await context.sql`
+      delete from student_engagement
+      where teacher_id = ${context.userId}
+        and indicator_code = ${data.indicatorCode}
+        and student_id = any(${data.studentIds}::uuid[])
+    `;
     return { ok: true };
   });
 
@@ -68,89 +64,76 @@ export const clearStudentEngagement = createServerFn({ method: "POST" })
  * L'enseignant ne peut jamais les attribuer ni les modifier.
  */
 export const getStudentStrengthChoices = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }): Promise<string[]> => {
-    const { data: rows, error } = await context.supabase
-      .from("student_strength_choices")
-      .select("strength_code")
-      .eq("student_id", data.studentId);
-    if (error) throw new Error(error.message);
-    return (rows ?? []).map((row) => row.strength_code);
+    const rows = await context.sql<{ strength_code: string }[]>`
+      select strength_code from student_strength_choices
+      where student_id = ${data.studentId} and teacher_id = ${context.userId}
+    `;
+    return rows.map((row) => row.strength_code);
   });
 
 /** Lecture seule pour l'enseignant : objectif choisi par l'élève lui-même. */
 export const getStudentGoalChoice = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireTeacher])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }): Promise<string | null> => {
-    const { data: row, error } = await context.supabase
-      .from("student_goal_choices")
-      .select("goal_code")
-      .eq("student_id", data.studentId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
+    const [row] = await context.sql<{ goal_code: string }[]>`
+      select goal_code from student_goal_choices
+      where student_id = ${data.studentId} and teacher_id = ${context.userId}
+      limit 1
+    `;
     return row?.goal_code ?? null;
   });
 
 /** Lecture seule : implication de l'élève identifié par son cookie de session QR. */
-export const getMyEngagement = createServerFn({ method: "GET" }).handler(
-  async (): Promise<EngagementMark[]> => {
+export const getMyEngagement = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(async ({ context }): Promise<EngagementMark[]> => {
     const { getStudentSession } = await import("./student-qr.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
     if (!studentId) return [];
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin
-      .from("student_engagement")
-      .select("indicator_code, level")
-      .eq("student_id", studentId);
-    if (error) throw new Error(error.message);
-    return rows ?? [];
-  },
-);
+    return await context.sql<EngagementMark[]>`
+      select indicator_code, level from student_engagement where student_id = ${studentId}
+    `;
+  });
 
 /** Points forts personnels de l'élève connecté (choisis par lui-même). */
-export const getMyStrengths = createServerFn({ method: "GET" }).handler(
-  async (): Promise<string[]> => {
+export const getMyStrengths = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(async ({ context }): Promise<string[]> => {
     const { getStudentSession } = await import("./student-qr.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
     if (!studentId) return [];
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin
-      .from("student_strength_choices")
-      .select("strength_code")
-      .eq("student_id", studentId);
-    if (error) throw new Error(error.message);
-    return (rows ?? []).map((row) => row.strength_code);
-  },
-);
+    const rows = await context.sql<{ strength_code: string }[]>`
+      select strength_code from student_strength_choices where student_id = ${studentId}
+    `;
+    return rows.map((row) => row.strength_code);
+  });
 
 /** Objectif personnel de l'élève connecté (choisi par lui-même). */
-export const getMyGoal = createServerFn({ method: "GET" }).handler(
-  async (): Promise<string | null> => {
+export const getMyGoal = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(async ({ context }): Promise<string | null> => {
     const { getStudentSession } = await import("./student-qr.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
     if (!studentId) return null;
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row, error } = await supabaseAdmin
-      .from("student_goal_choices")
-      .select("goal_code")
-      .eq("student_id", studentId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
+    const [row] = await context.sql<{ goal_code: string }[]>`
+      select goal_code from student_goal_choices where student_id = ${studentId} limit 1
+    `;
     return row?.goal_code ?? null;
-  },
-);
+  });
 
 /**
  * Écriture réservée à l'élève : ses 3 points forts personnels.
@@ -158,10 +141,11 @@ export const getMyGoal = createServerFn({ method: "GET" }).handler(
  * jamais par une donnée envoyée depuis le navigateur.
  */
 export const setMyStrengths = createServerFn({ method: "POST" })
+  .middleware([withDb])
   .inputValidator((input: { strengthCodes: string[] }) =>
     z.object({ strengthCodes: z.array(codeSchema).length(3) }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { STRENGTHS, MAX_STRENGTHS } = await import("./engagement");
     const codes = Array.from(new Set(data.strengthCodes));
     if (codes.length !== MAX_STRENGTHS) throw new Error("Choisis 3 points forts différents");
@@ -172,41 +156,31 @@ export const setMyStrengths = createServerFn({ method: "POST" })
     const { resolveStudent } = await import("./student-choices.server");
     const { studentId, teacherId } = await resolveStudent();
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error: deleteError } = await supabaseAdmin
-      .from("student_strength_choices")
-      .delete()
-      .eq("student_id", studentId);
-    if (deleteError) throw new Error(deleteError.message);
-
-    const { error } = await supabaseAdmin.from("student_strength_choices").insert(
-      codes.map((strength_code) => ({
-        student_id: studentId,
-        teacher_id: teacherId,
-        strength_code,
-      })),
-    );
-    if (error) throw new Error(error.message);
+    await context.sql`delete from student_strength_choices where student_id = ${studentId}`;
+    await context.sql`
+      insert into student_strength_choices (student_id, teacher_id, strength_code)
+      select ${studentId}, ${teacherId}, code from unnest(${codes}::text[]) as code
+    `;
     return { strengthCodes: codes };
   });
 
 /** Écriture réservée à l'élève : son objectif personnel (un seul). */
 export const setMyGoal = createServerFn({ method: "POST" })
+  .middleware([withDb])
   .inputValidator((input: { goalCode: string }) =>
     z.object({ goalCode: codeSchema }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { GOALS } = await import("./engagement");
     if (!GOALS.some((g) => g.code === data.goalCode)) throw new Error("Objectif inconnu");
 
     const { resolveStudent } = await import("./student-choices.server");
     const { studentId, teacherId } = await resolveStudent();
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("student_goal_choices").upsert(
-      { student_id: studentId, teacher_id: teacherId, goal_code: data.goalCode },
-      { onConflict: "student_id" },
-    );
-    if (error) throw new Error(error.message);
+    await context.sql`
+      insert into student_goal_choices (student_id, teacher_id, goal_code)
+      values (${studentId}, ${teacherId}, ${data.goalCode})
+      on conflict (student_id) do update set goal_code = excluded.goal_code, updated_at = now()
+    `;
     return { goalCode: data.goalCode };
   });

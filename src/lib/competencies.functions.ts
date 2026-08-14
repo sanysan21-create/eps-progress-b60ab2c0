@@ -49,8 +49,12 @@ export type StudentProfileActivity = {
     level_max: number;
     progress_tip: string | null;
     level_tip: string | null;
+    /** Niveau immédiatement supérieur (N+1) tel que configuré par l'enseignant. */
+    next_level_label: string | null;
+    next_level_tip: string | null;
   }[];
 };
+
 
 const labelSchema = z.string().trim().min(1, "Champ requis").max(200);
 

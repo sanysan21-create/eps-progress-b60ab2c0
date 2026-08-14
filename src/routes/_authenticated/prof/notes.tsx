@@ -126,6 +126,32 @@ function TeacherGrades() {
     flatItems.map((item) => ({ points: item.points, max_points: item.maxPoints })),
   );
 
+  /** Ligne active du panneau de niveau : dernière saisie, sinon première compétence cochée. */
+  const focusedEntry = useMemo(() => {
+    if (focused) {
+      const score = afl[focused.afl]?.[focused.competencyId];
+      if (score) {
+        return {
+          afl: focused.afl,
+          competencyId: focused.competencyId,
+          points: Number(score.points.replace(",", ".")) || 0,
+          maxPoints: Number(score.maxPoints.replace(",", ".")) || 0,
+        };
+      }
+    }
+    const first = flatItems[0];
+    if (!first) return null;
+    return {
+      afl: first.label,
+      competencyId: first.competencyId,
+      points: first.points,
+      maxPoints: first.maxPoints,
+    };
+  }, [afl, flatItems, focused]);
+
+  const focusedCompetency =
+    competencies.find((row) => row.id === focusedEntry?.competencyId) ?? null;
+
   function toggleCompetency(aflLabel: string, competencyId: string) {
     setAfl((current) => {
       const group = { ...(current[aflLabel] ?? {}) };
@@ -133,9 +159,11 @@ function TeacherGrades() {
       else group[competencyId] = { points: "0", maxPoints: defaultMax(aflLabel) };
       return { ...current, [aflLabel]: group };
     });
+    setFocused({ afl: aflLabel, competencyId });
   }
 
   function patchScore(aflLabel: string, competencyId: string, patch: Partial<Score>) {
+    setFocused({ afl: aflLabel, competencyId });
     setAfl((current) => {
       const group = current[aflLabel] ?? {};
       const score = group[competencyId];

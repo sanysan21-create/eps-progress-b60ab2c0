@@ -206,19 +206,7 @@ function AuthPage() {
             </button>
           </form>
 
-          <div className="my-5 flex items-center gap-3">
-            <span className="h-px flex-1 bg-border" />
-            <span className="mono-label text-muted-foreground">ou</span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
 
-          <button
-            onClick={google}
-            disabled={busy}
-            className="w-full rounded-xl border border-border bg-surface-2 px-4 py-3 text-xs font-bold uppercase text-foreground disabled:opacity-60"
-          >
-            Continuer avec Google
-          </button>
 
           <button
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}

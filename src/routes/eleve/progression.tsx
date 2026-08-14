@@ -67,6 +67,17 @@ function StudentProgress() {
   const selectedProgress = selected ? (averageProgress(selectedMarks) ?? 0) : 0;
   const myGoal = goal.data ? goalByCode(goal.data) : undefined;
 
+  /** Prochaine compétence à acquérir : niveau non maximal le moins avancé. */
+  const nextCompetency =
+    selectedMarks
+      .filter((mark) => mark.levelPosition < mark.levelMax)
+      .sort(
+        (a, b) =>
+          a.levelPosition / a.levelMax - b.levelPosition / b.levelMax ||
+          a.levelPosition - b.levelPosition,
+      )[0] ?? null;
+
+
   const journey = computeProgression({
     marks,
     engagement: engagement.data ?? [],

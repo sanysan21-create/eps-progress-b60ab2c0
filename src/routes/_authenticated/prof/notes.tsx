@@ -14,6 +14,8 @@ import {
 import { deleteStudentGrade, listStudentGrades, saveStudentGrade } from "@/lib/grades.functions";
 import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
+import { NumberField } from "@/components/eps/NumberField";
+
 
 export const Route = createFileRoute("/_authenticated/prof/notes")({
   head: () => ({

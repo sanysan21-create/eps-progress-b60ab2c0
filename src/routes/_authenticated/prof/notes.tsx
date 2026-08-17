@@ -446,11 +446,11 @@ function TeacherGrades() {
                                     <span className="text-xs text-muted-foreground">
                                       Points obtenus
                                     </span>
-                                    <WheelPicker
+                                    <NumericButtons
                                       value={score.points}
                                       max={Number(score.maxPoints.replace(",", ".")) || 20}
                                       step={1}
-                                      onValueChange={(points) =>
+                                      onValueChange={(points: string) =>
                                         patchScore(activeAfl, competency.id, { points })
                                       }
                                       aria-label={`Points ${activeAfl} — ${competency.label}`}

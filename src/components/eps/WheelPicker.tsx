@@ -54,8 +54,10 @@ export function WheelPicker({
     }
   }, [index]);
 
+  const lastValue = values[values.length - 1] ?? 0;
+
   const commit = (next: number) => {
-    const clamped = Math.min(values[values.length - 1], Math.max(0, next));
+    const clamped = Math.min(lastValue, Math.max(0, next));
     onValueChange(String(clamped));
   };
 

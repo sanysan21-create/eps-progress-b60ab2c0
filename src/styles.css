@@ -200,3 +200,11 @@
   letter-spacing: 0.14em;
   font-size: 0.625rem;
 }
+
+@utility hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

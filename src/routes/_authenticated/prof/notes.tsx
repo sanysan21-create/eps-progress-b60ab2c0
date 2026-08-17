@@ -15,6 +15,7 @@ import { deleteStudentGrade, listStudentGrades, saveStudentGrade } from "@/lib/g
 import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 import { NumberField } from "@/components/eps/NumberField";
+import { WheelPicker } from "@/components/eps/WheelPicker";
 
 
 export const Route = createFileRoute("/_authenticated/prof/notes")({
@@ -345,9 +346,12 @@ function TeacherGrades() {
                   </h2>
                   <p className="display-title text-3xl text-primary">
                     {formatPoints(totals.points)} / {formatPoints(totals.max)}
-                    {totals.percent !== null && (
+                    {totals.max > 0 && (
                       <span className="ml-2 text-sm font-normal text-muted-foreground">
-                        {totals.percent} %
+                        {((totals.points / totals.max) * 100).toLocaleString("fr-FR", {
+                          maximumFractionDigits: 1,
+                        })}{" "}
+                        %
                       </span>
                     )}
                   </p>
@@ -437,24 +441,21 @@ function TeacherGrades() {
                               </label>
 
                               {score && (
-                                <div className="mt-3 flex items-end gap-3 pl-7">
-                                  <label className="block space-y-1">
+                                <div className="mt-3 flex flex-wrap items-end gap-5 pl-7">
+                                  <div className="space-y-1">
                                     <span className="text-xs text-muted-foreground">
                                       Points obtenus
                                     </span>
-                                    <NumberField
+                                    <WheelPicker
                                       value={score.points}
-                                      min={0}
                                       max={Number(score.maxPoints.replace(",", ".")) || 20}
-                                      step={0.5}
+                                      step={1}
                                       onValueChange={(points) =>
                                         patchScore(activeAfl, competency.id, { points })
                                       }
                                       aria-label={`Points ${activeAfl} — ${competency.label}`}
-                                      className="w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                                     />
-                                  </label>
-                                  <span className="pb-2 text-muted-foreground">/</span>
+                                  </div>
                                   <label className="block space-y-1">
                                     <span className="text-xs text-muted-foreground">Barème</span>
                                     <NumberField

@@ -67,15 +67,6 @@ function StudentProgress() {
   const selectedProgress = selected ? (averageProgress(selectedMarks) ?? 0) : 0;
   const myGoal = goal.data ? goalByCode(goal.data) : undefined;
 
-  /** Prochaine compétence à acquérir : niveau non maximal le moins avancé. */
-  const nextCompetency =
-    selectedMarks
-      .filter((mark) => mark.levelPosition < mark.levelMax)
-      .sort(
-        (a, b) =>
-          a.levelPosition / a.levelMax - b.levelPosition / b.levelMax ||
-          a.levelPosition - b.levelPosition,
-      )[0] ?? null;
 
 
   const journey = computeProgression({
@@ -239,47 +230,110 @@ function StudentProgress() {
                       </div>
                     )}
 
-                    {nextCompetency ? (
-                      <article className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-                        <p className="mono-label text-primary">🎯 Ma prochaine compétence</p>
-                        <div>
-                          <p className="text-sm font-bold">
-                            Niveau {nextCompetency.levelPosition + 1}
-                            {nextCompetency.nextLevelLabel
-                              ? ` — ${nextCompetency.nextLevelLabel}`
-                              : ""}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {nextCompetency.competencyLabel}
-                          </p>
-                        </div>
+                    {groupByAfl(selected.competencies, (c) => c.afl).map((group) => {
+                      const done = group.items.filter(
+                        (c) => c.level_position >= c.level_max,
+                      ).length;
+                      const groupProgress = Math.round(
+                        (group.items.reduce(
+                          (sum, c) =>
+                            sum + (c.level_max > 0 ? (c.level_position / c.level_max) * 100 : 0),
+                          0,
+                        ) /
+                          group.items.length) *
+                          1,
+                      );
+                      return (
+                        <details
+                          key={group.afl}
+                          open
+                          className="group rounded-2xl border border-border bg-surface-2/40 px-4 py-3"
+                        >
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold">
+                                🎯 {group.afl} — {AFL_HINTS[group.afl]}
+                              </p>
+                              <p className="mono-label text-muted-foreground">
+                                {group.items.length} compétence
+                                {group.items.length > 1 ? "s" : ""} · {done} acquise
+                                {done > 1 ? "s" : ""} · {groupProgress}%
+                              </p>
+                            </div>
+                            <span
+                              className="shrink-0 text-xs text-muted-foreground transition-transform group-open:rotate-180"
+                              aria-hidden
+                            >
+                              ▼
+                            </span>
+                          </summary>
 
-                        <div className="rounded-xl border border-border bg-surface px-3 py-2">
-                          <p className="mono-label text-primary">💬 Conseil du professeur</p>
-                          {nextCompetency.nextLevelTip ?? nextCompetency.progressTip ? (
-                            <p className="mt-1 text-xs leading-relaxed text-foreground/80">
-                              {nextCompetency.nextLevelTip ?? nextCompetency.progressTip}
-                            </p>
-                          ) : (
-                            <p className="mt-1 text-xs italic text-muted-foreground">
-                              Aucun conseil renseigné pour l'instant.
-                            </p>
-                          )}
-                        </div>
-                      </article>
-                    ) : (
-                      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-center">
-                        <p className="text-2xl" aria-hidden>
-                          🏆
-                        </p>
-                        <p className="mt-1 text-sm font-bold">
-                          Toutes les compétences sont acquises !
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Tu as atteint le niveau maximum prévu pour cette activité.
-                        </p>
-                      </div>
-                    )}
+                          <div className="mt-3 space-y-3">
+                            {group.items.map((c) => {
+                              const percent =
+                                c.level_max > 0
+                                  ? Math.round((c.level_position / c.level_max) * 100)
+                                  : 0;
+                              const mastered = c.level_position >= c.level_max;
+                              const advice = c.next_level_tip ?? c.level_tip ?? c.progress_tip;
+                              return (
+                                <article
+                                  key={c.id}
+                                  className="space-y-2 rounded-xl border border-border bg-surface p-3"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <p className="text-sm font-bold">{c.label}</p>
+                                    <span className="shrink-0 font-mono text-[0.7rem] text-muted-foreground">
+                                      {percent}%
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Niveau {c.level_position}/{c.level_max} — {c.level_label}
+                                  </p>
+                                  <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
+                                    <div
+                                      className="h-full rounded-full bg-primary"
+                                      style={{ width: `${percent}%` }}
+                                    />
+                                  </div>
+
+                                  {mastered ? (
+                                    <p className="text-xs font-bold text-primary">
+                                      🏆 Compétence acquise !
+                                    </p>
+                                  ) : (
+                                    <p className="text-xs">
+                                      <span className="mono-label text-primary">
+                                        Prochain niveau
+                                      </span>{" "}
+                                      <span className="font-semibold">
+                                        Niveau {c.level_position + 1}
+                                        {c.next_level_label ? ` — ${c.next_level_label}` : ""}
+                                      </span>
+                                    </p>
+                                  )}
+
+                                  <div className="rounded-lg border border-border bg-surface-2/50 px-3 py-2">
+                                    <p className="mono-label text-primary">
+                                      💬 Conseil du professeur
+                                    </p>
+                                    {advice ? (
+                                      <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+                                        {advice}
+                                      </p>
+                                    ) : (
+                                      <p className="mt-1 text-xs italic text-muted-foreground">
+                                        Aucun conseil renseigné pour l'instant.
+                                      </p>
+                                    )}
+                                  </div>
+                                </article>
+                              );
+                            })}
+                          </div>
+                        </details>
+                      );
+                    })}
                   </div>
                 )}
 

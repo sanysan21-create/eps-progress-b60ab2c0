@@ -345,9 +345,12 @@ function TeacherGrades() {
                   </h2>
                   <p className="display-title text-3xl text-primary">
                     {formatPoints(totals.points)} / {formatPoints(totals.max)}
-                    {totals.percent !== null && (
+                    {totals.max > 0 && (
                       <span className="ml-2 text-sm font-normal text-muted-foreground">
-                        {totals.percent} %
+                        {((totals.points / totals.max) * 100).toLocaleString("fr-FR", {
+                          maximumFractionDigits: 1,
+                        })}{" "}
+                        %
                       </span>
                     )}
                   </p>

@@ -15,7 +15,7 @@ import { deleteStudentGrade, listStudentGrades, saveStudentGrade } from "@/lib/g
 import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 import { NumberField } from "@/components/eps/NumberField";
-import { WheelPicker } from "@/components/eps/WheelPicker";
+import { NumericButtons } from "@/components/eps/NumericButtons";
 
 
 export const Route = createFileRoute("/_authenticated/prof/notes")({
@@ -446,11 +446,11 @@ function TeacherGrades() {
                                     <span className="text-xs text-muted-foreground">
                                       Points obtenus
                                     </span>
-                                    <WheelPicker
+                                    <NumericButtons
                                       value={score.points}
                                       max={Number(score.maxPoints.replace(",", ".")) || 20}
                                       step={1}
-                                      onValueChange={(points) =>
+                                      onValueChange={(points: string) =>
                                         patchScore(activeAfl, competency.id, { points })
                                       }
                                       aria-label={`Points ${activeAfl} — ${competency.label}`}

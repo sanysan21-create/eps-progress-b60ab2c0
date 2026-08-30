@@ -620,7 +620,7 @@ function drawBack(data: StudentCardData) {
     ["bubble", "Conseils de mon professeur"],
   ];
 
-  let y = 208;
+  let y = 220;
   for (const [kind, label] of items) {
     journeyIcon(ctx, kind, 76, y - 10, 17);
     ctx.textAlign = "left";

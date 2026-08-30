@@ -201,8 +201,9 @@ function QuickCompetencies() {
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <section className="space-y-3 rounded-3xl border border-border bg-surface p-4">
+      <div className="grid items-stretch gap-6 lg:grid-cols-[320px_1fr]">
+        <section className="flex flex-col space-y-3 rounded-3xl border border-border bg-surface p-4">
+
           <label className="block space-y-1.5">
             <span className="mono-label text-muted-foreground">Classe</span>
             <select
@@ -268,7 +269,7 @@ function QuickCompetencies() {
             )}
           </div>
 
-          <div className="max-h-[460px] space-y-1.5 overflow-y-auto pr-1">
+          <div className="min-h-[240px] flex-1 space-y-1.5 overflow-y-auto pr-1">
             {students.isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
             {!students.isLoading && filtered.length === 0 && (
               <p className="text-sm text-muted-foreground">

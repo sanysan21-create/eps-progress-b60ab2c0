@@ -140,6 +140,8 @@ function ClassDetailPage() {
   const [moveTo, setMoveTo] = useState("");
   const [removeTarget, setRemoveTarget] = useState<StudentRow | null>(null);
   const [profileTarget, setProfileTarget] = useState<StudentRow | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const [importOpen, setImportOpen] = useState(false);
   const [parsed, setParsed] = useState<ParsedRow[]>([]);

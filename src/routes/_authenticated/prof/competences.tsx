@@ -269,7 +269,7 @@ function QuickCompetencies() {
             )}
           </div>
 
-          <div className="max-h-[460px] space-y-1.5 overflow-y-auto pr-1">
+          <div className="min-h-[240px] flex-1 space-y-1.5 overflow-y-auto pr-1">
             {students.isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
             {!students.isLoading && filtered.length === 0 && (
               <p className="text-sm text-muted-foreground">

@@ -573,6 +573,7 @@ function ClassDetailPage() {
             </li>
           ))}
         </ul>
+        </>
       )}
 
       {/* Ajouter / modifier un élève */}

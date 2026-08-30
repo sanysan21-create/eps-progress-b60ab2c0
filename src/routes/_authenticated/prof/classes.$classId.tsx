@@ -130,6 +130,7 @@ function ClassDetailPage() {
 
 
   const [term, setTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"last_name" | "first_name">("last_name");
   const [addOpen, setAddOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -148,11 +149,17 @@ function ClassDetailPage() {
 
   const filtered = useMemo(() => {
     const q = term.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((s) =>
-      `${s.first_name} ${s.last_name} ${s.student_code}`.toLowerCase().includes(q),
-    );
-  }, [students, term]);
+    const base = q
+      ? students.filter((s) =>
+          `${s.first_name} ${s.last_name} ${s.student_code}`.toLowerCase().includes(q),
+        )
+      : students;
+    const key = (s: StudentRow) =>
+      sortBy === "last_name"
+        ? `${s.last_name} ${s.first_name}`
+        : `${s.first_name} ${s.last_name}`;
+    return [...base].sort((a, b) => key(a).localeCompare(key(b), "fr", { sensitivity: "base" }));
+  }, [students, term, sortBy]);
 
   function refresh() {
     queryClient.invalidateQueries({ queryKey: ["class", classId] });
@@ -332,14 +339,45 @@ function ClassDetailPage() {
         </div>
       </header>
 
-      <div className="relative max-w-xl">
-        <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          value={term}
-          onChange={(e) => setTerm(e.target.value)}
-          placeholder="Rechercher dans la classe"
-          className="w-full rounded-xl border border-border bg-surface py-3 pl-11 pr-4 text-sm outline-none focus:border-primary"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[16rem] flex-1 max-w-xl">
+          <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            placeholder="Rechercher dans la classe"
+            className="w-full rounded-xl border border-border bg-surface py-3 pl-11 pr-4 text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <div
+          role="group"
+          aria-label="Trier les élèves"
+          className="flex items-center gap-1 rounded-xl border border-border bg-surface p-1"
+        >
+          <span className="px-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Trier par
+          </span>
+          {(
+            [
+              { value: "last_name", label: "Nom" },
+              { value: "first_name", label: "Prénom" },
+            ] as const
+          ).map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setSortBy(option.value)}
+              aria-pressed={sortBy === option.value}
+              className={`rounded-lg px-3 py-2 text-xs font-bold uppercase transition-colors ${
+                sortBy === option.value
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {detail.isLoading ? (

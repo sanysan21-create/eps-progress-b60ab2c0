@@ -426,6 +426,37 @@ function ClassDetailPage() {
           </p>
         </div>
       ) : (
+        <>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface/40 px-4 py-3">
+          <label className="flex items-center gap-3 text-xs font-bold uppercase text-muted-foreground">
+            <input
+              type="checkbox"
+              className="size-4 accent-[var(--primary)]"
+              checked={allVisibleSelected}
+              onChange={(e) =>
+                setSelectedIds(e.target.checked ? filtered.map((s) => s.id) : [])
+              }
+            />
+            Tout sélectionner ({filtered.length})
+          </label>
+          {selectedCount > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mono-label text-primary">{selectedCount} sélectionné(s)</span>
+              <button
+                onClick={() => setSelectedIds([])}
+                className="rounded-lg border border-border px-3 py-2 text-[10px] font-bold uppercase"
+              >
+                Annuler la sélection
+              </button>
+              <button
+                onClick={() => setBulkOpen(true)}
+                className="rounded-lg bg-destructive px-3 py-2 text-[10px] font-bold uppercase text-destructive-foreground"
+              >
+                Supprimer la sélection
+              </button>
+            </div>
+          )}
+        </div>
         <ul className="space-y-2">
           {filtered.map((student) => (
             <li
@@ -433,6 +464,19 @@ function ClassDetailPage() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface/40 p-4 transition-colors hover:bg-surface"
             >
               <div className="flex items-center gap-4">
+                <input
+                  type="checkbox"
+                  aria-label={`Sélectionner ${student.first_name} ${student.last_name}`}
+                  className="size-4 accent-[var(--primary)]"
+                  checked={selectedIds.includes(student.id)}
+                  onChange={(e) =>
+                    setSelectedIds((prev) =>
+                      e.target.checked
+                        ? [...prev, student.id]
+                        : prev.filter((id) => id !== student.id),
+                    )
+                  }
+                />
                 <div className="grid size-11 place-items-center rounded-xl bg-surface-2 ring-1 ring-border">
                   <span className="display-title text-sm text-primary">
                     {student.first_name[0]}

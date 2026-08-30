@@ -247,9 +247,10 @@
   --sidebar-foreground: oklch(1 0 0);
   --sidebar-primary: oklch(0.757 0.196 128);
   --sidebar-primary-foreground: oklch(0.229 0.066 253);
-  --sidebar-accent: oklch(0.229 0.066 253);
+  /* Fond actif : bleu marine légèrement plus clair que la barre latérale. */
+  --sidebar-accent: oklch(0.365 0.078 251);
   --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.34 0.075 251);
+  --sidebar-border: oklch(0.4 0.075 251);
   --sidebar-ring: oklch(0.757 0.196 128);
 }
 

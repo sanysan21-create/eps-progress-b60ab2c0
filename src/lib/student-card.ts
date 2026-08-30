@@ -236,26 +236,40 @@ function sportIcon(ctx: CanvasRenderingContext2D, kind: SportKind, cx: number, c
   }
 
   if (kind === "badminton") {
+    // tamis
     ctx.beginPath();
-    ctx.ellipse(cx - 1 * u, cy - 2.5 * u, 4 * u, 5 * u, Math.PI / 4, 0, Math.PI * 2);
+    ctx.ellipse(cx - 2 * u, cy - 3 * u, 3.6 * u, 4.8 * u, Math.PI / 4, 0, Math.PI * 2);
     ctx.stroke();
+    // cordage
+    stroke(ctx, NAVY, 1.2 * u * 0.9);
     ctx.beginPath();
-    ctx.moveTo(cx + 1.5 * u, cy + 1 * u);
-    ctx.lineTo(cx + 6.5 * u, cy + 7 * u);
+    ctx.moveTo(cx - 4.6 * u, cy - 4 * u);
+    ctx.lineTo(cx + 0.4 * u, cy - 1.4 * u);
+    ctx.moveTo(cx - 3.4 * u, cy - 6.4 * u);
+    ctx.lineTo(cx - 0.4 * u, cy - 0.4 * u);
     ctx.stroke();
-    stroke(ctx, GREEN, 2.2 * u * 0.9);
+    // manche
+    stroke(ctx, NAVY, 2.6 * u * 0.9);
+    ctx.beginPath();
+    ctx.moveTo(cx + 0.4 * u, cy + 0.6 * u);
+    ctx.lineTo(cx + 5.5 * u, cy + 7 * u);
+    ctx.stroke();
+    // volant vert
+    stroke(ctx, GREEN, 2 * u * 0.9);
     ctx.fillStyle = GREEN;
     ctx.beginPath();
-    ctx.arc(cx + 5.5 * u, cy - 6 * u, 1.6 * u, 0, Math.PI * 2);
+    ctx.arc(cx + 5 * u, cy - 5 * u, 1.5 * u, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(cx + 5.5 * u, cy - 4.6 * u);
-    ctx.lineTo(cx + 3.5 * u, cy - 1.5 * u);
-    ctx.moveTo(cx + 5.5 * u, cy - 4.6 * u);
-    ctx.lineTo(cx + 7.5 * u, cy - 1.5 * u);
+    ctx.moveTo(cx + 3.4 * u, cy - 6.6 * u);
+    ctx.lineTo(cx + 5 * u, cy - 5 * u);
+    ctx.lineTo(cx + 6.6 * u, cy - 6.6 * u);
+    ctx.moveTo(cx + 5 * u, cy - 5 * u);
+    ctx.lineTo(cx + 5 * u, cy - 7.6 * u);
     ctx.stroke();
     return;
   }
+
 
   if (kind === "ultimate") {
     ctx.beginPath();

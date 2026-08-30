@@ -107,7 +107,11 @@ export function StudentQrDialog({ student, className, onOpenChange }: Props) {
       return;
     }
     let cancelled = false;
-    renderStudentCardPreview({ fullName, className: className ?? "", accessUrl })
+    renderStudentCardPreview({
+      fullName: `${student.first_name} ${student.last_name}`,
+      className: className ?? "",
+      accessUrl,
+    })
       .then((preview) => {
         if (!cancelled) setCardPreview(preview);
       })
@@ -115,8 +119,7 @@ export function StudentQrDialog({ student, className, onOpenChange }: Props) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessUrl, fullName, className]);
+  }, [accessUrl, student, className]);
 
   const generateMutation = useMutation({
     mutationFn: () => generate({ data: { studentId: student!.id } }),

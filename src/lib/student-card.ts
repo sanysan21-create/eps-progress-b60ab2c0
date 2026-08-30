@@ -277,7 +277,7 @@ function drawBack(data: StudentCardData) {
     ["bubble", "Conseils du professeur"],
   ];
 
-  let y = 176;
+  let y = 190;
   for (const [kind, label] of items) {
     icon(ctx, kind, 68, y - 9, 17);
     ctx.textAlign = "left";
@@ -290,18 +290,18 @@ function drawBack(data: StudentCardData) {
     ctx.moveTo(108, y + 20);
     ctx.lineTo(W - 52, y + 20);
     ctx.stroke();
-    y += 78;
+    y += 86;
   }
 
   // Encadré info
-  const boxY = y + 30;
+  const boxY = y + 54;
   const textLines = [
     "Les informations sur les compétences",
     "sont mises à jour chaque semaine pour",
     "constater ta progression et identifier",
     "tes axes d'amélioration.",
   ];
-  const boxH = 56 + textLines.length * 34;
+  const boxH = 64 + textLines.length * 36;
   ctx.fillStyle = OFF_WHITE;
   roundRect(ctx, 40, boxY, W - 80, boxH, 22);
   ctx.fill();
@@ -309,7 +309,7 @@ function drawBack(data: StudentCardData) {
   ctx.fillStyle = NAVY;
   ctx.font = font(23, "400");
   ctx.textAlign = "left";
-  textLines.forEach((line, i) => ctx.fillText(line, 68, boxY + 46 + i * 34));
+  textLines.forEach((line, i) => ctx.fillText(line, 68, boxY + 50 + i * 36));
 
   ctx.fillStyle = GREEN;
   ctx.fillRect(40, H - 150, W - 80, 4);

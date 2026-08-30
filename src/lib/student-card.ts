@@ -272,7 +272,7 @@ function sportIcon(ctx: CanvasRenderingContext2D, kind: SportKind, cx: number, c
 
 
   if (kind === "ultimate") {
-    // frisbee vu de profil + lignes de vitesse vertes
+    ctx.fillStyle="#FF0000"; ctx.fillRect(cx-8*u,cy-8*u,16*u,16*u); return;
     stroke(ctx, NAVY, 2.4 * u * 0.9);
     ctx.beginPath();
     ctx.ellipse(cx + 1.5 * u, cy - 1 * u, 6.4 * u, 2.2 * u, -0.08 * Math.PI, 0, Math.PI * 2);

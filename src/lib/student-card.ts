@@ -537,6 +537,7 @@ async function drawFront(data: StudentCardData) {
   ctx.font = font(nameSize, "900");
   ctx.fillText(data.fullName, 158, bandY + 66);
   ctx.fillStyle = NAVY_SOFT;
+  ctx.letterSpacing = "0px";
   ctx.font = font(26, "700");
   ctx.fillText(data.className || "Classe", 158, bandY + 112);
 

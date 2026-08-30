@@ -201,8 +201,9 @@ function QuickCompetencies() {
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <section className="space-y-3 rounded-3xl border border-border bg-surface p-4">
+      <div className="grid items-stretch gap-6 lg:grid-cols-[320px_1fr]">
+        <section className="flex flex-col space-y-3 rounded-3xl border border-border bg-surface p-4">
+
           <label className="block space-y-1.5">
             <span className="mono-label text-muted-foreground">Classe</span>
             <select

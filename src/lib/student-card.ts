@@ -403,7 +403,6 @@ async function drawFront(data: StudentCardData) {
   const { canvas, ctx } = newCanvas();
   const R = 40;
 
-  // Fond blanc + silhouette carte
   ctx.fillStyle = WHITE;
   ctx.fillRect(0, 0, W, H);
   roundRect(ctx, 0, 0, W, H, R);
@@ -413,64 +412,58 @@ async function drawFront(data: StudentCardData) {
   ctx.fillStyle = WHITE;
   ctx.fillRect(0, 0, W, H);
 
-  /* En-tête bleu marine */
-  const headerH = 196;
-  ctx.fillStyle = NAVY;
-  ctx.fillRect(0, 0, W, headerH);
-  // séparation courbe subtile
+  /* ---------------------------------------------------------- bandeau supérieur */
+  const headerH = 208;
+  ctx.fillStyle = NAVY_DEEP;
   ctx.beginPath();
-  ctx.moveTo(0, headerH);
-  ctx.quadraticCurveTo(W / 2, headerH + 44, W, headerH);
-  ctx.lineTo(W, headerH - 4);
-  ctx.lineTo(0, headerH - 4);
+  ctx.moveTo(0, 0);
+  ctx.lineTo(W, 0);
+  ctx.lineTo(W, headerH);
+  ctx.quadraticCurveTo(W / 2, headerH + 52, 0, headerH);
   ctx.closePath();
-  ctx.fillStyle = NAVY;
   ctx.fill();
 
-  ctx.font = font(62, "900");
+  // Titre imposant : EPS blanc + PROGRESS vert
+  const titleSize = fitOneLine(ctx, "EPS PROGRESS", W - 96, 78, 54, "900");
+  ctx.font = font(titleSize, "900");
   const eps = "EPS ";
   const progress = "PROGRESS";
   const totalW = ctx.measureText(eps).width + ctx.measureText(progress).width;
   let x = W / 2 - totalW / 2;
   ctx.textAlign = "left";
   ctx.fillStyle = WHITE;
-  ctx.fillText(eps, x, 92);
+  ctx.fillText(eps, x, 104);
   x += ctx.measureText(eps).width;
   ctx.fillStyle = GREEN;
-  ctx.fillText(progress, x, 92);
+  ctx.fillText(progress, x, 104);
 
   ctx.textAlign = "center";
   ctx.fillStyle = WHITE;
   ctx.font = font(24, "700");
-  ctx.letterSpacing = "5px";
-  ctx.fillText("MON ESPACE ÉLÈVE", W / 2, 132);
+  ctx.letterSpacing = "6px";
+  ctx.fillText("MON ESPACE ÉLÈVE", W / 2, 150);
   ctx.letterSpacing = "0px";
 
-  // fine ligne verte de séparation
-  ctx.fillStyle = GREEN;
-  roundRect(ctx, 54, 160, W - 108, 6, 3);
-  ctx.fill();
-  ctx.fillStyle = GREEN_LIGHT;
-  ctx.beginPath();
-  ctx.moveTo(0, headerH);
-  ctx.quadraticCurveTo(W / 2, headerH + 42, W, headerH);
-  ctx.lineTo(W, headerH - 3);
-  ctx.quadraticCurveTo(W / 2, headerH + 39, 0, headerH - 3);
-  ctx.closePath();
-  ctx.fill();
-
-  /* Zone centrale blanche */
-  ctx.fillStyle = NAVY;
-  ctx.font = font(30, "700");
-  wrapCentered(ctx, "Scanne pour accéder à ton espace personnel", W / 2, 268, W - 150, 38);
-
-  /* QR code encadré vert */
-  const qrSize = 316;
-  const qrX = (W - qrSize) / 2;
-  const qrY = 356;
-  ctx.fillStyle = WHITE;
+  // fine ligne vert citron suivant la courbe du bandeau
   stroke(ctx, GREEN, 6);
-  roundRect(ctx, qrX - 18, qrY - 18, qrSize + 36, qrSize + 36, 26);
+  ctx.beginPath();
+  ctx.moveTo(0, headerH - 2);
+  ctx.quadraticCurveTo(W / 2, headerH + 50, W, headerH - 2);
+  ctx.stroke();
+
+  /* --------------------------------------------------------------- zone blanche */
+  ctx.fillStyle = NAVY;
+  ctx.font = font(31, "700");
+  wrapCentered(ctx, "Scanne pour accéder à ton espace personnel", W / 2, 306, W - 190, 40);
+
+  /* ------------------------------------------------------------------- QR code */
+  const qrSize = 292; // ≈ 39 % ; cadre vert ≈ 44 % de la largeur
+  const pad = 20;
+  const qrX = Math.round((W - qrSize) / 2);
+  const qrY = 384;
+  ctx.fillStyle = WHITE;
+  stroke(ctx, GREEN, 7);
+  roundRect(ctx, qrX - pad, qrY - pad, qrSize + pad * 2, qrSize + pad * 2, 28);
   ctx.fill();
   ctx.stroke();
 
@@ -492,78 +485,65 @@ async function drawFront(data: StudentCardData) {
     ctx.fillText("QR non généré", W / 2, qrY + qrSize / 2);
   }
 
-  /* Pictogrammes des activités suivies, autour du QR */
-  const activities = (data.activities?.length ? data.activities : DEFAULT_ACTIVITIES).slice(0, 6);
-  const badgeR = 40;
-  const leftX = 74;
-  const rightX = W - 74;
-  const slotsY = [qrY + 34, qrY + qrSize / 2, qrY + qrSize - 34];
-  activities.forEach((name, i) => {
-    const side = i % 2 === 0 ? leftX : rightX;
-    const slot = slotsY[Math.floor(i / 2)];
-    if (slot === undefined) return;
-    ctx.fillStyle = OFF_WHITE;
-    stroke(ctx, GREEN, 3);
-    ctx.beginPath();
-    ctx.arc(side, slot, badgeR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    sportIcon(ctx, sportKind(name), side, slot, badgeR * 0.62);
+  /* -------------------------------------------------- pictogrammes des activités */
+  const activities = (data.activities?.length ? data.activities : DEFAULT_ACTIVITIES).slice(0, 5);
+  const kinds = activities.map(sportKind);
+  while (kinds.length < 5) kinds.push(sportKind(DEFAULT_ACTIVITIES[kinds.length] ?? "ball"));
+
+  const sideY = qrY + qrSize / 2;
+  const bottomY = qrY + qrSize + 96;
+  const slots: Array<[number, number, number]> = [
+    [104, sideY, 46], // gauche du QR
+    [W - 104, sideY, 46], // droite du QR
+    [140, bottomY, 44], // bas gauche
+    [W - 140, bottomY, 44], // bas droite
+    [W / 2, bottomY, 44], // sous le QR
+  ];
+  slots.forEach(([cx, cy, r], i) => {
+    const kind = kinds[i];
+    if (!kind) return;
+    sportIcon(ctx, kind, cx, cy, r);
   });
 
-  ctx.fillStyle = "#4A5A6A";
-  ctx.font = font(22, "400");
-  wrapCentered(
-    ctx,
-    "Les informations de progression sont mises à jour régulièrement.",
-    W / 2,
-    qrY + qrSize + 74,
-    W - 170,
-    30,
-  );
-
-  /* Bas de carte bleu marine */
-  const footY = 900;
-  ctx.fillStyle = NAVY;
+  /* ------------------------------------------------------------- bas du recto */
+  const footTop = 852;
+  ctx.fillStyle = NAVY_DEEP;
   ctx.beginPath();
-  ctx.moveTo(0, footY + 26);
-  ctx.quadraticCurveTo(W / 2, footY - 22, W, footY + 26);
+  ctx.moveTo(0, footTop);
+  ctx.quadraticCurveTo(W / 2, footTop - 54, W, footTop);
   ctx.lineTo(W, H);
   ctx.lineTo(0, H);
   ctx.closePath();
   ctx.fill();
 
-  // carte blanche identité
-  const bandY = footY + 62;
-  const bandH = 116;
+  // encadré blanc identité
+  const bandY = 894;
+  const bandH = 148;
   ctx.fillStyle = WHITE;
-  roundRect(ctx, 40, bandY, W - 80, bandH, 26);
-  ctx.fill();
-  ctx.fillStyle = GREEN;
-  roundRect(ctx, 40, bandY, 12, bandH, { tl: 6, tr: 0, br: 0, bl: 6 });
+  roundRect(ctx, 44, bandY, W - 88, bandH, 30);
   ctx.fill();
 
-  userIcon(ctx, 96, bandY + bandH / 2 - 4, 24, GREEN);
+  userIcon(ctx, 108, bandY + 56, 28, GREEN);
 
   ctx.textAlign = "left";
   ctx.fillStyle = NAVY;
-  const nameSize = fitOneLine(ctx, data.fullName, W - 230, 34, 20, "900");
+  const nameSize = fitOneLine(ctx, data.fullName, W - 240, 38, 18, "900");
   ctx.font = font(nameSize, "900");
-  ctx.fillText(data.fullName, 138, bandY + 52);
-  ctx.fillStyle = "#4A5A6A";
-  ctx.font = font(23, "700");
-  ctx.fillText(data.className || "Classe", 138, bandY + 88);
+  ctx.fillText(data.fullName, 158, bandY + 66);
+  ctx.fillStyle = NAVY_SOFT;
+  ctx.font = font(26, "700");
+  ctx.fillText(data.className || "Classe", 158, bandY + 112);
 
   // message de sécurité
-  const secY = bandY + bandH + 46;
-  ctx.font = font(21, "700");
+  const secY = bandY + bandH + 54;
+  ctx.font = font(22, "700");
   const secText = "Ne la prête pas à un autre élève.";
   const secW = ctx.measureText(secText).width;
-  const secStart = W / 2 - (secW + 34) / 2;
-  lockIcon(ctx, secStart + 11, secY - 7, 15, GREEN);
+  const secStart = W / 2 - (secW + 38) / 2;
+  lockIcon(ctx, secStart + 12, secY - 8, 16, GREEN);
   ctx.textAlign = "left";
   ctx.fillStyle = WHITE;
-  ctx.fillText(secText, secStart + 34, secY);
+  ctx.fillText(secText, secStart + 38, secY);
 
   ctx.restore();
   return canvas;
@@ -581,36 +561,29 @@ function drawBack(data: StudentCardData) {
   ctx.save();
   ctx.clip();
 
-  ctx.fillStyle = NAVY;
+  ctx.fillStyle = NAVY_DEEP;
   ctx.fillRect(0, 0, W, H);
 
-  /* Éléments géométriques subtils */
-  ctx.fillStyle = NAVY_SOFT;
-  ctx.globalAlpha = 0.55;
-  ctx.beginPath();
-  ctx.arc(W + 30, 150, 190, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(-40, H - 260, 150, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 0.35;
-  ctx.beginPath();
-  ctx.moveTo(W - 70, H - 90);
-  ctx.lineTo(W + 60, H - 220);
-  ctx.lineTo(W + 60, H - 40);
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 1;
+  /* chevrons diagonaux ton sur ton */
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  stroke(ctx, NAVY_SOFT, 26);
+  for (let i = -2; i < 10; i++) {
+    const offset = i * 150;
+    ctx.beginPath();
+    ctx.moveTo(offset, H + 60);
+    ctx.lineTo(offset + 220, H - 160);
+    ctx.lineTo(offset + 440, H + 60);
+    ctx.stroke();
+  }
+  ctx.restore();
 
-  /* En-tête */
-  userIcon(ctx, 74, 78, 26, GREEN);
+  /* en-tête */
+  userIcon(ctx, 82, 92, 28, GREEN);
   ctx.textAlign = "left";
   ctx.fillStyle = WHITE;
-  ctx.font = font(38, "900");
-  ctx.fillText("Mon parcours EPS", 116, 92);
-  ctx.fillStyle = GREEN;
-  roundRect(ctx, 74, 118, 150, 6, 3);
-  ctx.fill();
+  ctx.font = font(40, "900");
+  ctx.fillText("Mon parcours EPS", 130, 108);
 
   const items: [Parameters<typeof journeyIcon>[1], string][] = [
     ["trend", "Mes progrès"],
@@ -620,67 +593,67 @@ function drawBack(data: StudentCardData) {
     ["bubble", "Conseils de mon professeur"],
   ];
 
-  let y = 220;
+  let y = 216;
   for (const [kind, label] of items) {
-    journeyIcon(ctx, kind, 76, y - 10, 17);
+    journeyIcon(ctx, kind, 84, y - 9, 21);
     ctx.textAlign = "left";
-    ctx.font = font(27, "700");
+    ctx.font = font(label.length > 20 ? 26 : 29, "700");
     ctx.fillStyle = WHITE;
-    ctx.fillText(label, 116, y);
-    stroke(ctx, "rgba(139,203,22,0.45)", 2);
+    ctx.fillText(label, 132, y);
+    stroke(ctx, "rgba(139,203,22,0.55)", 2.5);
     ctx.beginPath();
-    ctx.moveTo(116, y + 22);
-    ctx.lineTo(W - 60, y + 22);
+    ctx.moveTo(56, y + 30);
+    ctx.lineTo(W - 56, y + 30);
     ctx.stroke();
-    y += 102;
+    y += 92;
   }
 
-  /* Encadré information */
+  /* encadré information */
   const textLines = [
     "Les informations sur les compétences",
     "sont mises à jour chaque semaine pour",
     "constater ta progression et identifier",
     "tes axes d'amélioration.",
   ];
-  const boxH = 96 + textLines.length * 34;
-  const boxY = Math.max(y + 26, H - 168 - 40 - boxH);
+  const lineH = 34;
+  const boxH = 74 + textLines.length * lineH;
+  const boxY = y + 22;
 
   ctx.fillStyle = OFF_WHITE;
-  roundRect(ctx, 44, boxY, W - 88, boxH, 26);
+  roundRect(ctx, 48, boxY, W - 96, boxH, 28);
   ctx.fill();
 
-  infoIcon(ctx, 78, boxY + 40, 16, GREEN);
+  infoIcon(ctx, 84, boxY + 42, 17, GREEN);
   ctx.fillStyle = NAVY;
-  ctx.font = font(20, "700");
+  ctx.font = font(21, "900");
   ctx.textAlign = "left";
   ctx.letterSpacing = "2px";
-  ctx.fillText("INFORMATION", 106, boxY + 47);
+  ctx.fillText("INFORMATION", 114, boxY + 50);
   ctx.letterSpacing = "0px";
 
-  ctx.font = font(22, "400");
-  textLines.forEach((line, i) => ctx.fillText(line, 74, boxY + 92 + i * 34));
+  ctx.font = font(23, "400");
+  ctx.fillStyle = NAVY;
+  textLines.forEach((line, i) => ctx.fillText(line, 76, boxY + 96 + i * lineH));
 
-  /* Bas de carte */
+  /* bas du verso */
+  const lineY = boxY + boxH + 40;
   ctx.fillStyle = GREEN;
-  roundRect(ctx, 44, H - 168, W - 88, 5, 3);
+  roundRect(ctx, 48, lineY, W - 96, 5, 3);
   ctx.fill();
 
-  lockIcon(ctx, 78, H - 116, 17, GREEN);
+  lockIcon(ctx, 84, lineY + 52, 18, GREEN);
   ctx.textAlign = "left";
   ctx.fillStyle = WHITE;
-  ctx.font = font(23, "700");
-  ctx.fillText("Cette carte est personnelle.", 110, H - 108);
+  ctx.font = font(24, "700");
+  ctx.fillText("Cette carte est personnelle.", 120, lineY + 46);
   ctx.fillStyle = LIGHT;
-  ctx.font = font(21, "400");
-  ctx.fillText("Ne la prête pas à un autre élève.", 110, H - 74);
-
-  ctx.fillStyle = "#8FA3B5";
-  ctx.font = font(18, "700");
-  ctx.fillText(`${data.fullName} · ${data.className || "EPS Progress"}`, 110, H - 40);
+  ctx.font = font(22, "400");
+  ctx.fillText("Ne la prête pas à un autre élève.", 120, lineY + 80);
 
   ctx.restore();
   return canvas;
 }
+
 
 /** Construit un PDF (recto page 1, verso page 2 pour chaque élève) et le télécharge. */
 export async function downloadStudentCardsPdf(cards: StudentCardData[], fileName: string) {

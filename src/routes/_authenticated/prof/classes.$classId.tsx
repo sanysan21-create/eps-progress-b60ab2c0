@@ -140,6 +140,8 @@ function ClassDetailPage() {
   const [moveTo, setMoveTo] = useState("");
   const [removeTarget, setRemoveTarget] = useState<StudentRow | null>(null);
   const [profileTarget, setProfileTarget] = useState<StudentRow | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const [importOpen, setImportOpen] = useState(false);
   const [parsed, setParsed] = useState<ParsedRow[]>([]);
@@ -219,6 +221,40 @@ function ClassDetailPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  const selectedCount = selectedIds.length;
+  const allVisibleSelected =
+    filtered.length > 0 && filtered.every((s) => selectedIds.includes(s.id));
+
+  const bulkRemoveMutation = useMutation({
+    mutationFn: async () => {
+      for (const id of selectedIds) await removeOne({ data: { studentId: id, classId } });
+      return selectedIds.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count} élève(s) retiré(s) de la classe (historique conservé)`);
+      setSelectedIds([]);
+      setBulkOpen(false);
+      refresh();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const bulkDestroyMutation = useMutation({
+    mutationFn: async () => {
+      for (const id of selectedIds) await destroyOne({ data: { id } });
+      return selectedIds.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count} élève(s) supprimé(s) définitivement`);
+      setSelectedIds([]);
+      setBulkOpen(false);
+      refresh();
+      queryClient.invalidateQueries({ queryKey: ["qr-statuses"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
 
   const asMemberMutation = useMutation({
     mutationFn: (vars: { id: string; asMember: boolean }) => saveAsMember({ data: vars }),
@@ -392,6 +428,37 @@ function ClassDetailPage() {
           </p>
         </div>
       ) : (
+        <>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface/40 px-4 py-3">
+          <label className="flex items-center gap-3 text-xs font-bold uppercase text-muted-foreground">
+            <input
+              type="checkbox"
+              className="size-4 accent-[var(--primary)]"
+              checked={allVisibleSelected}
+              onChange={(e) =>
+                setSelectedIds(e.target.checked ? filtered.map((s) => s.id) : [])
+              }
+            />
+            Tout sélectionner ({filtered.length})
+          </label>
+          {selectedCount > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mono-label text-primary">{selectedCount} sélectionné(s)</span>
+              <button
+                onClick={() => setSelectedIds([])}
+                className="rounded-lg border border-border px-3 py-2 text-[10px] font-bold uppercase"
+              >
+                Annuler la sélection
+              </button>
+              <button
+                onClick={() => setBulkOpen(true)}
+                className="rounded-lg bg-destructive px-3 py-2 text-[10px] font-bold uppercase text-destructive-foreground"
+              >
+                Supprimer la sélection
+              </button>
+            </div>
+          )}
+        </div>
         <ul className="space-y-2">
           {filtered.map((student) => (
             <li
@@ -399,6 +466,19 @@ function ClassDetailPage() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface/40 p-4 transition-colors hover:bg-surface"
             >
               <div className="flex items-center gap-4">
+                <input
+                  type="checkbox"
+                  aria-label={`Sélectionner ${student.first_name} ${student.last_name}`}
+                  className="size-4 accent-[var(--primary)]"
+                  checked={selectedIds.includes(student.id)}
+                  onChange={(e) =>
+                    setSelectedIds((prev) =>
+                      e.target.checked
+                        ? [...prev, student.id]
+                        : prev.filter((id) => id !== student.id),
+                    )
+                  }
+                />
                 <div className="grid size-11 place-items-center rounded-xl bg-surface-2 ring-1 ring-border">
                   <span className="display-title text-sm text-primary">
                     {student.first_name[0]}
@@ -495,6 +575,7 @@ function ClassDetailPage() {
             </li>
           ))}
         </ul>
+        </>
       )}
 
       {/* Ajouter / modifier un élève */}
@@ -702,6 +783,39 @@ function ClassDetailPage() {
             <button
               onClick={() => destroyMutation.mutate()}
               disabled={destroyMutation.isPending}
+              className="rounded-lg bg-destructive px-4 py-2.5 text-xs font-bold uppercase text-destructive-foreground disabled:opacity-60"
+            >
+              Supprimer définitivement
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Suppression en lot */}
+      <AlertDialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedCount} élève{selectedCount === 1 ? "" : "s"} sélectionné
+              {selectedCount === 1 ? "" : "s"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              « Retirer de la classe » conserve les élèves et leur historique. « Supprimer
+              définitivement » efface les élèves et toutes leurs données.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <button
+              onClick={() => bulkRemoveMutation.mutate()}
+              disabled={bulkRemoveMutation.isPending || bulkDestroyMutation.isPending}
+              className="rounded-lg border border-border px-4 py-2.5 text-xs font-bold uppercase disabled:opacity-60"
+            >
+              Retirer de la classe
+            </button>
+            <button
+              onClick={() => bulkDestroyMutation.mutate()}
+              disabled={bulkRemoveMutation.isPending || bulkDestroyMutation.isPending}
               className="rounded-lg bg-destructive px-4 py-2.5 text-xs font-bold uppercase text-destructive-foreground disabled:opacity-60"
             >
               Supprimer définitivement

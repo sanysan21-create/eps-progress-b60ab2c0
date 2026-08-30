@@ -642,8 +642,9 @@ function drawBack(data: StudentCardData) {
     "constater ta progression et identifier",
     "tes axes d'amélioration.",
   ];
-  const boxY = y + 26;
   const boxH = 96 + textLines.length * 34;
+  const boxY = Math.max(y + 26, H - 168 - 40 - boxH);
+
   ctx.fillStyle = OFF_WHITE;
   roundRect(ctx, 44, boxY, W - 88, boxH, 26);
   ctx.fill();

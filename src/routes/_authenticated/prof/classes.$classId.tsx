@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Loader2,
   QrCode,
+  IdCard,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -27,7 +28,12 @@ import {
   type StudentRow,
 } from "@/lib/classes.functions";
 import { Checkbox } from "@/components/ui/checkbox";
-import { listQrStatuses, generateMissingQrForClass } from "@/lib/student-qr.functions";
+import {
+  listQrStatuses,
+  generateMissingQrForClass,
+  getStudentQrBatch,
+} from "@/lib/student-qr.functions";
+import { downloadStudentCardsPdf } from "@/lib/student-card";
 import { StudentQrDialog } from "@/components/eps/StudentQrDialog";
 import {
   Dialog,
@@ -119,6 +125,7 @@ function ClassDetailPage() {
   const fetchQrStatuses = useServerFn(listQrStatuses);
   const generateMissing = useServerFn(generateMissingQrForClass);
   const saveAsMember = useServerFn(setStudentAsMember);
+  const fetchQrBatch = useServerFn(getStudentQrBatch);
 
   const detail = useQuery({
     queryKey: ["class", classId],
@@ -291,6 +298,36 @@ function ClassDetailPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  /** Export PDF des cartes élève (recto page 1, verso page 2, format carte bancaire). */
+  const cardsMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const targets = students.filter((s) => ids.includes(s.id));
+      if (targets.length === 0) throw new Error("Aucun élève sélectionné");
+      const tokens = await fetchQrBatch({ data: { studentIds: targets.map((s) => s.id) } });
+      const byStudent = new Map(tokens.map((t) => [t.studentId, t.token]));
+      const missing = targets.filter((s) => !byStudent.has(s.id)).length;
+      const origin = window.location.origin;
+      await downloadStudentCardsPdf(
+        targets.map((s) => ({
+          fullName: `${s.first_name} ${s.last_name}`,
+          className: klass?.name ?? "",
+          accessUrl: byStudent.has(s.id) ? `${origin}/acces-eleve/${byStudent.get(s.id)}` : null,
+        })),
+        targets.length === 1
+          ? `carte-${targets[0]!.last_name}-${targets[0]!.first_name}.pdf`
+          : `cartes-eleves-${(klass?.name ?? "classe").replace(/\s+/g, "-")}.pdf`,
+      );
+      return { count: targets.length, missing };
+    },
+    onSuccess: ({ count, missing }) => {
+      toast.success(
+        missing > 0
+          ? `${count} carte(s) générée(s) — ${missing} sans QR code actif`
+          : `${count} carte(s) élève générée(s)`,
+      );
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const importMutation = useMutation({
     mutationFn: () =>
@@ -372,6 +409,20 @@ function ClassDetailPage() {
               <QrCode className="size-4" /> Générer les QR manquants ({missingQrCount})
             </button>
           )}
+          {students.length > 0 && (
+            <button
+              onClick={() => cardsMutation.mutate(students.map((s) => s.id))}
+              disabled={cardsMutation.isPending}
+              className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-xs font-bold uppercase disabled:opacity-60"
+            >
+              {cardsMutation.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <IdCard className="size-4" />
+              )}
+              Cartes élève (PDF)
+            </button>
+          )}
         </div>
       </header>
 
@@ -449,6 +500,13 @@ function ClassDetailPage() {
                 className="rounded-lg border border-border px-3 py-2 text-[10px] font-bold uppercase"
               >
                 Annuler la sélection
+              </button>
+              <button
+                onClick={() => cardsMutation.mutate(selectedIds)}
+                disabled={cardsMutation.isPending}
+                className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-[10px] font-bold uppercase disabled:opacity-60"
+              >
+                <IdCard className="size-3.5" /> Cartes élève (PDF)
               </button>
               <button
                 onClick={() => setBulkOpen(true)}

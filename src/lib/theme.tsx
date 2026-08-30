@@ -5,25 +5,25 @@ export type ThemeChoice = "dark" | "light" | "navy-light" | "navy" | "system";
 const STORAGE_KEY = "eps-progress:theme";
 
 export const THEME_OPTIONS: { value: ThemeChoice; label: string; emoji: string; hint: string }[] = [
-  { value: "dark", label: "Thème sombre", emoji: "🌙", hint: "Bleu nuit et volt" },
-  { value: "light", label: "Thème clair", emoji: "☀️", hint: "Fond clair, mêmes couleurs" },
-  {
-    value: "navy-light",
-    label: "Bleu / Vert clair",
-    emoji: "🟩",
-    hint: "Apparence par défaut d'EPS Progress",
-  },
   {
     value: "navy",
     label: "Bleu / Vert sombre",
     emoji: "🟦",
-    hint: "Bleu marine profond et vert sportif",
+    hint: "Apparence par défaut d'EPS Progress",
   },
+  {
+    value: "navy-light",
+    label: "Bleu / Vert clair",
+    emoji: "🟩",
+    hint: "Bleu marine dominant sur fond blanc",
+  },
+  { value: "dark", label: "Thème sombre", emoji: "🌙", hint: "Bleu nuit et volt" },
+  { value: "light", label: "Thème clair", emoji: "☀️", hint: "Fond clair, mêmes couleurs" },
   { value: "system", label: "Automatique", emoji: "🌗", hint: "Suit les réglages de l'appareil" },
 ];
 
 /** Script inline : applique le thème avant le premier rendu pour éviter tout flash. */
-export const themeBootstrapScript = `(function(){try{var c=localStorage.getItem('${STORAGE_KEY}')||'navy-light';var m=c==='system'?(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):c;var e=document.documentElement;e.classList.toggle('light',m==='light');e.classList.toggle('theme-navy',m==='navy');e.classList.toggle('theme-navy-light',m==='navy-light');e.style.colorScheme=(m==='light'||m==='navy-light')?'light':'dark';}catch(e){}})();`;
+export const themeBootstrapScript = `(function(){try{var c=localStorage.getItem('${STORAGE_KEY}')||'navy';var m=c==='system'?(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):c;var e=document.documentElement;e.classList.toggle('light',m==='light');e.classList.toggle('theme-navy',m==='navy');e.classList.toggle('theme-navy-light',m==='navy-light');e.style.colorScheme=(m==='light'||m==='navy-light')?'light':'dark';}catch(e){}})();`;
 
 function systemTheme(): "dark" | "light" {
   if (typeof window === "undefined") return "dark";
@@ -55,8 +55,8 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeChoice>("navy-light");
-  const [resolved, setResolved] = useState<Resolved>("navy-light");
+  const [theme, setThemeState] = useState<ThemeChoice>("navy");
+  const [resolved, setResolved] = useState<Resolved>("navy");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as ThemeChoice | null;
@@ -67,7 +67,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       stored === "navy-light" ||
       stored === "system"
         ? stored
-        : "navy-light";
+        : "navy";
     setThemeState(next);
     setResolved(resolveChoice(next));
     applyTheme(next);

@@ -142,3 +142,20 @@ export const generateMissingQrForClass = createServerFn({ method: "POST" })
     }
     return { generated: missing.length };
   });
+
+/** Jetons actifs de plusieurs élèves (pour l'export des cartes élève en lot). */
+export const getStudentQrBatch = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentIds: string[] }) =>
+    z.object({ studentIds: z.array(z.string().uuid()).min(1).max(400) }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ studentId: string; token: string }[]> => {
+    const rows = await context.sql<{ id: string; student_id: string }[]>`
+      select id, student_id from student_qr_tokens
+      where teacher_id = ${context.userId}
+        and active = true
+        and student_id = any(${data.studentIds}::uuid[])
+    `;
+    const { signStudentToken } = await import("./student-qr.server");
+    return rows.map((row) => ({ studentId: row.student_id, token: signStudentToken(row.id) }));
+  });

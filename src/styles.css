@@ -170,6 +170,46 @@
 }
 
 
+/*
+ * Thème "Bleu / Vert" : bleu marine profond + vert sportif (DA carte élève).
+ */
+.theme-navy {
+  --background: oklch(0.215 0.055 258);
+  --foreground: oklch(0.985 0.005 250);
+  --card: oklch(0.27 0.058 258);
+  --card-foreground: oklch(0.985 0.005 250);
+  --surface: oklch(0.27 0.058 258);
+  --surface-2: oklch(0.32 0.055 258);
+  --popover: oklch(0.27 0.058 258);
+  --popover-foreground: oklch(0.985 0.005 250);
+  --primary: oklch(0.72 0.175 132);
+  --primary-foreground: oklch(0.19 0.05 258);
+  --secondary: oklch(0.32 0.055 258);
+  --secondary-foreground: oklch(0.985 0.005 250);
+  --muted: oklch(0.32 0.055 258);
+  --muted-foreground: oklch(0.76 0.03 250);
+  --accent: oklch(0.36 0.06 258);
+  --accent-foreground: oklch(0.985 0.005 250);
+  --destructive: oklch(0.6 0.21 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.37 0.05 258);
+  --input: oklch(0.37 0.05 258);
+  --ring: oklch(0.72 0.175 132);
+  --chart-1: oklch(0.72 0.175 132);
+  --chart-2: oklch(0.68 0.14 225);
+  --chart-3: oklch(0.75 0.16 75);
+  --chart-4: oklch(0.62 0.17 300);
+  --chart-5: oklch(0.65 0.19 20);
+  --sidebar: oklch(0.24 0.056 258);
+  --sidebar-foreground: oklch(0.985 0.005 250);
+  --sidebar-primary: oklch(0.72 0.175 132);
+  --sidebar-primary-foreground: oklch(0.19 0.05 258);
+  --sidebar-accent: oklch(0.32 0.055 258);
+  --sidebar-accent-foreground: oklch(0.985 0.005 250);
+  --sidebar-border: oklch(0.37 0.05 258);
+  --sidebar-ring: oklch(0.72 0.175 132);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

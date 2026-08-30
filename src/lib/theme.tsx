@@ -55,8 +55,8 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeChoice>("navy-light");
-  const [resolved, setResolved] = useState<Resolved>("navy-light");
+  const [theme, setThemeState] = useState<ThemeChoice>("navy");
+  const [resolved, setResolved] = useState<Resolved>("navy");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as ThemeChoice | null;
@@ -67,7 +67,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       stored === "navy-light" ||
       stored === "system"
         ? stored
-        : "navy-light";
+        : "navy";
     setThemeState(next);
     setResolved(resolveChoice(next));
     applyTheme(next);

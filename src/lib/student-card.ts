@@ -15,15 +15,21 @@ const H = Math.round(CARD_H_MM * PX_PER_MM);
 
 const NAVY = "#062B4C";
 const NAVY_DEEP = "#03213D";
+const NAVY_SOFT = "#0B3A64";
 const GREEN = "#8BCB16";
+const GREEN_LIGHT = "#A4D52A";
 const WHITE = "#FFFFFF";
 const OFF_WHITE = "#F5F6F4";
 const LIGHT = "#E9EBEE";
+
+const DEFAULT_ACTIVITIES = ["Course", "Escalade", "Danse", "Badminton", "Ultimate"];
 
 export type StudentCardData = {
   fullName: string;
   className: string;
   accessUrl: string | null;
+  /** Activités réellement suivies par l'élève (pictogrammes du recto). */
+  activities?: string[];
 };
 
 function roundRect(
@@ -32,14 +38,19 @@ function roundRect(
   y: number,
   w: number,
   h: number,
-  r: number,
+  r: number | { tl: number; tr: number; br: number; bl: number },
 ) {
+  const rr = typeof r === "number" ? { tl: r, tr: r, br: r, bl: r } : r;
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
+  ctx.moveTo(x + rr.tl, y);
+  ctx.lineTo(x + w - rr.tr, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rr.tr);
+  ctx.lineTo(x + w, y + h - rr.br);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - rr.br, y + h);
+  ctx.lineTo(x + rr.bl, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - rr.bl);
+  ctx.lineTo(x, y + rr.tl);
+  ctx.quadraticCurveTo(x, y, x + rr.tl, y);
   ctx.closePath();
 }
 
@@ -83,119 +94,241 @@ function wrapCentered(
   return y + lines.length * lineHeight;
 }
 
-async function drawFront(data: StudentCardData) {
-  const { canvas, ctx } = newCanvas();
-
-  ctx.fillStyle = NAVY;
-  ctx.fillRect(0, 0, W, H);
-
-  // Titre
-  ctx.textAlign = "center";
-  ctx.font = font(60, "900");
-  const eps = "EPS ";
-  const progress = "PROGRESS";
-  const totalW = ctx.measureText(eps).width + ctx.measureText(progress).width;
-  let x = W / 2 - totalW / 2;
-  ctx.textAlign = "left";
-  ctx.fillStyle = WHITE;
-  ctx.fillText(eps, x, 96);
-  x += ctx.measureText(eps).width;
-  ctx.fillStyle = GREEN;
-  ctx.fillText(progress, x, 96);
-
-  ctx.textAlign = "center";
-  ctx.fillStyle = WHITE;
-  ctx.font = font(22, "700");
-  ctx.letterSpacing = "4px";
-  ctx.fillText("MON ESPACE ÉLÈVE", W / 2, 130);
-  ctx.letterSpacing = "0px";
-
-  // Filet vert
-  ctx.fillStyle = GREEN;
-  ctx.fillRect(40, 152, W - 80, 5);
-
-  // Panneau blanc central
-  const panelY = 168;
-  const panelH = 700;
-  ctx.fillStyle = OFF_WHITE;
-  roundRect(ctx, 24, panelY, W - 48, panelH, 26);
-  ctx.fill();
-
-  ctx.fillStyle = NAVY;
-  ctx.font = font(26, "700");
-  wrapCentered(ctx, "Scanne pour accéder à ton espace personnel", W / 2, panelY + 52, W - 130, 34);
-
-  // QR
-  const qrSize = 400;
-  const qrX = (W - qrSize) / 2;
-  const qrY = panelY + 150;
-  ctx.strokeStyle = GREEN;
-  ctx.lineWidth = 5;
-  roundRect(ctx, qrX - 14, qrY - 14, qrSize + 28, qrSize + 28, 20);
-  ctx.fillStyle = WHITE;
-  ctx.fill();
-  ctx.stroke();
-
-  if (data.accessUrl) {
-    const dataUrl = await QRCode.toDataURL(data.accessUrl, {
-      width: 800,
-      margin: 0,
-      errorCorrectionLevel: "M",
-      color: { dark: NAVY, light: "#ffffff" },
-    });
-    const img = new Image();
-    img.src = dataUrl;
-    await img.decode();
-    ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
-  } else {
-    ctx.fillStyle = "#9AA5B1";
-    ctx.font = font(24, "700");
-    ctx.textAlign = "center";
-    ctx.fillText("QR non généré", W / 2, qrY + qrSize / 2);
+/** Réduit la taille de police jusqu'à ce que le texte tienne sur une seule ligne. */
+function fitOneLine(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  start: number,
+  min: number,
+  weight: "700" | "900" = "900",
+) {
+  let size = start;
+  ctx.font = font(size, weight);
+  while (size > min && ctx.measureText(text).width > maxWidth) {
+    size -= 1;
+    ctx.font = font(size, weight);
   }
-
-  ctx.fillStyle = NAVY;
-  ctx.font = font(22, "400");
-  wrapCentered(
-    ctx,
-    "Les informations de progression sont mises à jour régulièrement.",
-    W / 2,
-    qrY + qrSize + 54,
-    W - 130,
-    30,
-  );
-
-  // Bandeau identité
-  const bandY = panelY + panelH + 30;
-  ctx.fillStyle = WHITE;
-  roundRect(ctx, 34, bandY, W - 68, 96, 22);
-  ctx.fill();
-  ctx.fillStyle = GREEN;
-  roundRect(ctx, 34, bandY, 10, 96, 5);
-  ctx.fill();
-
-  ctx.textAlign = "left";
-  ctx.fillStyle = NAVY;
-  ctx.font = font(32, "900");
-  ctx.fillText(data.fullName, 72, bandY + 42);
-  ctx.fillStyle = "#4A5A6A";
-  ctx.font = font(24, "400");
-  ctx.fillText(data.className || "Élève", 72, bandY + 76);
-
-  ctx.textAlign = "center";
-  ctx.fillStyle = GREEN;
-  ctx.font = font(20, "700");
-  ctx.fillText("Ne la prête pas à un autre élève.", W / 2, H - 34);
-
-  return canvas;
+  return size;
 }
 
-function icon(ctx: CanvasRenderingContext2D, kind: string, cx: number, cy: number, r: number) {
-  ctx.strokeStyle = GREEN;
-  ctx.fillStyle = GREEN;
-  ctx.lineWidth = 3.5;
+/* ---------------------------------------------------------------- pictogrammes */
+
+type SportKind = "run" | "climb" | "dance" | "badminton" | "ultimate" | "ball";
+
+function sportKind(name: string): SportKind {
+  const n = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (/(cours|running|athle|relais|endurance|demi-fond|sprint)/.test(n)) return "run";
+  if (/(escalade|grimpe|bloc)/.test(n)) return "climb";
+  if (/(danse|acro|gym|cirque|expression)/.test(n)) return "dance";
+  if (/(badminton|tennis|raquette|ping|table)/.test(n)) return "badminton";
+  if (/(ultimate|frisbee|disque)/.test(n)) return "ultimate";
+  return "ball";
+}
+
+function stroke(ctx: CanvasRenderingContext2D, color: string, width: number) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
+}
+
+/** Pictogramme sportif bleu marine avec touche de vert, dans un carré de côté 2r. */
+function sportIcon(ctx: CanvasRenderingContext2D, kind: SportKind, cx: number, cy: number, r: number) {
+  const u = r / 10;
+  stroke(ctx, NAVY, 2.6 * u * 0.9);
+  ctx.fillStyle = NAVY;
+
+  if (kind === "run") {
+    ctx.beginPath();
+    ctx.arc(cx + 1.5 * u, cy - 6 * u, 2 * u, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx - 3 * u, cy - 1 * u);
+    ctx.lineTo(cx + 1 * u, cy - 2.5 * u);
+    ctx.lineTo(cx + 4 * u, cy + 1 * u);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 1 * u, cy - 2.5 * u);
+    ctx.lineTo(cx - 1 * u, cy + 3 * u);
+    ctx.lineTo(cx - 5 * u, cy + 6.5 * u);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 1 * u, cy + 3 * u);
+    ctx.lineTo(cx + 4 * u, cy + 6.5 * u);
+    ctx.stroke();
+    stroke(ctx, GREEN, 2.2 * u * 0.9);
+    ctx.beginPath();
+    ctx.moveTo(cx - 8 * u, cy - 3 * u);
+    ctx.lineTo(cx - 4.5 * u, cy - 3 * u);
+    ctx.moveTo(cx - 8 * u, cy + 0.5 * u);
+    ctx.lineTo(cx - 5.5 * u, cy + 0.5 * u);
+    ctx.stroke();
+    return;
+  }
+
+  if (kind === "climb") {
+    stroke(ctx, GREEN, 2.2 * u * 0.9);
+    ctx.beginPath();
+    ctx.moveTo(cx - 7 * u, cy - 8 * u);
+    ctx.lineTo(cx - 7 * u, cy + 8 * u);
+    ctx.stroke();
+    ctx.fillStyle = GREEN;
+    for (const [dx, dy] of [
+      [-3.5, -6],
+      [1.5, -2.5],
+      [-2, 4],
+    ] as const) {
+      ctx.beginPath();
+      ctx.arc(cx + dx * u, cy + dy * u, 1.2 * u, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    stroke(ctx, NAVY, 2.6 * u * 0.9);
+    ctx.fillStyle = NAVY;
+    ctx.beginPath();
+    ctx.arc(cx + 4 * u, cy - 6 * u, 2 * u, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + 4 * u, cy - 4 * u);
+    ctx.lineTo(cx + 2.5 * u, cy + 1.5 * u);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 4 * u, cy - 3 * u);
+    ctx.lineTo(cx - 1.5 * u, cy - 5.5 * u);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 2.5 * u, cy + 1.5 * u);
+    ctx.lineTo(cx - 1 * u, cy + 4.5 * u);
+    ctx.moveTo(cx + 2.5 * u, cy + 1.5 * u);
+    ctx.lineTo(cx + 4.5 * u, cy + 7 * u);
+    ctx.stroke();
+    return;
+  }
+
+  if (kind === "dance") {
+    ctx.beginPath();
+    ctx.arc(cx - 0.5 * u, cy - 6.5 * u, 2 * u, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx - 0.5 * u, cy - 4.5 * u);
+    ctx.lineTo(cx + 1 * u, cy + 1 * u);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 0.5 * u, cy - 3.5 * u);
+    ctx.lineTo(cx - 5.5 * u, cy - 6 * u);
+    ctx.moveTo(cx - 0.5 * u, cy - 3.5 * u);
+    ctx.lineTo(cx + 5 * u, cy - 7.5 * u);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 1 * u, cy + 1 * u);
+    ctx.lineTo(cx - 3 * u, cy + 7 * u);
+    ctx.moveTo(cx + 1 * u, cy + 1 * u);
+    ctx.lineTo(cx + 6 * u, cy + 5 * u);
+    ctx.stroke();
+    stroke(ctx, GREEN, 2.2 * u * 0.9);
+    ctx.beginPath();
+    ctx.arc(cx + 0.5 * u, cy + 1 * u, 7.5 * u, -0.15 * Math.PI, 0.55 * Math.PI);
+    ctx.stroke();
+    return;
+  }
+
+  if (kind === "badminton") {
+    ctx.beginPath();
+    ctx.ellipse(cx - 1 * u, cy - 2.5 * u, 4 * u, 5 * u, Math.PI / 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 1.5 * u, cy + 1 * u);
+    ctx.lineTo(cx + 6.5 * u, cy + 7 * u);
+    ctx.stroke();
+    stroke(ctx, GREEN, 2.2 * u * 0.9);
+    ctx.fillStyle = GREEN;
+    ctx.beginPath();
+    ctx.arc(cx + 5.5 * u, cy - 6 * u, 1.6 * u, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + 5.5 * u, cy - 4.6 * u);
+    ctx.lineTo(cx + 3.5 * u, cy - 1.5 * u);
+    ctx.moveTo(cx + 5.5 * u, cy - 4.6 * u);
+    ctx.lineTo(cx + 7.5 * u, cy - 1.5 * u);
+    ctx.stroke();
+    return;
+  }
+
+  if (kind === "ultimate") {
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 1 * u, 8 * u, 3.6 * u, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    stroke(ctx, GREEN, 2.2 * u * 0.9);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - 0.5 * u, 4.5 * u, 2 * u, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    stroke(ctx, NAVY, 2.4 * u * 0.9);
+    ctx.beginPath();
+    ctx.arc(cx, cy + 1 * u, 8 * u, 0.1 * Math.PI, 0.9 * Math.PI);
+    ctx.stroke();
+    return;
+  }
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 7 * u, 0, Math.PI * 2);
+  ctx.stroke();
+  stroke(ctx, GREEN, 2.2 * u * 0.9);
+  ctx.beginPath();
+  ctx.moveTo(cx - 7 * u, cy - 1.5 * u);
+  ctx.quadraticCurveTo(cx, cy + 3.5 * u, cx + 7 * u, cy - 1.5 * u);
+  ctx.stroke();
+}
+
+/** Icône utilisateur (cercle + buste). */
+function userIcon(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string) {
+  stroke(ctx, color, r * 0.24);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy - r * 0.35, r * 0.38, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy + r * 0.75, r * 0.72, Math.PI * 1.15, Math.PI * 1.85);
+  ctx.stroke();
+}
+
+function lockIcon(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string) {
+  stroke(ctx, color, r * 0.22);
+  ctx.fillStyle = color;
+  roundRect(ctx, cx - r * 0.65, cy - r * 0.1, r * 1.3, r * 0.95, r * 0.22);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy - r * 0.15, r * 0.42, Math.PI, 0);
+  ctx.stroke();
+}
+
+function infoIcon(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string) {
+  stroke(ctx, color, r * 0.2);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy - r * 0.45, r * 0.14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r * 0.1);
+  ctx.lineTo(cx, cy + r * 0.5);
+  ctx.stroke();
+}
+
+/** Pictogrammes du verso (parcours EPS). */
+function journeyIcon(
+  ctx: CanvasRenderingContext2D,
+  kind: "trend" | "target" | "star" | "calendar" | "bubble",
+  cx: number,
+  cy: number,
+  r: number,
+) {
+  stroke(ctx, GREEN, 3.2);
+  ctx.fillStyle = GREEN;
   if (kind === "trend") {
     ctx.beginPath();
     ctx.moveTo(cx - r, cy + r * 0.6);
@@ -238,7 +371,7 @@ function icon(ctx: CanvasRenderingContext2D, kind: string, cx: number, cy: numbe
     ctx.stroke();
     ctx.fillRect(cx - r * 0.55, cy + r * 0.15, r * 0.35, r * 0.35);
     ctx.fillRect(cx + r * 0.2, cy + r * 0.15, r * 0.35, r * 0.35);
-  } else if (kind === "bubble") {
+  } else {
     roundRect(ctx, cx - r, cy - r * 0.8, r * 2, r * 1.4, r * 0.5);
     ctx.stroke();
     ctx.beginPath();
@@ -247,85 +380,290 @@ function icon(ctx: CanvasRenderingContext2D, kind: string, cx: number, cy: numbe
     ctx.lineTo(cx - r * 0.6, cy + r * 1.05);
     ctx.closePath();
     ctx.fill();
-  } else if (kind === "lock") {
-    roundRect(ctx, cx - r * 0.75, cy - r * 0.15, r * 1.5, r * 1.1, 4);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(cx, cy - r * 0.2, r * 0.5, Math.PI, 0);
-    ctx.stroke();
   }
 }
 
+/* ---------------------------------------------------------------------- recto */
+
+async function drawFront(data: StudentCardData) {
+  const { canvas, ctx } = newCanvas();
+  const R = 40;
+
+  // Fond blanc + silhouette carte
+  ctx.fillStyle = WHITE;
+  ctx.fillRect(0, 0, W, H);
+  roundRect(ctx, 0, 0, W, H, R);
+  ctx.save();
+  ctx.clip();
+
+  ctx.fillStyle = WHITE;
+  ctx.fillRect(0, 0, W, H);
+
+  /* En-tête bleu marine */
+  const headerH = 196;
+  ctx.fillStyle = NAVY;
+  ctx.fillRect(0, 0, W, headerH);
+  // séparation courbe subtile
+  ctx.beginPath();
+  ctx.moveTo(0, headerH);
+  ctx.quadraticCurveTo(W / 2, headerH + 44, W, headerH);
+  ctx.lineTo(W, headerH - 4);
+  ctx.lineTo(0, headerH - 4);
+  ctx.closePath();
+  ctx.fillStyle = NAVY;
+  ctx.fill();
+
+  ctx.font = font(62, "900");
+  const eps = "EPS ";
+  const progress = "PROGRESS";
+  const totalW = ctx.measureText(eps).width + ctx.measureText(progress).width;
+  let x = W / 2 - totalW / 2;
+  ctx.textAlign = "left";
+  ctx.fillStyle = WHITE;
+  ctx.fillText(eps, x, 92);
+  x += ctx.measureText(eps).width;
+  ctx.fillStyle = GREEN;
+  ctx.fillText(progress, x, 92);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = WHITE;
+  ctx.font = font(24, "700");
+  ctx.letterSpacing = "5px";
+  ctx.fillText("MON ESPACE ÉLÈVE", W / 2, 132);
+  ctx.letterSpacing = "0px";
+
+  // fine ligne verte de séparation
+  ctx.fillStyle = GREEN;
+  roundRect(ctx, 54, 160, W - 108, 6, 3);
+  ctx.fill();
+  ctx.fillStyle = GREEN_LIGHT;
+  ctx.beginPath();
+  ctx.moveTo(0, headerH);
+  ctx.quadraticCurveTo(W / 2, headerH + 42, W, headerH);
+  ctx.lineTo(W, headerH - 3);
+  ctx.quadraticCurveTo(W / 2, headerH + 39, 0, headerH - 3);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Zone centrale blanche */
+  ctx.fillStyle = NAVY;
+  ctx.font = font(30, "700");
+  wrapCentered(ctx, "Scanne pour accéder à ton espace personnel", W / 2, 268, W - 150, 38);
+
+  /* QR code encadré vert */
+  const qrSize = 316;
+  const qrX = (W - qrSize) / 2;
+  const qrY = 356;
+  ctx.fillStyle = WHITE;
+  stroke(ctx, GREEN, 6);
+  roundRect(ctx, qrX - 18, qrY - 18, qrSize + 36, qrSize + 36, 26);
+  ctx.fill();
+  ctx.stroke();
+
+  if (data.accessUrl) {
+    const dataUrl = await QRCode.toDataURL(data.accessUrl, {
+      width: 760,
+      margin: 0,
+      errorCorrectionLevel: "M",
+      color: { dark: NAVY, light: "#ffffff" },
+    });
+    const img = new Image();
+    img.src = dataUrl;
+    await img.decode();
+    ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+  } else {
+    ctx.fillStyle = "#9AA5B1";
+    ctx.font = font(24, "700");
+    ctx.textAlign = "center";
+    ctx.fillText("QR non généré", W / 2, qrY + qrSize / 2);
+  }
+
+  /* Pictogrammes des activités suivies, autour du QR */
+  const activities = (data.activities?.length ? data.activities : DEFAULT_ACTIVITIES).slice(0, 6);
+  const badgeR = 40;
+  const leftX = 74;
+  const rightX = W - 74;
+  const slotsY = [qrY + 34, qrY + qrSize / 2, qrY + qrSize - 34];
+  activities.forEach((name, i) => {
+    const side = i % 2 === 0 ? leftX : rightX;
+    const slot = slotsY[Math.floor(i / 2)];
+    if (slot === undefined) return;
+    ctx.fillStyle = OFF_WHITE;
+    stroke(ctx, GREEN, 3);
+    ctx.beginPath();
+    ctx.arc(side, slot, badgeR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    sportIcon(ctx, sportKind(name), side, slot, badgeR * 0.62);
+  });
+
+  ctx.fillStyle = "#4A5A6A";
+  ctx.font = font(22, "400");
+  wrapCentered(
+    ctx,
+    "Les informations de progression sont mises à jour régulièrement.",
+    W / 2,
+    qrY + qrSize + 74,
+    W - 170,
+    30,
+  );
+
+  /* Bas de carte bleu marine */
+  const footY = 900;
+  ctx.fillStyle = NAVY;
+  ctx.beginPath();
+  ctx.moveTo(0, footY + 26);
+  ctx.quadraticCurveTo(W / 2, footY - 22, W, footY + 26);
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // carte blanche identité
+  const bandY = footY + 62;
+  const bandH = 116;
+  ctx.fillStyle = WHITE;
+  roundRect(ctx, 40, bandY, W - 80, bandH, 26);
+  ctx.fill();
+  ctx.fillStyle = GREEN;
+  roundRect(ctx, 40, bandY, 12, bandH, { tl: 6, tr: 0, br: 0, bl: 6 });
+  ctx.fill();
+
+  userIcon(ctx, 96, bandY + bandH / 2 - 4, 24, GREEN);
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = NAVY;
+  const nameSize = fitOneLine(ctx, data.fullName, W - 230, 34, 20, "900");
+  ctx.font = font(nameSize, "900");
+  ctx.fillText(data.fullName, 138, bandY + 52);
+  ctx.fillStyle = "#4A5A6A";
+  ctx.font = font(23, "700");
+  ctx.fillText(data.className || "Classe", 138, bandY + 88);
+
+  // message de sécurité
+  const secY = bandY + bandH + 46;
+  ctx.font = font(21, "700");
+  const secText = "Ne la prête pas à un autre élève.";
+  const secW = ctx.measureText(secText).width;
+  const secStart = W / 2 - (secW + 34) / 2;
+  lockIcon(ctx, secStart + 11, secY - 7, 15, GREEN);
+  ctx.textAlign = "left";
+  ctx.fillStyle = WHITE;
+  ctx.fillText(secText, secStart + 34, secY);
+
+  ctx.restore();
+  return canvas;
+}
+
+/* ---------------------------------------------------------------------- verso */
+
 function drawBack(data: StudentCardData) {
   const { canvas, ctx } = newCanvas();
+  const R = 40;
+
+  ctx.fillStyle = WHITE;
+  ctx.fillRect(0, 0, W, H);
+  roundRect(ctx, 0, 0, W, H, R);
+  ctx.save();
+  ctx.clip();
 
   ctx.fillStyle = NAVY;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.textAlign = "center";
-  ctx.fillStyle = WHITE;
-  ctx.font = font(40, "900");
-  ctx.fillText("Mon parcours EPS", W / 2, 84);
-  ctx.fillStyle = GREEN;
-  ctx.fillRect(W / 2 - 70, 104, 140, 5);
+  /* Éléments géométriques subtils */
+  ctx.fillStyle = NAVY_SOFT;
+  ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.arc(W + 30, 150, 190, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(-40, H - 260, 150, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath();
+  ctx.moveTo(W - 70, H - 90);
+  ctx.lineTo(W + 60, H - 220);
+  ctx.lineTo(W + 60, H - 40);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
 
-  const items: [string, string][] = [
+  /* En-tête */
+  userIcon(ctx, 74, 78, 26, GREEN);
+  ctx.textAlign = "left";
+  ctx.fillStyle = WHITE;
+  ctx.font = font(38, "900");
+  ctx.fillText("Mon parcours EPS", 116, 92);
+  ctx.fillStyle = GREEN;
+  roundRect(ctx, 74, 118, 150, 6, 3);
+  ctx.fill();
+
+  const items: [Parameters<typeof journeyIcon>[1], string][] = [
     ["trend", "Mes progrès"],
     ["target", "Mes objectifs"],
     ["star", "Mes réussites"],
     ["calendar", "Mes résultats"],
-    ["bubble", "Conseils du professeur"],
+    ["bubble", "Conseils de mon professeur"],
   ];
 
-  let y = 190;
+  let y = 208;
   for (const [kind, label] of items) {
-    icon(ctx, kind, 68, y - 9, 17);
+    journeyIcon(ctx, kind, 76, y - 10, 17);
     ctx.textAlign = "left";
-    ctx.font = font(29, "700");
+    ctx.font = font(27, "700");
     ctx.fillStyle = WHITE;
-    ctx.fillText(label, 108, y);
-    ctx.strokeStyle = "rgba(139,203,22,0.4)";
-    ctx.lineWidth = 2;
+    ctx.fillText(label, 116, y);
+    stroke(ctx, "rgba(139,203,22,0.45)", 2);
     ctx.beginPath();
-    ctx.moveTo(108, y + 20);
-    ctx.lineTo(W - 52, y + 20);
+    ctx.moveTo(116, y + 22);
+    ctx.lineTo(W - 60, y + 22);
     ctx.stroke();
-    y += 86;
+    y += 82;
   }
 
-  // Encadré info
-  const boxY = y + 54;
+  /* Encadré information */
   const textLines = [
     "Les informations sur les compétences",
     "sont mises à jour chaque semaine pour",
     "constater ta progression et identifier",
     "tes axes d'amélioration.",
   ];
-  const boxH = 64 + textLines.length * 36;
+  const boxY = y + 26;
+  const boxH = 96 + textLines.length * 34;
   ctx.fillStyle = OFF_WHITE;
-  roundRect(ctx, 40, boxY, W - 80, boxH, 22);
+  roundRect(ctx, 44, boxY, W - 88, boxH, 26);
   ctx.fill();
 
+  infoIcon(ctx, 78, boxY + 40, 16, GREEN);
   ctx.fillStyle = NAVY;
-  ctx.font = font(23, "400");
+  ctx.font = font(20, "700");
   ctx.textAlign = "left";
-  textLines.forEach((line, i) => ctx.fillText(line, 68, boxY + 50 + i * 36));
+  ctx.letterSpacing = "2px";
+  ctx.fillText("INFORMATION", 106, boxY + 47);
+  ctx.letterSpacing = "0px";
 
+  ctx.font = font(22, "400");
+  textLines.forEach((line, i) => ctx.fillText(line, 74, boxY + 92 + i * 34));
+
+  /* Bas de carte */
   ctx.fillStyle = GREEN;
-  ctx.fillRect(40, H - 150, W - 80, 4);
+  roundRect(ctx, 44, H - 168, W - 88, 5, 3);
+  ctx.fill();
 
-  icon(ctx, "lock", 70, H - 96, 16);
+  lockIcon(ctx, 78, H - 116, 17, GREEN);
   ctx.textAlign = "left";
+  ctx.fillStyle = WHITE;
+  ctx.font = font(23, "700");
+  ctx.fillText("Cette carte est personnelle.", 110, H - 108);
   ctx.fillStyle = LIGHT;
-  ctx.font = font(22, "700");
-  ctx.fillText("Cette carte est personnelle.", 106, H - 88);
-  ctx.fillStyle = "#B9C4CF";
-  ctx.font = font(20, "400");
-  ctx.fillText(`${data.fullName} · ${data.className || "EPS Progress"}`, 106, H - 56);
+  ctx.font = font(21, "400");
+  ctx.fillText("Ne la prête pas à un autre élève.", 110, H - 74);
 
-  ctx.fillStyle = NAVY_DEEP;
-  ctx.fillRect(0, H - 10, W, 10);
+  ctx.fillStyle = "#8FA3B5";
+  ctx.font = font(18, "700");
+  ctx.fillText(`${data.fullName} · ${data.className || "EPS Progress"}`, 110, H - 40);
 
+  ctx.restore();
   return canvas;
 }
 

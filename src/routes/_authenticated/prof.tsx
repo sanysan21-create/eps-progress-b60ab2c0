@@ -38,29 +38,36 @@ function TeacherLayout() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto grid min-h-screen max-w-[1440px] grid-cols-1 lg:grid-cols-[280px_1fr]">
-        <aside className="hidden flex-col border-r border-border bg-sidebar p-6 lg:flex">
+        <aside className="hidden flex-col border-r border-sidebar-border bg-sidebar p-6 text-sidebar-foreground lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-y-auto">
           <div className="mb-10">
-            <Link to="/" className="display-title block text-3xl italic tracking-tighter text-primary">
+            <Link
+              to="/"
+              className="display-title block text-3xl italic tracking-tighter text-sidebar-primary"
+            >
               EPS Progress
             </Link>
-            <p className="mono-label mt-1 text-muted-foreground">suivi des progrès</p>
+            <p className="mono-label mt-1 text-sidebar-foreground/70">suivi des progrès</p>
           </div>
 
           <nav className="space-y-1">
-            <div className="mono-label mb-4 text-muted-foreground">Tableau de bord</div>
+            <div className="mono-label mb-4 text-sidebar-foreground/60">Tableau de bord</div>
             {nav.map(({ to, label, icon: Icon, exact }) => (
               <Link
                 key={to}
                 to={to}
                 activeOptions={{ exact }}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-medium uppercase text-foreground/80 transition-colors hover:bg-accent"
-                activeProps={{ className: "bg-primary text-primary-foreground font-bold" }}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-medium uppercase text-sidebar-foreground/90 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                activeProps={{
+                  className:
+                    "bg-sidebar-accent text-sidebar-foreground font-bold ring-1 ring-sidebar-primary/50 [&>svg]:text-sidebar-primary",
+                }}
               >
                 <Icon className="size-4" />
                 {label}
               </Link>
             ))}
           </nav>
+
 
           <div className="mt-auto space-y-4 border-t border-border pt-6">
             <Link to="/eleve" className="mono-label block text-muted-foreground hover:text-primary">

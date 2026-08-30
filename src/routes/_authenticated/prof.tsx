@@ -69,8 +69,11 @@ function TeacherLayout() {
           </nav>
 
 
-          <div className="mt-auto space-y-4 border-t border-border pt-6">
-            <Link to="/eleve" className="mono-label block text-muted-foreground hover:text-primary">
+          <div className="mt-auto space-y-4 border-t border-sidebar-border pt-6">
+            <Link
+              to="/eleve"
+              className="mono-label block text-sidebar-foreground/80 hover:text-sidebar-primary"
+            >
               → Voir l'espace élève
             </Link>
             <button
@@ -78,20 +81,23 @@ function TeacherLayout() {
                 await signOutTeacher({});
                 window.location.href = "/auth";
               }}
-              className="mono-label block text-muted-foreground hover:text-primary"
+              className="mono-label flex w-full items-center justify-center gap-2 rounded-xl border border-sidebar-primary/40 bg-sidebar-accent px-3 py-2.5 text-sidebar-foreground transition-colors hover:border-sidebar-primary hover:text-sidebar-primary"
             >
-              → Se déconnecter
+              <LogOut className="size-3.5" /> Se déconnecter
             </button>
-            <Link to="/prof/profil" className="flex items-center gap-3 rounded-xl p-2 hover:bg-accent">
+            <Link
+              to="/prof/profil"
+              className="flex items-center gap-3 rounded-xl p-2 text-sidebar-foreground hover:bg-sidebar-accent"
+            >
               {profile?.avatarUrl ? (
                 <img
                   src={profile.avatarUrl}
                   alt={`Photo de profil de ${profile.firstName} ${profile.lastName}`}
-                  className="size-10 rounded-full object-cover ring-2 ring-primary/30"
+                  className="size-10 rounded-full object-cover ring-2 ring-sidebar-primary/40"
                 />
               ) : (
-                <div className="grid size-10 place-items-center rounded-full bg-surface-2 ring-2 ring-primary/20">
-                  <span className="display-title text-primary">
+                <div className="grid size-10 place-items-center rounded-full bg-sidebar-accent ring-2 ring-sidebar-primary/30">
+                  <span className="display-title text-sidebar-primary">
                     {profile ? teacherInitials(profile) : "?"}
                   </span>
                 </div>
@@ -100,21 +106,24 @@ function TeacherLayout() {
                 <p className="truncate text-xs font-bold">
                   {profile ? `${profile.firstName} ${profile.lastName}`.trim() || profile.email : "Mon profil"}
                 </p>
-                <p className="mono-label truncate text-muted-foreground">Professeur EPS</p>
+                <p className="mono-label truncate text-sidebar-foreground/70">Professeur EPS</p>
               </div>
             </Link>
           </div>
         </aside>
 
-        <div className="flex flex-col">
-          <nav className="flex items-center gap-2 overflow-x-auto border-b border-border bg-sidebar px-4 py-3 lg:hidden">
+        <div className="flex min-h-screen flex-col lg:min-h-0">
+          <nav className="flex items-center gap-2 overflow-x-auto border-b border-sidebar-border bg-sidebar px-4 py-3 lg:hidden">
             {nav.map(({ to, label, exact }) => (
               <Link
                 key={to}
                 to={to}
                 activeOptions={{ exact }}
-                className="whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-[10px] font-bold uppercase text-muted-foreground"
-                activeProps={{ className: "bg-primary text-primary-foreground border-primary" }}
+                className="whitespace-nowrap rounded-full border border-sidebar-border px-3 py-1.5 text-[10px] font-bold uppercase text-sidebar-foreground/90"
+                activeProps={{
+                  className:
+                    "bg-sidebar-accent text-sidebar-foreground border-sidebar-primary/60",
+                }}
               >
                 {label}
               </Link>
@@ -123,13 +132,13 @@ function TeacherLayout() {
           <main className="flex-1 space-y-8 p-4 lg:p-10">
             <Outlet />
           </main>
-          <footer className="border-t border-border p-4 lg:p-10 lg:pt-6">
+          <footer className="mt-auto border-t border-border p-4 lg:px-10 lg:py-6">
             <button
               onClick={async () => {
                 await signOutTeacher({});
                 window.location.href = "/auth";
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-sidebar px-4 py-3 text-xs font-bold uppercase tracking-tight text-muted-foreground transition-colors hover:border-primary hover:text-primary lg:w-auto"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-xs font-bold uppercase tracking-tight text-foreground/80 transition-colors hover:border-primary hover:text-primary lg:w-auto"
             >
               <LogOut className="size-4" /> Se déconnecter
             </button>

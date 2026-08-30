@@ -537,6 +537,7 @@ async function drawFront(data: StudentCardData) {
   ctx.font = font(nameSize, "900");
   ctx.fillText(data.fullName, 158, bandY + 66);
   ctx.fillStyle = NAVY_SOFT;
+  ctx.letterSpacing = "0px";
   ctx.font = font(26, "700");
   ctx.fillText(data.className || "Classe", 158, bandY + 112);
 
@@ -619,31 +620,50 @@ function drawBack(data: StudentCardData) {
   }
 
   /* encadré information */
-  const textLines = [
-    "Les informations sur les compétences",
-    "sont mises à jour chaque semaine pour",
-    "constater ta progression et identifier",
-    "tes axes d'amélioration.",
-  ];
+  const boxX = 48;
+  const boxW = W - 96;
+  const textX = boxX + 28;
+  const textMaxW = boxW - 56;
   const lineH = 34;
+
+  ctx.font = font(23, "400");
+  ctx.letterSpacing = "0px";
+  const words =
+    "Les informations sur les compétences sont mises à jour chaque semaine pour constater ta progression et identifier tes axes d'amélioration.".split(
+      " ",
+    );
+  const textLines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (ctx.measureText(next).width > textMaxW && current) {
+      textLines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) textLines.push(current);
+
   const boxH = 74 + textLines.length * lineH;
   const boxY = y + 22;
 
   ctx.fillStyle = OFF_WHITE;
-  roundRect(ctx, 48, boxY, W - 96, boxH, 28);
+  roundRect(ctx, boxX, boxY, boxW, boxH, 28);
   ctx.fill();
 
-  infoIcon(ctx, 84, boxY + 42, 17, GREEN);
+  infoIcon(ctx, textX + 8, boxY + 42, 17, GREEN);
   ctx.fillStyle = NAVY;
   ctx.font = font(21, "900");
   ctx.textAlign = "left";
   ctx.letterSpacing = "2px";
-  ctx.fillText("INFORMATION", 114, boxY + 50);
+  ctx.fillText("INFORMATION", textX + 38, boxY + 50);
   ctx.letterSpacing = "0px";
 
   ctx.font = font(23, "400");
   ctx.fillStyle = NAVY;
-  textLines.forEach((line, i) => ctx.fillText(line, 76, boxY + 96 + i * lineH));
+  textLines.forEach((line, i) => ctx.fillText(line, textX, boxY + 96 + i * lineH));
+
 
   /* bas du verso */
   const lineY = boxY + boxH + 40;

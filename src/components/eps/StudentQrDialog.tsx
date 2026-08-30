@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Download, Loader2, Printer, QrCode, RefreshCw } from "lucide-react";
+import { Download, IdCard, Loader2, Printer, QrCode, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 
@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { generateStudentQr, getStudentQr } from "@/lib/student-qr.functions";
+import { downloadStudentCardsPdf, renderStudentCardPreview } from "@/lib/student-card";
 
 export type QrDialogStudent = {
   id: string;
@@ -69,6 +70,8 @@ export function StudentQrDialog({ student, className, onOpenChange }: Props) {
 
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [cardPreview, setCardPreview] = useState<{ front: string; back: string } | null>(null);
+  const [cardBusy, setCardBusy] = useState(false);
   const urlRef = useRef<string | null>(null);
 
   const qrQuery = useQuery({
@@ -98,6 +101,23 @@ export function StudentQrDialog({ student, className, onOpenChange }: Props) {
     };
   }, [accessUrl]);
 
+  useEffect(() => {
+    if (!accessUrl || !student) {
+      setCardPreview(null);
+      return;
+    }
+    let cancelled = false;
+    renderStudentCardPreview({ fullName, className: className ?? "", accessUrl })
+      .then((preview) => {
+        if (!cancelled) setCardPreview(preview);
+      })
+      .catch(() => setCardPreview(null));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessUrl, fullName, className]);
+
   const generateMutation = useMutation({
     mutationFn: () => generate({ data: { studentId: student!.id } }),
     onSuccess: (result) => {
@@ -115,6 +135,21 @@ export function StudentQrDialog({ student, className, onOpenChange }: Props) {
 
   const fullName = student ? `${student.first_name} ${student.last_name}` : "";
   const subtitle = `${student?.student_code ?? ""}${className ? ` · ${className}` : ""}`;
+
+  async function downloadCardPdf() {
+    if (!urlRef.current || !student) return;
+    setCardBusy(true);
+    try {
+      await downloadStudentCardsPdf(
+        [{ fullName: fullName, className: className ?? "", accessUrl: urlRef.current }],
+        `carte-${student.student_code}.pdf`,
+      );
+    } catch {
+      toast.error("Génération de la carte impossible");
+    } finally {
+      setCardBusy(false);
+    }
+  }
 
   async function download() {
     if (!urlRef.current || !student) return;
@@ -208,6 +243,30 @@ export function StudentQrDialog({ student, className, onOpenChange }: Props) {
             </div>
           )}
 
+          {token && (
+            <div className="space-y-3">
+              <p className="mono-label text-muted-foreground">Carte élève · format carte bancaire</p>
+              {cardPreview ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <img
+                    src={cardPreview.front}
+                    alt={`Recto de la carte élève de ${fullName}`}
+                    className="w-full rounded-xl border border-border"
+                  />
+                  <img
+                    src={cardPreview.back}
+                    alt={`Verso de la carte élève de ${fullName}`}
+                    className="w-full rounded-xl border border-border"
+                  />
+                </div>
+              ) : (
+                <div className="grid h-32 place-items-center rounded-xl border border-dashed border-border">
+                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          )}
+
           <DialogFooter className="flex-col gap-2 sm:flex-row">
             {token ? (
               <>
@@ -216,6 +275,18 @@ export function StudentQrDialog({ student, className, onOpenChange }: Props) {
                   className="flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-xs font-bold uppercase"
                 >
                   <Download className="size-4" /> Télécharger
+                </button>
+                <button
+                  onClick={() => void downloadCardPdf()}
+                  disabled={cardBusy}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-xs font-bold uppercase disabled:opacity-60"
+                >
+                  {cardBusy ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <IdCard className="size-4" />
+                  )}
+                  Carte PDF
                 </button>
                 <button
                   onClick={() => void print()}

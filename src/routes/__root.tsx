@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider, themeBootstrapScript } from "@/lib/theme";
+import { UiModeProvider, uiModeBootstrapScript } from "@/lib/ui-mode";
 
 function NotFoundComponent() {
   return (
@@ -115,6 +116,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+        <script dangerouslySetInnerHTML={{ __html: uiModeBootstrapScript }} />
       </head>
       <body>
         {children}
@@ -130,9 +132,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster position="top-center" />
+        <UiModeProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <Toaster position="top-center" />
+        </UiModeProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

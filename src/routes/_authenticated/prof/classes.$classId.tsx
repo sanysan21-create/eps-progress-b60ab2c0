@@ -149,11 +149,17 @@ function ClassDetailPage() {
 
   const filtered = useMemo(() => {
     const q = term.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((s) =>
-      `${s.first_name} ${s.last_name} ${s.student_code}`.toLowerCase().includes(q),
-    );
-  }, [students, term]);
+    const base = q
+      ? students.filter((s) =>
+          `${s.first_name} ${s.last_name} ${s.student_code}`.toLowerCase().includes(q),
+        )
+      : students;
+    const key = (s: StudentRow) =>
+      sortBy === "last_name"
+        ? `${s.last_name} ${s.first_name}`
+        : `${s.first_name} ${s.last_name}`;
+    return [...base].sort((a, b) => key(a).localeCompare(key(b), "fr", { sensitivity: "base" }));
+  }, [students, term, sortBy]);
 
   function refresh() {
     queryClient.invalidateQueries({ queryKey: ["class", classId] });

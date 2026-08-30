@@ -272,19 +272,24 @@ function sportIcon(ctx: CanvasRenderingContext2D, kind: SportKind, cx: number, c
 
 
   if (kind === "ultimate") {
+    // disque vu de trois-quarts + lignes de vitesse vertes
+    stroke(ctx, NAVY, 2.6 * u * 0.9);
     ctx.beginPath();
-    ctx.ellipse(cx, cy + 1 * u, 8 * u, 3.6 * u, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + 1.5 * u, cy, 6.5 * u, 3 * u, -0.12 * Math.PI, 0, Math.PI * 2);
     ctx.stroke();
-    stroke(ctx, GREEN, 2.2 * u * 0.9);
+    stroke(ctx, GREEN, 2 * u * 0.9);
     ctx.beginPath();
-    ctx.ellipse(cx, cy - 0.5 * u, 4.5 * u, 2 * u, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + 1.5 * u, cy, 3.2 * u, 1.4 * u, -0.12 * Math.PI, 0, Math.PI * 2);
     ctx.stroke();
-    stroke(ctx, NAVY, 2.4 * u * 0.9);
     ctx.beginPath();
-    ctx.arc(cx, cy + 1 * u, 8 * u, 0.1 * Math.PI, 0.9 * Math.PI);
+    ctx.moveTo(cx - 9 * u, cy + 3.6 * u);
+    ctx.lineTo(cx - 4.5 * u, cy + 3.6 * u);
+    ctx.moveTo(cx - 8 * u, cy + 6.4 * u);
+    ctx.lineTo(cx - 2.5 * u, cy + 6.4 * u);
     ctx.stroke();
     return;
   }
+
 
   ctx.beginPath();
   ctx.arc(cx, cy, 7 * u, 0, Math.PI * 2);

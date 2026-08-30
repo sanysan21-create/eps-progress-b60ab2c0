@@ -216,31 +216,32 @@
  * blanc #FFFFFF, blanc cassé #F5F6F4, gris clair #E9EBEE.
  */
 .theme-navy-light {
-  --background: oklch(0.972 0.003 130); /* #F5F6F4 */
+  --background: oklch(1 0 0); /* blanc pur */
   --foreground: oklch(0.276 0.072 251); /* #062B4C */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.276 0.072 251);
   --surface: oklch(1 0 0);
-  --surface-2: oklch(0.933 0.005 260); /* #E9EBEE */
+  --surface-2: oklch(0.96 0.008 251);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.276 0.072 251);
-  --primary: oklch(0.757 0.196 128); /* #8BCB16 */
-  --primary-foreground: oklch(0.229 0.066 253); /* #03213D */
-  --secondary: oklch(0.933 0.005 260);
-  --secondary-foreground: oklch(0.276 0.072 251);
-  --muted: oklch(0.933 0.005 260);
+  /* Bleu marine = couleur principale, vert citron = accent secondaire. */
+  --primary: oklch(0.276 0.072 251); /* #062B4C */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.757 0.196 128); /* #8BCB16 */
+  --secondary-foreground: oklch(0.229 0.066 253);
+  --muted: oklch(0.955 0.006 251);
   --muted-foreground: oklch(0.45 0.05 253);
   --accent: oklch(0.8 0.19 127); /* #A4D52A */
   --accent-foreground: oklch(0.229 0.066 253);
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0.008 260);
-  --input: oklch(0.9 0.008 260);
-  --ring: oklch(0.757 0.196 128);
-  --chart-1: oklch(0.757 0.196 128);
-  --chart-2: oklch(0.276 0.072 251);
-  --chart-3: oklch(0.8 0.19 127);
-  --chart-4: oklch(0.42 0.09 253);
+  --border: oklch(0.895 0.012 251);
+  --input: oklch(0.895 0.012 251);
+  --ring: oklch(0.276 0.072 251);
+  --chart-1: oklch(0.276 0.072 251);
+  --chart-2: oklch(0.757 0.196 128);
+  --chart-3: oklch(0.42 0.09 253);
+  --chart-4: oklch(0.8 0.19 127);
   --chart-5: oklch(0.6 0.11 200);
   --sidebar: oklch(0.276 0.072 251);
   --sidebar-foreground: oklch(1 0 0);

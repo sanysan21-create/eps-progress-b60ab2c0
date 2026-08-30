@@ -222,6 +222,38 @@ function ClassDetailPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const selectedCount = selectedIds.length;
+
+  const bulkRemoveMutation = useMutation({
+    mutationFn: async () => {
+      for (const id of selectedIds) await removeOne({ data: { studentId: id, classId } });
+      return selectedIds.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count} élève(s) retiré(s) de la classe (historique conservé)`);
+      setSelectedIds([]);
+      setBulkOpen(false);
+      refresh();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const bulkDestroyMutation = useMutation({
+    mutationFn: async () => {
+      for (const id of selectedIds) await destroyOne({ data: { id } });
+      return selectedIds.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count} élève(s) supprimé(s) définitivement`);
+      setSelectedIds([]);
+      setBulkOpen(false);
+      refresh();
+      queryClient.invalidateQueries({ queryKey: ["qr-statuses"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+
   const asMemberMutation = useMutation({
     mutationFn: (vars: { id: string; asMember: boolean }) => saveAsMember({ data: vars }),
     onSuccess: (_r, vars) => {

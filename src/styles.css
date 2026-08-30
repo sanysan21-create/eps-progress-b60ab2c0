@@ -208,3 +208,8 @@
     display: none;
   }
 }
+
+/* Mode ordinateur forcé : rendu bureautique large même sur petit écran. */
+html.ui-desktop body {
+  min-width: 1440px;
+}

@@ -710,6 +710,39 @@ function ClassDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Suppression en lot */}
+      <AlertDialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedCount} élève{selectedCount === 1 ? "" : "s"} sélectionné
+              {selectedCount === 1 ? "" : "s"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              « Retirer de la classe » conserve les élèves et leur historique. « Supprimer
+              définitivement » efface les élèves et toutes leurs données.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <button
+              onClick={() => bulkRemoveMutation.mutate()}
+              disabled={bulkRemoveMutation.isPending || bulkDestroyMutation.isPending}
+              className="rounded-lg border border-border px-4 py-2.5 text-xs font-bold uppercase disabled:opacity-60"
+            >
+              Retirer de la classe
+            </button>
+            <button
+              onClick={() => bulkDestroyMutation.mutate()}
+              disabled={bulkRemoveMutation.isPending || bulkDestroyMutation.isPending}
+              className="rounded-lg bg-destructive px-4 py-2.5 text-xs font-bold uppercase text-destructive-foreground disabled:opacity-60"
+            >
+              Supprimer définitivement
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Import CSV */}
       <Dialog
         open={importOpen}

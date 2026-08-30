@@ -569,19 +569,23 @@ function drawBack(data: StudentCardData) {
   ctx.fillStyle = NAVY_DEEP;
   ctx.fillRect(0, 0, W, H);
 
-  /* chevrons diagonaux ton sur ton */
+  /* chevrons diagonaux ton sur ton, sur toute la hauteur */
   ctx.save();
-  ctx.globalAlpha = 0.5;
-  stroke(ctx, NAVY_SOFT, 26);
-  for (let i = -2; i < 10; i++) {
-    const offset = i * 150;
-    ctx.beginPath();
-    ctx.moveTo(offset, H + 60);
-    ctx.lineTo(offset + 220, H - 160);
-    ctx.lineTo(offset + 440, H + 60);
-    ctx.stroke();
+  ctx.globalAlpha = 0.32;
+  stroke(ctx, NAVY_SOFT, 20);
+  for (let row = -1; row < 8; row++) {
+    const baseY = row * 190;
+    for (let col = -1; col < 4; col++) {
+      const baseX = col * 300 + (row % 2 === 0 ? 0 : 150);
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY + 120);
+      ctx.lineTo(baseX + 150, baseY);
+      ctx.lineTo(baseX + 300, baseY + 120);
+      ctx.stroke();
+    }
   }
   ctx.restore();
+
 
   /* en-tête */
   userIcon(ctx, 82, 92, 28, GREEN);

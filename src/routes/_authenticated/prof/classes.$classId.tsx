@@ -223,6 +223,8 @@ function ClassDetailPage() {
   });
 
   const selectedCount = selectedIds.length;
+  const allVisibleSelected =
+    filtered.length > 0 && filtered.every((s) => selectedIds.includes(s.id));
 
   const bulkRemoveMutation = useMutation({
     mutationFn: async () => {

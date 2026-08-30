@@ -632,7 +632,7 @@ function drawBack(data: StudentCardData) {
     ctx.moveTo(116, y + 22);
     ctx.lineTo(W - 60, y + 22);
     ctx.stroke();
-    y += 82;
+    y += 102;
   }
 
   /* Encadré information */

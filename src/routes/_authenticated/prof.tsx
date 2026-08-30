@@ -22,8 +22,8 @@ export const Route = createFileRoute("/_authenticated/prof")({
 
 const nav = [
   { to: "/prof", label: "Gestion classes", icon: Users, exact: true },
-  { to: "/prof/competences", label: "Évaluer compétences", icon: ListChecks, exact: false },
   { to: "/prof/activites", label: "Activités & compétences", icon: Dumbbell, exact: false },
+  { to: "/prof/competences", label: "Évaluer compétences", icon: ListChecks, exact: false },
   { to: "/prof/notes", label: "Résultats", icon: ClipboardList, exact: false },
   { to: "/prof/reussites", label: "Réussites", icon: Medal, exact: false },
   { to: "/prof/programme", label: "Programme", icon: CalendarDays, exact: false },

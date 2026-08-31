@@ -96,19 +96,63 @@ export const Route = createFileRoute("/_authenticated/prof/classes/$classId")({
 
 type ParsedRow = { firstName: string; lastName: string; duplicate: boolean };
 
+function isUpperToken(value: string): boolean {
+  const letters = value.replace(/[^\p{L}]/gu, "");
+  if (!letters) return false;
+  return letters === letters.toLocaleUpperCase("fr");
+}
+
+function toTitleCase(value: string): string {
+  return value
+    .toLocaleLowerCase("fr")
+    .replace(/(^|[\s'’-])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toLocaleUpperCase("fr"));
+}
+
+/**
+ * Les tokens ÉCRITS EN MAJUSCULES sont considérés comme le nom,
+ * les autres comme le prénom (ex. "DUPONT Jean" ou "jean;DUPONT").
+ */
+function splitByCase(tokens: string[]): { firstName: string; lastName: string } | null {
+  const upper = tokens.filter(isUpperToken);
+  const lower = tokens.filter((t) => !isUpperToken(t));
+  if (upper.length && lower.length) {
+    return {
+      firstName: toTitleCase(lower.join(" ")),
+      lastName: upper.join(" ").toLocaleUpperCase("fr"),
+    };
+  }
+  return null;
+}
+
 function parseCsv(text: string): { firstName: string; lastName: string }[] {
   return text
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => line.split(/[;,\t]/).map((c) => c.trim().replace(/^"|"$/g, "")))
-    .filter((cells) => cells.length >= 2 && cells[0] && cells[1])
+    .map((line) =>
+      line
+        .split(/[;,\t]/)
+        .map((c) => c.trim().replace(/^"|"$/g, ""))
+        .filter(Boolean),
+    )
+    .filter((cells) => cells.length >= 1)
     .filter(
       (cells) =>
-        !/^(pr[ée]nom|first ?name)$/i.test(cells[0]!) && !/^(nom|last ?name)$/i.test(cells[1]!),
+        !/^(pr[ée]nom|first ?name)$/i.test(cells[0]!) &&
+        !(cells[1] && /^(nom|last ?name)$/i.test(cells[1])),
     )
-    .map((cells) => ({ firstName: cells[0]!, lastName: cells[1]! }));
+    .map((cells) => {
+      const tokens = cells.flatMap((c) => c.split(/\s+/)).filter(Boolean);
+      const byCase = splitByCase(tokens);
+      if (byCase) return byCase;
+      if (cells.length >= 2 && cells[0] && cells[1]) {
+        return { firstName: toTitleCase(cells[0]), lastName: toTitleCase(cells[1]) };
+      }
+      return null;
+    })
+    .filter((row): row is { firstName: string; lastName: string } => row !== null);
 }
+
 
 function ClassDetailPage() {
   const { classId } = Route.useParams();

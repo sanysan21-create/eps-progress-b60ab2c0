@@ -67,7 +67,8 @@ function TeacherProgram() {
   const removeSession = useServerFn(deleteSequenceSession);
   const uploadFile = useServerFn(addSessionFile);
   const removeFile = useServerFn(deleteSessionFile);
-  const saveCriteria = useServerFn(saveSequenceCriteria);
+  const saveScaleImage = useServerFn(saveSequenceScaleImage);
+  const deleteScaleImage = useServerFn(deleteSequenceScaleImage);
   const removeLegacy = useServerFn(deleteProgramSession);
 
   const sequences = useQuery({ queryKey: ["sequence-details"], queryFn: () => fetchSequences() });

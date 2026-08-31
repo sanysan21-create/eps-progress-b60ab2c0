@@ -12,14 +12,15 @@ import {
   addSessionFile,
   createSequence,
   deleteSequence,
+  deleteSequenceScaleImage,
   deleteSequenceSession,
   deleteSessionFile,
   listSequenceDetails,
-  saveSequenceCriteria,
+  saveSequenceScaleImage,
   saveSequenceSession,
   updateSequence,
 } from "@/lib/program-builder.functions";
-import { criteriaTotal, longDate, shortDate } from "@/lib/program-builder";
+import { longDate, shortDate } from "@/lib/program-builder";
 import type { SequenceDetail } from "@/lib/program-builder";
 import { deleteProgramSession, listProgramSessions } from "@/lib/program.functions";
 import { sessionWhen } from "@/lib/program";

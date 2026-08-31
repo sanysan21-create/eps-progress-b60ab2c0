@@ -721,109 +721,63 @@ function TeacherProgram() {
             </section>
           )}
 
-          {/* 4. Barème de la séquence */}
+          {/* 4. Barème de la séquence : une seule image */}
           {current && (
             <section className={CARD}>
               <h2 className="mono-label text-muted-foreground">Barème de la séquence</h2>
-              <div className="space-y-2">
-                {criteria.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Aucun critère : ajoute un critère (les compétences de l'activité sont
-                    réutilisables).
-                  </p>
-                )}
-                {criteria.map((item, index) => (
-                  <div key={index} className="grid gap-2 md:grid-cols-[1fr_220px_90px_40px]">
-                    <input
-                      value={item.label}
-                      onChange={(event) =>
-                        setCriteria(
-                          criteria.map((row, i) =>
-                            i === index ? { ...row, label: event.target.value } : row,
-                          ),
-                        )
-                      }
-                      placeholder="Construire l'échange"
-                      className={FIELD}
+              <p className="text-xs text-muted-foreground">
+                Ajoute une photo du barème (PNG, JPG ou WEBP, 8 Mo maximum).
+              </p>
+
+              {current.scale_image_url ? (
+                <div className="space-y-3">
+                  <a href={current.scale_image_url} target="_blank" rel="noreferrer" className="block">
+                    <img
+                      src={current.scale_image_url}
+                      alt={`Barème de la séquence ${current.name}`}
+                      className="max-h-80 w-full rounded-xl border border-border object-contain"
+                      loading="lazy"
                     />
-                    <select
-                      value={item.competencyId}
-                      onChange={(event) => {
-                        const competency = activityCompetencies.find(
-                          (row) => row.id === event.target.value,
-                        );
-                        setCriteria(
-                          criteria.map((row, i) =>
-                            i === index
-                              ? {
-                                  ...row,
-                                  competencyId: event.target.value,
-                                  label: competency ? competency.label : row.label,
-                                }
-                              : row,
-                          ),
-                        );
-                      }}
-                      className={FIELD}
-                    >
-                      <option value="">Compétence liée (optionnel)…</option>
-                      {activityCompetencies.map((row) => (
-                        <option key={row.id} value={row.id}>
-                          {row.afl} · {row.label}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.5}
-                      value={item.points}
-                      onChange={(event) =>
-                        setCriteria(
-                          criteria.map((row, i) =>
-                            i === index ? { ...row, points: event.target.value } : row,
-                          ),
-                        )
-                      }
-                      placeholder="8"
-                      className={FIELD}
-                    />
+                  </a>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary">
+                      <ImageIcon className="size-3.5" /> Remplacer l'image
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (file) void handleScaleUpload(file);
+                        }}
+                      />
+                    </label>
                     <button
                       type="button"
-                      onClick={() => setCriteria(criteria.filter((_, i) => i !== index))}
-                      className="text-muted-foreground hover:text-destructive"
-                      aria-label="Supprimer le critère"
+                      disabled={busy}
+                      onClick={() => void handleScaleDelete()}
+                      className="inline-flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:border-destructive hover:text-destructive disabled:opacity-60"
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-3.5" /> Supprimer l'image
                     </button>
                   </div>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCriteria([...criteria, { label: "", points: "", competencyId: "" }])
-                  }
-                  className="inline-flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary"
-                >
-                  <Plus className="size-3.5" /> Ajouter un critère
-                </button>
-                <p className="text-sm font-bold uppercase">
-                  Total <span className="text-primary">/{total}</span>
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void handleSaveCriteria()}
-                disabled={busy}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
-              >
-                <Save className="size-4" /> Enregistrer le barème
-              </button>
+                </div>
+              ) : (
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground">
+                  <ImageIcon className="size-4" /> {busy ? "Envoi…" : "Ajouter une photo"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) void handleScaleUpload(file);
+                    }}
+                  />
+                </label>
+              )}
             </section>
           )}
         </>

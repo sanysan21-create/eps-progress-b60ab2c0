@@ -1,36 +1,43 @@
-import { ActivityIcon } from "@/components/eps/ActivityIcon";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ImagePlus, Pencil, Trash2, X } from "lucide-react";
+import { CalendarDays, Paperclip, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { listActivities } from "@/lib/competencies.functions";
 import { listClasses } from "@/lib/classes.functions";
 import {
-  deleteProgramSession,
-  listProgramSessions,
-  saveProgramSession,
-  uploadScaleImage,
-} from "@/lib/program.functions";
+  addSequenceSession,
+  addSessionFile,
+  createSequence,
+  deleteSequence,
+  deleteSequenceSession,
+  deleteSessionFile,
+  listSequenceDetails,
+  saveSequenceCriteria,
+  saveSequenceSession,
+  updateSequence,
+} from "@/lib/program-builder.functions";
+import { criteriaTotal, longDate, shortDate } from "@/lib/program-builder";
+import type { SequenceDetail } from "@/lib/program-builder";
+import { deleteProgramSession, listProgramSessions } from "@/lib/program.functions";
 import { sessionWhen } from "@/lib/program";
-
-import { SequencePlanner } from "@/components/eps/SequencePlanner";
+import { ActivityIcon } from "@/components/eps/ActivityIcon";
 
 export const Route = createFileRoute("/_authenticated/prof/programme")({
   head: () => ({
     meta: [
-      { title: "Programme des séances — EPS Progress" },
+      { title: "Programme : séquences et séances — EPS Progress" },
       {
         name: "description",
         content:
-          "Planifiez les activités dans le temps : date ou période, activité, objectif de séance. Les élèves voient le programme en lecture seule.",
+          "Construisez une séquence complète : classe, activité, période, séances numérotées, objectifs, ressources et barème.",
       },
-      { property: "og:title", content: "Programme des séances — EPS Progress" },
+      { property: "og:title", content: "Programme : séquences et séances — EPS Progress" },
       {
         property: "og:description",
-        content: "Programmation des activités et objectifs de séance pour vos classes.",
+        content: "Séquence → séances → contenu → barème, pour vos classes d'EPS.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -39,414 +46,828 @@ export const Route = createFileRoute("/_authenticated/prof/programme")({
   component: TeacherProgram,
 });
 
-type Draft = {
-  id: string | null;
-  classId: string;
-  activityId: string;
-  sessionDate: string;
-  periodLabel: string;
-  objective: string;
-  description: string;
-  scaleImagePath: string | null;
-  scaleImageUrl: string | null;
-  scaleActivityId: string;
-};
+const FIELD =
+  "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary";
+const CARD = "space-y-4 rounded-2xl border border-border bg-surface p-5";
+const LABEL = "text-xs text-muted-foreground";
 
-function emptyDraft(): Draft {
-  return {
-    id: null,
-    classId: "",
-    activityId: "",
-    sessionDate: "",
-    periodLabel: "",
-    objective: "",
-    description: "",
-    scaleImagePath: null,
-    scaleImageUrl: null,
-    scaleActivityId: "",
-  };
-}
+type CriterionDraft = { label: string; points: string; competencyId: string };
 
 function TeacherProgram() {
   const queryClient = useQueryClient();
-  const fetchSessions = useServerFn(listProgramSessions);
+  const fetchSequences = useServerFn(listSequenceDetails);
   const fetchActivities = useServerFn(listActivities);
   const fetchClasses = useServerFn(listClasses);
-  const save = useServerFn(saveProgramSession);
-  const remove = useServerFn(deleteProgramSession);
-  const upload = useServerFn(uploadScaleImage);
+  const fetchLegacy = useServerFn(listProgramSessions);
+  const create = useServerFn(createSequence);
+  const update = useServerFn(updateSequence);
+  const removeSequence = useServerFn(deleteSequence);
+  const addSession = useServerFn(addSequenceSession);
+  const saveSession = useServerFn(saveSequenceSession);
+  const removeSession = useServerFn(deleteSequenceSession);
+  const uploadFile = useServerFn(addSessionFile);
+  const removeFile = useServerFn(deleteSessionFile);
+  const saveCriteria = useServerFn(saveSequenceCriteria);
+  const removeLegacy = useServerFn(deleteProgramSession);
 
-  const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [formTab, setFormTab] = useState<"seance" | "bareme">("seance");
+  const sequences = useQuery({ queryKey: ["sequence-details"], queryFn: () => fetchSequences() });
+  const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
+  const classes = useQuery({ queryKey: ["classes"], queryFn: () => fetchClasses() });
+  const legacy = useQuery({ queryKey: ["program-sessions"], queryFn: () => fetchLegacy() });
 
-  async function handleScaleUpload(file: File) {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Choisis une image (JPG, PNG…).");
+  const [form, setForm] = useState({
+    name: "",
+    classId: "",
+    activityId: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [creating, setCreating] = useState(false);
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const list = sequences.data ?? [];
+  const current: SequenceDetail | null = useMemo(
+    () => list.find((row) => row.id === currentId) ?? list[0] ?? null,
+    [list, currentId],
+  );
+  const session = useMemo(
+    () => current?.sessions.find((row) => row.id === sessionId) ?? current?.sessions[0] ?? null,
+    [current, sessionId],
+  );
+
+  const [sessionDraft, setSessionDraft] = useState({ date: "", objective: "", keyPoints: "" });
+  useEffect(() => {
+    setSessionDraft({
+      date: session?.session_date ?? "",
+      objective: session?.objective ?? "",
+      keyPoints: session?.key_points ?? "",
+    });
+  }, [session?.id, session?.session_date, session?.objective, session?.key_points]);
+
+  const [criteria, setCriteria] = useState<CriterionDraft[]>([]);
+  useEffect(() => {
+    setCriteria(
+      (current?.criteria ?? []).map((item) => ({
+        label: item.label,
+        points: String(item.points),
+        competencyId: item.competency_id ?? "",
+      })),
+    );
+  }, [current?.id, current?.criteria]);
+
+  const activityCompetencies = useMemo(() => {
+    const activity = (activities.data ?? []).find((row) => row.id === current?.activity_id);
+    return activity?.competencies ?? [];
+  }, [activities.data, current?.activity_id]);
+
+  const total = criteriaTotal(
+    criteria.map((item, index) => ({
+      id: String(index),
+      label: item.label,
+      points: Number(item.points) || 0,
+      competency_id: item.competencyId || null,
+    })),
+  );
+
+  async function refresh() {
+    await queryClient.invalidateQueries({ queryKey: ["sequence-details"] });
+    await queryClient.invalidateQueries({ queryKey: ["program-sessions"] });
+  }
+
+  async function handleCreate() {
+    if (creating) return;
+    const problem =
+      !form.name.trim()
+        ? "Donne un nom à la séquence."
+        : !form.classId
+          ? "Choisis une classe."
+          : !form.activityId
+            ? "Choisis une activité."
+            : !form.startDate || !form.endDate
+              ? "Choisis la période (du … au …)."
+              : form.endDate < form.startDate
+                ? "La date de fin doit suivre le début."
+                : null;
+    if (problem) {
+      toast.error(problem);
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image trop lourde (5 Mo maximum).");
-      return;
-    }
-    setUploading(true);
+
+    setCreating(true);
     try {
-      const buffer = await file.arrayBuffer();
-      let binary = "";
-      const bytes = new Uint8Array(buffer);
-      for (let i = 0; i < bytes.length; i += 8192) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
-      }
-      const result = await upload({
-        data: { contentType: file.type, dataBase64: btoa(binary) },
+      const result = await create({
+        data: {
+          name: form.name.trim(),
+          classId: form.classId,
+          activityId: form.activityId,
+          startDate: form.startDate,
+          endDate: form.endDate,
+        },
       });
-      setDraft((current) => ({
-        ...current,
-        scaleImagePath: result.fileId,
-        scaleImageUrl: result.url,
-      }));
-      toast.success("Barème ajouté");
+      toast.success("Séquence créée : les séances ont été générées.");
+      setForm({ name: "", classId: "", activityId: "", startDate: "", endDate: "" });
+      setCurrentId(result.id);
+      setSessionId(null);
+      await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Envoi impossible");
+      toast.error(error instanceof Error ? error.message : "Création impossible");
     } finally {
-      setUploading(false);
+      setCreating(false);
     }
   }
 
-
-  const sessions = useQuery({ queryKey: ["program-sessions"], queryFn: () => fetchSessions() });
-  const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
-  const classes = useQuery({ queryKey: ["classes"], queryFn: () => fetchClasses() });
-
-  async function handleSave() {
-    setSaving(true);
+  async function handleUpdateSequence() {
+    if (!current || busy) return;
+    setBusy(true);
     try {
-      await save({
+      await update({
         data: {
-          id: draft.id,
-          classId: draft.classId || null,
-          activityId: draft.activityId || null,
-          sessionDate: draft.sessionDate || null,
-          periodLabel: draft.periodLabel.trim() || null,
-          objective: draft.objective.trim() || null,
-          description: draft.description.trim() || null,
-          scaleImagePath: draft.scaleImagePath,
-          scaleActivityId: draft.scaleActivityId || null,
+          id: current.id,
+          name: current.name,
+          classId: current.class_id ?? "",
+          activityId: current.activity_id ?? "",
+          startDate: current.start_date,
+          endDate: current.end_date,
         },
       });
-      toast.success(draft.id ? "Séance mise à jour" : "Séance ajoutée au programme");
-      setDraft(emptyDraft());
-      await queryClient.invalidateQueries({ queryKey: ["program-sessions"] });
+      toast.success("Séquence mise à jour");
+      await refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Enregistrement impossible");
     } finally {
-      setSaving(false);
+      setBusy(false);
     }
   }
 
-  async function handleDelete(id: string) {
+  async function handleSaveSession() {
+    if (!session || busy) return;
+    setBusy(true);
     try {
-      await remove({ data: { id } });
-      if (draft.id === id) setDraft(emptyDraft());
-      await queryClient.invalidateQueries({ queryKey: ["program-sessions"] });
+      await saveSession({
+        data: {
+          id: session.id,
+          sessionDate: sessionDraft.date || null,
+          objective: sessionDraft.objective.trim() || null,
+          keyPoints: sessionDraft.keyPoints.trim() || null,
+        },
+      });
+      toast.success("Séance enregistrée");
+      await refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Enregistrement impossible");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleAddSession() {
+    if (!current || busy) return;
+    setBusy(true);
+    try {
+      const result = await addSession({ data: { sequenceId: current.id } });
+      setSessionId(result.id);
+      await refresh();
+      toast.success("Séance ajoutée");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Ajout impossible");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDeleteSession(id: string) {
+    if (!window.confirm("Supprimer cette séance et ses ressources ?")) return;
+    setBusy(true);
+    try {
+      await removeSession({ data: { id } });
+      if (sessionId === id) setSessionId(null);
+      await refresh();
       toast.success("Séance supprimée");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Suppression impossible");
+    } finally {
+      setBusy(false);
     }
   }
+
+  async function handleDeleteSequence(id: string) {
+    if (!window.confirm("Supprimer la séquence, ses séances et son barème ?")) return;
+    setBusy(true);
+    try {
+      await removeSequence({ data: { id } });
+      setCurrentId(null);
+      setSessionId(null);
+      await refresh();
+      toast.success("Séquence supprimée");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Suppression impossible");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUpload(file: File) {
+    if (!session) return;
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Fichier trop lourd (8 Mo maximum).");
+      return;
+    }
+    setBusy(true);
+    try {
+      const buffer = new Uint8Array(await file.arrayBuffer());
+      let binary = "";
+      for (let i = 0; i < buffer.length; i += 8192) {
+        binary += String.fromCharCode(...buffer.subarray(i, i + 8192));
+      }
+      await uploadFile({
+        data: {
+          sessionId: session.id,
+          name: file.name.slice(0, 160),
+          contentType: file.type || "application/pdf",
+          dataBase64: btoa(binary),
+        },
+      });
+      await refresh();
+      toast.success("Ressource ajoutée");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Envoi impossible");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveCriteria() {
+    if (!current || busy) return;
+    const cleaned = criteria
+      .map((item) => ({
+        label: item.label.trim(),
+        points: Number(item.points) || 0,
+        competencyId: item.competencyId || null,
+      }))
+      .filter((item) => item.label.length > 0);
+    setBusy(true);
+    try {
+      await saveCriteria({ data: { sequenceId: current.id, criteria: cleaned } });
+      toast.success("Barème enregistré");
+      await refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Enregistrement impossible");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const orphanSessions = (legacy.data ?? []).filter(
+    (row) => !list.some((sequence) => sequence.sessions.some((s) => s.id === row.id)),
+  );
 
   return (
     <div className="space-y-8 p-6 lg:p-10">
       <header className="space-y-1">
         <h1 className="display-title text-3xl italic tracking-tighter">Programme</h1>
         <p className="text-sm text-muted-foreground">
-          Date ou période → activité → objectif → enregistrer. Les élèves voient la prochaine séance
-          et les activités à venir.
+          Séquence → séances → contenu de chaque séance → barème.
         </p>
       </header>
 
-      <SequencePlanner />
-
-      <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-        <section className="space-y-4 rounded-2xl border border-border bg-surface p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="mono-label text-muted-foreground">
-              {draft.id ? "Modifier la séance" : "Nouvelle séance"}
-            </h2>
-            {draft.id && (
-              <button
-                type="button"
-                onClick={() => setDraft(emptyDraft())}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-              >
-                <X className="size-3" /> Annuler
-              </button>
-            )}
-          </div>
-
-          <div className="flex rounded-xl border border-border p-1">
-            <button
-              type="button"
-              onClick={() => setFormTab("seance")}
-              className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                formTab === "seance"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+      {/* 1. Nouvelle séquence */}
+      <section className={CARD}>
+        <h2 className="mono-label text-muted-foreground">Nouvelle séquence</h2>
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="block space-y-1 md:col-span-2">
+            <span className={LABEL}>Nom de la séquence</span>
+            <input
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              placeholder="Basketball — Construire l'échange"
+              className={FIELD}
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className={LABEL}>Classe</span>
+            <select
+              value={form.classId}
+              onChange={(event) => setForm({ ...form, classId: event.target.value })}
+              className={FIELD}
             >
-              Séance
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormTab("bareme")}
-              className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                formTab === "bareme"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              <option value="">Choisir une classe…</option>
+              {(classes.data ?? []).map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.name} · {row.school_year}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block space-y-1">
+            <span className={LABEL}>Activité</span>
+            <select
+              value={form.activityId}
+              onChange={(event) => setForm({ ...form, activityId: event.target.value })}
+              className={FIELD}
             >
-              Barême
-            </button>
-          </div>
+              <option value="">Choisir une activité…</option>
+              {(activities.data ?? []).map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block space-y-1">
+            <span className={LABEL}>Du</span>
+            <input
+              type="date"
+              value={form.startDate}
+              onChange={(event) => setForm({ ...form, startDate: event.target.value })}
+              className={FIELD}
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className={LABEL}>Au</span>
+            <input
+              type="date"
+              value={form.endDate}
+              onChange={(event) => setForm({ ...form, endDate: event.target.value })}
+              className={FIELD}
+            />
+          </label>
+        </div>
+        <button
+          type="button"
+          onClick={() => void handleCreate()}
+          disabled={creating}
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
+        >
+          <CalendarDays className="size-4" />
+          {creating ? "Création…" : "Créer la séquence"}
+        </button>
+        <p className="text-xs text-muted-foreground">
+          Une séance est générée automatiquement par semaine sur la période choisie ; chaque date
+          reste modifiable.
+        </p>
+      </section>
 
-          {formTab === "seance" ? (
-            <div className="space-y-4">
-              <label className="block space-y-1">
-                <span className="text-xs text-muted-foreground">Date de la séance</span>
-                <input
-                  type="date"
-                  value={draft.sessionDate}
-                  onChange={(event) => setDraft({ ...draft, sessionDate: event.target.value })}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-xs text-muted-foreground">
-                  Ou période (ex. « Semaine du 7 septembre », « Octobre »)
-                </span>
-                <input
-                  value={draft.periodLabel}
-                  onChange={(event) => setDraft({ ...draft, periodLabel: event.target.value })}
-                  placeholder="Semaine du 7 septembre"
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-xs text-muted-foreground">Activité</span>
-                <select
-                  value={draft.activityId}
-                  onChange={(event) => setDraft({ ...draft, activityId: event.target.value })}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+      {/* Séquence actuelle */}
+      {sequences.isPending ? (
+        <div className="h-24 animate-pulse rounded-2xl border border-border bg-surface" />
+      ) : list.length === 0 ? (
+        <p className="rounded-2xl border border-border/60 bg-surface/60 px-4 py-6 text-sm text-muted-foreground">
+          Aucune séquence pour le moment : crée ta première séquence ci-dessus.
+        </p>
+      ) : (
+        <>
+          <section className={CARD}>
+            <h2 className="mono-label text-muted-foreground">Séquence actuelle</h2>
+            <div className="flex flex-wrap gap-2">
+              {list.map((row) => (
+                <button
+                  key={row.id}
+                  type="button"
+                  onClick={() => {
+                    setCurrentId(row.id);
+                    setSessionId(null);
+                  }}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                    current?.id === row.id
+                      ? "border-primary bg-primary/15 text-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
                 >
-                  <option value="">Choisir une activité…</option>
-                  {(activities.data ?? []).map((activity) => (
-                    <option key={activity.id} value={activity.id}>
-                      {activity.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-xs text-muted-foreground">Classe</span>
-                <select
-                  value={draft.classId}
-                  onChange={(event) => setDraft({ ...draft, classId: event.target.value })}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                >
-                  <option value="">Toutes mes classes</option>
-                  {(classes.data ?? []).map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {row.name} · {row.school_year}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-xs text-muted-foreground">Objectif de la séance</span>
-                <textarea
-                  value={draft.objective}
-                  onChange={(event) => setDraft({ ...draft, objective: event.target.value })}
-                  rows={3}
-                  placeholder="Améliorer sa respiration et maintenir son effort sur 25 mètres."
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-xs text-muted-foreground">Description courte (optionnel)</span>
-                <input
-                  value={draft.description}
-                  onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-              </label>
+                  <ActivityIcon name={row.activity_name ?? row.name} className="size-4 text-primary" />
+                  {row.name}
+                </button>
+              ))}
             </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Ajoute une image du barème. Les élèves pourront l’ouvrir depuis leur onglet
-                Programme.
-              </p>
-              {draft.scaleImageUrl || draft.scaleImagePath ? (
-                <div className="space-y-3 rounded-xl border border-border bg-background p-2">
-                  {draft.scaleImageUrl && (
-                    <img
-                      src={draft.scaleImageUrl}
-                      alt="Barème de la séance"
-                      className="max-h-56 w-full rounded-lg object-contain"
-                    />
-                  )}
-                  <label className="block space-y-1">
-                    <span className="text-xs text-muted-foreground">
-                      Cette image concerne quelle activité ?
-                    </span>
-                    <select
-                      value={draft.scaleActivityId}
-                      onChange={(event) =>
-                        setDraft({ ...draft, scaleActivityId: event.target.value })
-                      }
-                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+
+            {current && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="block space-y-1 md:col-span-2">
+                  <span className={LABEL}>Nom</span>
+                  <input
+                    value={current.name}
+                    onChange={(event) =>
+                      queryClient.setQueryData<SequenceDetail[]>(["sequence-details"], (rows) =>
+                        (rows ?? []).map((row) =>
+                          row.id === current.id ? { ...row, name: event.target.value } : row,
+                        ),
+                      )
+                    }
+                    className={FIELD}
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className={LABEL}>Classe</span>
+                  <select
+                    value={current.class_id ?? ""}
+                    onChange={(event) =>
+                      queryClient.setQueryData<SequenceDetail[]>(["sequence-details"], (rows) =>
+                        (rows ?? []).map((row) =>
+                          row.id === current.id ? { ...row, class_id: event.target.value } : row,
+                        ),
+                      )
+                    }
+                    className={FIELD}
+                  >
+                    {(classes.data ?? []).map((row) => (
+                      <option key={row.id} value={row.id}>
+                        {row.name} · {row.school_year}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block space-y-1">
+                  <span className={LABEL}>Activité</span>
+                  <select
+                    value={current.activity_id ?? ""}
+                    onChange={(event) =>
+                      queryClient.setQueryData<SequenceDetail[]>(["sequence-details"], (rows) =>
+                        (rows ?? []).map((row) =>
+                          row.id === current.id ? { ...row, activity_id: event.target.value } : row,
+                        ),
+                      )
+                    }
+                    className={FIELD}
+                  >
+                    {(activities.data ?? []).map((row) => (
+                      <option key={row.id} value={row.id}>
+                        {row.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block space-y-1">
+                  <span className={LABEL}>Du</span>
+                  <input
+                    type="date"
+                    value={current.start_date ?? ""}
+                    onChange={(event) =>
+                      queryClient.setQueryData<SequenceDetail[]>(["sequence-details"], (rows) =>
+                        (rows ?? []).map((row) =>
+                          row.id === current.id
+                            ? { ...row, start_date: event.target.value || null }
+                            : row,
+                        ),
+                      )
+                    }
+                    className={FIELD}
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className={LABEL}>Au</span>
+                  <input
+                    type="date"
+                    value={current.end_date ?? ""}
+                    onChange={(event) =>
+                      queryClient.setQueryData<SequenceDetail[]>(["sequence-details"], (rows) =>
+                        (rows ?? []).map((row) =>
+                          row.id === current.id
+                            ? { ...row, end_date: event.target.value || null }
+                            : row,
+                        ),
+                      )
+                    }
+                    className={FIELD}
+                  />
+                </label>
+                <div className="flex items-center gap-3 md:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleUpdateSequence()}
+                    disabled={busy}
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
+                  >
+                    <Save className="size-4" /> Enregistrer la séquence
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteSequence(current.id)}
+                    disabled={busy}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="size-4" /> Supprimer la séquence
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* 2. Séances */}
+          {current && (
+            <section className={CARD}>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="mono-label text-muted-foreground">Séances</h2>
+                <button
+                  type="button"
+                  onClick={() => void handleAddSession()}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary disabled:opacity-60"
+                >
+                  <Plus className="size-3.5" /> Ajouter une séance
+                </button>
+              </div>
+
+              {current.sessions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Aucune séance sur cette période : ajoute une séance manuellement.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {current.sessions.map((row) => (
+                    <button
+                      key={row.id}
+                      type="button"
+                      onClick={() => setSessionId(row.id)}
+                      className={`min-w-[86px] rounded-xl border px-3 py-2 text-center transition-colors ${
+                        session?.id === row.id
+                          ? "border-primary bg-primary/15"
+                          : "border-border hover:border-primary/60"
+                      }`}
                     >
-                      <option value="">Choisir une activité existante…</option>
-                      {(activities.data ?? []).map((activity) => (
-                        <option key={activity.id} value={activity.id}>
-                          {activity.name}
+                      <span className="block text-sm font-bold">S{row.session_number}</span>
+                      <span className="block text-[11px] text-muted-foreground">
+                        {shortDate(row.session_date)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* 3. Détail de la séance */}
+              {session && (
+                <div className="space-y-4 rounded-2xl border border-border bg-background p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-bold uppercase">
+                      S{session.session_number} — {longDate(session.session_date)}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteSession(session.id)}
+                      disabled={busy}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Supprimer la séance"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+
+                  <label className="block space-y-1 md:max-w-[220px]">
+                    <span className={LABEL}>Date de la séance</span>
+                    <input
+                      type="date"
+                      value={sessionDraft.date}
+                      onChange={(event) =>
+                        setSessionDraft({ ...sessionDraft, date: event.target.value })
+                      }
+                      className={FIELD}
+                    />
+                  </label>
+
+                  <label className="block space-y-1">
+                    <span className={LABEL}>Objectif de la séance</span>
+                    <textarea
+                      rows={3}
+                      value={sessionDraft.objective}
+                      onChange={(event) =>
+                        setSessionDraft({ ...sessionDraft, objective: event.target.value })
+                      }
+                      placeholder="Améliorer sa capacité à conserver la balle et à se démarquer."
+                      className={FIELD}
+                    />
+                  </label>
+
+                  <label className="block space-y-1">
+                    <span className={LABEL}>Points importants</span>
+                    <textarea
+                      rows={3}
+                      value={sessionDraft.keyPoints}
+                      onChange={(event) =>
+                        setSessionDraft({ ...sessionDraft, keyPoints: event.target.value })
+                      }
+                      placeholder="Se démarquer après la passe. Lever la tête avant de recevoir."
+                      className={FIELD}
+                    />
+                  </label>
+
+                  <div className="space-y-2">
+                    <span className={LABEL}>Fichiers / ressources</span>
+                    {session.files.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Aucune ressource ajoutée.</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {session.files.map((file) => (
+                          <li
+                            key={file.id}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 text-sm"
+                          >
+                            <a
+                              href={file.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex min-w-0 items-center gap-2 truncate hover:text-primary"
+                            >
+                              <Paperclip className="size-3.5 shrink-0" />
+                              <span className="truncate">{file.name}</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!window.confirm(`Supprimer « ${file.name} » ?`)) return;
+                                try {
+                                  await removeFile({ data: { id: file.id } });
+                                  await refresh();
+                                  toast.success("Ressource supprimée");
+                                } catch (error) {
+                                  toast.error(
+                                    error instanceof Error ? error.message : "Suppression impossible",
+                                  );
+                                }
+                              }}
+                              className="shrink-0 text-muted-foreground hover:text-destructive"
+                              aria-label="Supprimer la ressource"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary">
+                      <Plus className="size-3.5" /> Ajouter un fichier
+                      <input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.mp4"
+                        className="hidden"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (file) void handleUpload(file);
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveSession()}
+                    disabled={busy}
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
+                  >
+                    <Save className="size-4" /> {busy ? "Enregistrement…" : "Enregistrer la séance"}
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* 4. Barème de la séquence */}
+          {current && (
+            <section className={CARD}>
+              <h2 className="mono-label text-muted-foreground">Barème de la séquence</h2>
+              <div className="space-y-2">
+                {criteria.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Aucun critère : ajoute un critère (les compétences de l'activité sont
+                    réutilisables).
+                  </p>
+                )}
+                {criteria.map((item, index) => (
+                  <div key={index} className="grid gap-2 md:grid-cols-[1fr_220px_90px_40px]">
+                    <input
+                      value={item.label}
+                      onChange={(event) =>
+                        setCriteria(
+                          criteria.map((row, i) =>
+                            i === index ? { ...row, label: event.target.value } : row,
+                          ),
+                        )
+                      }
+                      placeholder="Construire l'échange"
+                      className={FIELD}
+                    />
+                    <select
+                      value={item.competencyId}
+                      onChange={(event) => {
+                        const competency = activityCompetencies.find(
+                          (row) => row.id === event.target.value,
+                        );
+                        setCriteria(
+                          criteria.map((row, i) =>
+                            i === index
+                              ? {
+                                  ...row,
+                                  competencyId: event.target.value,
+                                  label: competency ? competency.label : row.label,
+                                }
+                              : row,
+                          ),
+                        );
+                      }}
+                      className={FIELD}
+                    >
+                      <option value="">Compétence liée (optionnel)…</option>
+                      {activityCompetencies.map((row) => (
+                        <option key={row.id} value={row.id}>
+                          {row.afl} · {row.label}
                         </option>
                       ))}
                     </select>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDraft({
-                        ...draft,
-                        scaleImagePath: null,
-                        scaleImageUrl: null,
-                        scaleActivityId: "",
-                      })
-                    }
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="size-3" /> Retirer le barème
-                  </button>
-                </div>
-              ) : (
-                <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-background px-3 py-6 text-sm text-muted-foreground hover:border-primary hover:text-primary">
-                  <ImagePlus className="size-5" />
-                  {uploading ? "Envoi…" : "Ajouter une image de barème"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploading}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      event.target.value = "";
-                      if (file) void handleScaleUpload(file);
-                    }}
-                  />
-                </label>
-              )}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={saving}
-            className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
-          >
-            {saving ? "Enregistrement…" : draft.id ? "Mettre à jour" : "Enregistrer"}
-          </button>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="mono-label text-muted-foreground">Programmation</h2>
-          {sessions.isPending ? (
-            <div className="h-24 animate-pulse rounded-2xl border border-border bg-surface" />
-          ) : (sessions.data ?? []).length === 0 ? (
-            <p className="rounded-2xl border border-border/60 bg-surface/60 px-5 py-6 text-sm text-muted-foreground">
-              Aucune séance planifiée pour le moment.
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {(sessions.data ?? []).map((session) => (
-                <li key={session.id} className="rounded-2xl border border-border bg-surface p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="mono-label text-primary">{sessionWhen(session)}</p>
-                      <p className="mt-1 flex items-center gap-2 text-base font-semibold">
-                        <ActivityIcon name={session.activity_name} className="size-4 text-primary" />
-                        {session.activity_name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {session.class_name ?? "Toutes mes classes"}
-                      </p>
-                      {session.objective && (
-                        <p className="mt-2 text-sm leading-relaxed text-foreground/80">
-                          {session.objective}
-                        </p>
-                      )}
-                      {session.description && (
-                        <p className="mt-1 text-xs text-muted-foreground">{session.description}</p>
-                      )}
-                      {session.scale_image_url && (
-                        <a
-                          href={session.scale_image_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-3 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary"
-                        >
-                          📊 Voir le barème
-                          {session.scale_activity_name
-                            ? ` · ${session.scale_activity_name}`
-                            : ""}
-                        </a>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDraft({
-                            id: session.id,
-                            classId: session.class_id ?? "",
-                            activityId: session.activity_id ?? "",
-                            sessionDate: session.session_date ?? "",
-                            periodLabel: session.period_label ?? "",
-                            objective: session.objective ?? "",
-                            description: session.description ?? "",
-                            scaleImagePath: session.scale_image_path,
-                            scaleImageUrl: session.scale_image_url,
-                            scaleActivityId: session.scale_activity_id ?? "",
-                          })
-                        }
-                        aria-label={`Modifier la séance ${session.activity_name}`}
-                        className="text-muted-foreground hover:text-primary"
-                      >
-                        <Pencil className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleDelete(session.id)}
-                        aria-label={`Supprimer la séance ${session.activity_name}`}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={item.points}
+                      onChange={(event) =>
+                        setCriteria(
+                          criteria.map((row, i) =>
+                            i === index ? { ...row, points: event.target.value } : row,
+                          ),
+                        )
+                      }
+                      placeholder="8"
+                      className={FIELD}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCriteria(criteria.filter((_, i) => i !== index))}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Supprimer le critère"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
                   </div>
-                </li>
-              ))}
-            </ul>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCriteria([...criteria, { label: "", points: "", competencyId: "" }])
+                  }
+                  className="inline-flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary"
+                >
+                  <Plus className="size-3.5" /> Ajouter un critère
+                </button>
+                <p className="text-sm font-bold uppercase">
+                  Total <span className="text-primary">/{total}</span>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void handleSaveCriteria()}
+                disabled={busy}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
+              >
+                <Save className="size-4" /> Enregistrer le barème
+              </button>
+            </section>
           )}
+        </>
+      )}
+
+      {orphanSessions.length > 0 && (
+        <section className={CARD}>
+          <h2 className="mono-label text-muted-foreground">Séances hors séquence</h2>
+          <p className="text-xs text-muted-foreground">
+            Séances planifiées avant la refonte : toujours visibles par les élèves.
+          </p>
+          <ul className="grid gap-2 md:grid-cols-2">
+            {orphanSessions.map((row) => (
+              <li
+                key={row.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm"
+              >
+                <span className="min-w-0 truncate">
+                  {row.activity_name} · {sessionWhen(row)}
+                </span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!window.confirm("Supprimer cette séance ?")) return;
+                    try {
+                      await removeLegacy({ data: { id: row.id } });
+                      await refresh();
+                      toast.success("Séance supprimée");
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error ? error.message : "Suppression impossible",
+                      );
+                    }
+                  }}
+                  className="shrink-0 text-muted-foreground hover:text-destructive"
+                  aria-label="Supprimer la séance"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
         </section>
-      </div>
+      )}
     </div>
   );
 }

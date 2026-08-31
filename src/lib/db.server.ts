@@ -355,6 +355,45 @@ create table if not exists medal_thresholds (
 -- Classement des compétences par AFL (compétences existantes rattachées à AFL1).
 alter table competencies add column if not exists afl text not null default 'AFL1';
 
+-- Constructeur de séquences (période réelle, séances numérotées, ressources, barème).
+alter table program_sequences add column if not exists start_date date;
+alter table program_sequences add column if not exists end_date date;
+
+alter table program_sessions add column if not exists sequence_id uuid
+  references program_sequences(id) on delete cascade;
+alter table program_sessions add column if not exists session_number smallint;
+alter table program_sessions add column if not exists key_points text;
+alter table program_sessions add column if not exists visible_to_students boolean not null default true;
+
+create table if not exists program_session_files (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  session_id uuid not null references program_sessions(id) on delete cascade,
+  file_id uuid not null references app_files(id) on delete cascade,
+  name text not null,
+  content_type text not null,
+  visible_to_students boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists program_criteria (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  sequence_id uuid not null references program_sequences(id) on delete cascade,
+  competency_id uuid references competencies(id) on delete set null,
+  label text not null,
+  points numeric not null default 0,
+  position smallint not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_program_sessions_sequence on program_sessions(sequence_id);
+create index if not exists idx_program_session_files_session on program_session_files(session_id);
+create index if not exists idx_program_criteria_sequence on program_criteria(sequence_id);
+
+
 create index if not exists idx_students_teacher on students(teacher_id);
 
 

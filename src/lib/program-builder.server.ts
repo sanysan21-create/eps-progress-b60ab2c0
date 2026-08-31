@@ -10,6 +10,7 @@ type SequenceRow = {
   activity_name: string | null;
   start_date: string | null;
   end_date: string | null;
+  scale_file_id: string | null;
 };
 
 type SessionRow = {

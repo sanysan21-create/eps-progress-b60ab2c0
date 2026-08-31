@@ -44,6 +44,9 @@ function StudentProgram() {
   const upcoming = upcomingSessions(sessions);
   const [zoom, setZoom] = useState<string | null>(null);
 
+  // Barèmes photo attachés aux séquences, affichés en bas de page.
+  const sequenceScales = sequences.filter((sequence) => sequence.scale_image_url);
+
   // Barèmes disponibles : une entrée par activité, dédoublonnée.
   const scales = sessions
     .filter((session) => session.scale_image_url)
@@ -215,6 +218,43 @@ function StudentProgram() {
             </section>
           )}
         </>
+      )}
+
+      {sequenceScales.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+            📊 Barèmes de mes séquences
+          </h2>
+          <ul className="space-y-3">
+            {sequenceScales.map((sequence) => (
+              <li
+                key={`seq-scale-${sequence.id}`}
+                className="overflow-hidden rounded-2xl border border-border bg-surface"
+              >
+                <button
+                  type="button"
+                  onClick={() => setZoom(sequence.scale_image_url)}
+                  className="w-full text-left"
+                >
+                  <img
+                    src={sequence.scale_image_url ?? ""}
+                    alt={`Barème ${sequence.name}`}
+                    className="max-h-56 w-full bg-background object-contain"
+                  />
+                  <span className="flex items-center justify-between gap-2 px-5 py-3">
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <span aria-hidden>
+                        {activityEmoji(sequence.activity_name ?? sequence.name)}
+                      </span>
+                      {sequence.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Appuie pour agrandir</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {zoom && (

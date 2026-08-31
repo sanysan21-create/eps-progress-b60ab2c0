@@ -96,6 +96,7 @@ export async function loadSequenceDetails(sql: Db, teacherId: string): Promise<S
     activity_name: sequence.activity_name,
     start_date: sequence.start_date,
     end_date: sequence.end_date,
+    scale_image_url: sequence.scale_file_id ? `/api/files/${sequence.scale_file_id}` : null,
     sessions: sessions
       .filter((session) => session.sequence_id === sequence.id)
       .map((session, index) => ({

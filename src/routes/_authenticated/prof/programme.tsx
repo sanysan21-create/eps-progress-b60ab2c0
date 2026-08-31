@@ -298,22 +298,45 @@ function TeacherProgram() {
     }
   }
 
-  async function handleSaveCriteria() {
+  async function handleScaleUpload(file: File) {
     if (!current || busy) return;
-    const cleaned = criteria
-      .map((item) => ({
-        label: item.label.trim(),
-        points: Number(item.points) || 0,
-        competencyId: item.competencyId || null,
-      }))
-      .filter((item) => item.label.length > 0);
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      toast.error("Choisis une image (PNG, JPG ou WEBP).");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Image trop lourde (8 Mo maximum).");
+      return;
+    }
     setBusy(true);
     try {
-      await saveCriteria({ data: { sequenceId: current.id, criteria: cleaned } });
-      toast.success("Barème enregistré");
+      const buffer = new Uint8Array(await file.arrayBuffer());
+      let binary = "";
+      for (let i = 0; i < buffer.length; i += 8192) {
+        binary += String.fromCharCode(...buffer.subarray(i, i + 8192));
+      }
+      await saveScaleImage({
+        data: { sequenceId: current.id, contentType: file.type, dataBase64: btoa(binary) },
+      });
       await refresh();
+      toast.success("Barème enregistré");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Enregistrement impossible");
+      toast.error(error instanceof Error ? error.message : "Envoi impossible");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleScaleDelete() {
+    if (!current || busy) return;
+    if (!window.confirm("Supprimer l'image du barème ?")) return;
+    setBusy(true);
+    try {
+      await deleteScaleImage({ data: { sequenceId: current.id } });
+      await refresh();
+      toast.success("Image supprimée");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Suppression impossible");
     } finally {
       setBusy(false);
     }

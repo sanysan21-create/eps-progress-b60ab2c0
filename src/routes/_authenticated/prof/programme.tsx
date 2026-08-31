@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, Paperclip, Plus, Save, Trash2 } from "lucide-react";
+import { CalendarDays, Image as ImageIcon, Paperclip, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { listActivities } from "@/lib/competencies.functions";

@@ -108,30 +108,8 @@ function TeacherProgram() {
     });
   }, [session?.id, session?.session_date, session?.objective, session?.key_points]);
 
-  const [criteria, setCriteria] = useState<CriterionDraft[]>([]);
-  useEffect(() => {
-    setCriteria(
-      (current?.criteria ?? []).map((item) => ({
-        label: item.label,
-        points: String(item.points),
-        competencyId: item.competency_id ?? "",
-      })),
-    );
-  }, [current?.id, current?.criteria]);
 
-  const activityCompetencies = useMemo(() => {
-    const activity = (activities.data ?? []).find((row) => row.id === current?.activity_id);
-    return activity?.competencies ?? [];
-  }, [activities.data, current?.activity_id]);
 
-  const total = criteriaTotal(
-    criteria.map((item, index) => ({
-      id: String(index),
-      label: item.label,
-      points: Number(item.points) || 0,
-      competency_id: item.competencyId || null,
-    })),
-  );
 
   async function refresh() {
     await queryClient.invalidateQueries({ queryKey: ["sequence-details"] });

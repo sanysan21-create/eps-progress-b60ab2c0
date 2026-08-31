@@ -8,6 +8,7 @@ export type ProgramSequence = {
   from_session: number | null;
   to_session: number | null;
   position: number;
+  scale_image_url: string | null;
 };
 
 /** "Séances 1 à 6" — libellé lisible de l'intervalle d'une séquence. */

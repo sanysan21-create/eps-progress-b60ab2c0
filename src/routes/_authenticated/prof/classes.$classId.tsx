@@ -545,7 +545,9 @@ function ClassDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm font-bold">
-                    {student.first_name} {student.last_name}
+                    {sortBy === "last_name"
+                      ? `${student.last_name} ${student.first_name}`
+                      : `${student.first_name} ${student.last_name}`}
                   </p>
                   <p className="mono-label flex flex-wrap items-center gap-2 text-muted-foreground">
                     {student.student_code}

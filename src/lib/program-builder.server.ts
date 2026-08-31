@@ -42,7 +42,7 @@ type CriterionRow = {
 export async function loadSequenceDetails(sql: Db, teacherId: string): Promise<SequenceDetail[]> {
   const sequences = await sql<SequenceRow[]>`
     select s.id, s.name, s.class_id, c.name as class_name, s.activity_id, a.name as activity_name,
-           s.start_date::text as start_date, s.end_date::text as end_date
+           s.start_date::text as start_date, s.end_date::text as end_date, s.scale_file_id
     from program_sequences s
     left join classes c on c.id = s.class_id
     left join activities a on a.id = s.activity_id

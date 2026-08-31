@@ -10,6 +10,7 @@ type SequenceRow = {
   activity_name: string | null;
   start_date: string | null;
   end_date: string | null;
+  scale_file_id: string | null;
 };
 
 type SessionRow = {
@@ -41,7 +42,7 @@ type CriterionRow = {
 export async function loadSequenceDetails(sql: Db, teacherId: string): Promise<SequenceDetail[]> {
   const sequences = await sql<SequenceRow[]>`
     select s.id, s.name, s.class_id, c.name as class_name, s.activity_id, a.name as activity_name,
-           s.start_date::text as start_date, s.end_date::text as end_date
+           s.start_date::text as start_date, s.end_date::text as end_date, s.scale_file_id
     from program_sequences s
     left join classes c on c.id = s.class_id
     left join activities a on a.id = s.activity_id
@@ -95,6 +96,7 @@ export async function loadSequenceDetails(sql: Db, teacherId: string): Promise<S
     activity_name: sequence.activity_name,
     start_date: sequence.start_date,
     end_date: sequence.end_date,
+    scale_image_url: sequence.scale_file_id ? `/api/files/${sequence.scale_file_id}` : null,
     sessions: sessions
       .filter((session) => session.sequence_id === sequence.id)
       .map((session, index) => ({

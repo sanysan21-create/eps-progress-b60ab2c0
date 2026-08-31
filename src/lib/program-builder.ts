@@ -35,6 +35,8 @@ export type SequenceDetail = {
   end_date: string | null;
   sessions: SequenceSession[];
   criteria: SequenceCriterion[];
+  /** Image du barème de la séquence (une seule photo). */
+  scale_image_url: string | null;
 };
 
 /** Dates hebdomadaires comprises entre deux bornes (incluses). */

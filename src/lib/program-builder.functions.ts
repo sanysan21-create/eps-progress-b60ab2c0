@@ -14,6 +14,59 @@ const FILE_MIME = [
   "video/mp4",
 ];
 
+const IMAGE_MIME = ["image/png", "image/jpeg", "image/webp"];
+
+/** Image du barème d'une séquence (une seule photo, remplaçable). */
+export const saveSequenceScaleImage = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { sequenceId: string; contentType: string; dataBase64: string }) =>
+    z
+      .object({
+        sequenceId: z.string().uuid(),
+        contentType: z
+          .string()
+          .refine((v) => IMAGE_MIME.includes(v), "Choisis une image (PNG, JPG ou WEBP)."),
+        dataBase64: z.string().min(1).max(14_000_000),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const [sequence] = await context.sql<{ id: string }[]>`
+      select id from program_sequences
+      where id = ${data.sequenceId} and teacher_id = ${context.userId} limit 1
+    `;
+    if (!sequence) throw new Error("Séquence introuvable");
+
+    const bytes = Uint8Array.from(atob(data.dataBase64), (c) => c.charCodeAt(0));
+    if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Image trop lourde (8 Mo maximum).");
+
+    const [file] = await context.sql<{ id: string }[]>`
+      insert into app_files (teacher_id, content_type, data)
+      values (${context.userId}, ${data.contentType}, ${bytes})
+      returning id
+    `;
+    if (!file) throw new Error("Envoi impossible");
+
+    await context.sql`
+      update program_sequences set scale_file_id = ${file.id}, updated_at = now()
+      where id = ${data.sequenceId} and teacher_id = ${context.userId}
+    `;
+    return { url: `/api/files/${file.id}` };
+  });
+
+export const deleteSequenceScaleImage = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { sequenceId: string }) =>
+    z.object({ sequenceId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await context.sql`
+      update program_sequences set scale_file_id = null, updated_at = now()
+      where id = ${data.sequenceId} and teacher_id = ${context.userId}
+    `;
+    return { ok: true };
+  });
+
 /** Séquences du professeur connecté, avec séances, ressources et barème. */
 export const listSequenceDetails = createServerFn({ method: "GET" })
   .middleware([requireTeacher])

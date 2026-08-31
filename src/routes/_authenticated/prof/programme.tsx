@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, Paperclip, Plus, Save, Trash2 } from "lucide-react";
+import { CalendarDays, Image as ImageIcon, Paperclip, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { listActivities } from "@/lib/competencies.functions";
@@ -12,14 +12,15 @@ import {
   addSessionFile,
   createSequence,
   deleteSequence,
+  deleteSequenceScaleImage,
   deleteSequenceSession,
   deleteSessionFile,
   listSequenceDetails,
-  saveSequenceCriteria,
+  saveSequenceScaleImage,
   saveSequenceSession,
   updateSequence,
 } from "@/lib/program-builder.functions";
-import { criteriaTotal, longDate, shortDate } from "@/lib/program-builder";
+import { longDate, shortDate } from "@/lib/program-builder";
 import type { SequenceDetail } from "@/lib/program-builder";
 import { deleteProgramSession, listProgramSessions } from "@/lib/program.functions";
 import { sessionWhen } from "@/lib/program";
@@ -51,7 +52,7 @@ const FIELD =
 const CARD = "space-y-4 rounded-2xl border border-border bg-surface p-5";
 const LABEL = "text-xs text-muted-foreground";
 
-type CriterionDraft = { label: string; points: string; competencyId: string };
+
 
 function TeacherProgram() {
   const queryClient = useQueryClient();
@@ -67,7 +68,8 @@ function TeacherProgram() {
   const removeSession = useServerFn(deleteSequenceSession);
   const uploadFile = useServerFn(addSessionFile);
   const removeFile = useServerFn(deleteSessionFile);
-  const saveCriteria = useServerFn(saveSequenceCriteria);
+  const saveScaleImage = useServerFn(saveSequenceScaleImage);
+  const deleteScaleImage = useServerFn(deleteSequenceScaleImage);
   const removeLegacy = useServerFn(deleteProgramSession);
 
   const sequences = useQuery({ queryKey: ["sequence-details"], queryFn: () => fetchSequences() });
@@ -106,30 +108,8 @@ function TeacherProgram() {
     });
   }, [session?.id, session?.session_date, session?.objective, session?.key_points]);
 
-  const [criteria, setCriteria] = useState<CriterionDraft[]>([]);
-  useEffect(() => {
-    setCriteria(
-      (current?.criteria ?? []).map((item) => ({
-        label: item.label,
-        points: String(item.points),
-        competencyId: item.competency_id ?? "",
-      })),
-    );
-  }, [current?.id, current?.criteria]);
 
-  const activityCompetencies = useMemo(() => {
-    const activity = (activities.data ?? []).find((row) => row.id === current?.activity_id);
-    return activity?.competencies ?? [];
-  }, [activities.data, current?.activity_id]);
 
-  const total = criteriaTotal(
-    criteria.map((item, index) => ({
-      id: String(index),
-      label: item.label,
-      points: Number(item.points) || 0,
-      competency_id: item.competencyId || null,
-    })),
-  );
 
   async function refresh() {
     await queryClient.invalidateQueries({ queryKey: ["sequence-details"] });
@@ -298,22 +278,45 @@ function TeacherProgram() {
     }
   }
 
-  async function handleSaveCriteria() {
+  async function handleScaleUpload(file: File) {
     if (!current || busy) return;
-    const cleaned = criteria
-      .map((item) => ({
-        label: item.label.trim(),
-        points: Number(item.points) || 0,
-        competencyId: item.competencyId || null,
-      }))
-      .filter((item) => item.label.length > 0);
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      toast.error("Choisis une image (PNG, JPG ou WEBP).");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Image trop lourde (8 Mo maximum).");
+      return;
+    }
     setBusy(true);
     try {
-      await saveCriteria({ data: { sequenceId: current.id, criteria: cleaned } });
-      toast.success("Barème enregistré");
+      const buffer = new Uint8Array(await file.arrayBuffer());
+      let binary = "";
+      for (let i = 0; i < buffer.length; i += 8192) {
+        binary += String.fromCharCode(...buffer.subarray(i, i + 8192));
+      }
+      await saveScaleImage({
+        data: { sequenceId: current.id, contentType: file.type, dataBase64: btoa(binary) },
+      });
       await refresh();
+      toast.success("Barème enregistré");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Enregistrement impossible");
+      toast.error(error instanceof Error ? error.message : "Envoi impossible");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleScaleDelete() {
+    if (!current || busy) return;
+    if (!window.confirm("Supprimer l'image du barème ?")) return;
+    setBusy(true);
+    try {
+      await deleteScaleImage({ data: { sequenceId: current.id } });
+      await refresh();
+      toast.success("Image supprimée");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Suppression impossible");
     } finally {
       setBusy(false);
     }
@@ -721,109 +724,63 @@ function TeacherProgram() {
             </section>
           )}
 
-          {/* 4. Barème de la séquence */}
+          {/* 4. Barème de la séquence : une seule image */}
           {current && (
             <section className={CARD}>
               <h2 className="mono-label text-muted-foreground">Barème de la séquence</h2>
-              <div className="space-y-2">
-                {criteria.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Aucun critère : ajoute un critère (les compétences de l'activité sont
-                    réutilisables).
-                  </p>
-                )}
-                {criteria.map((item, index) => (
-                  <div key={index} className="grid gap-2 md:grid-cols-[1fr_220px_90px_40px]">
-                    <input
-                      value={item.label}
-                      onChange={(event) =>
-                        setCriteria(
-                          criteria.map((row, i) =>
-                            i === index ? { ...row, label: event.target.value } : row,
-                          ),
-                        )
-                      }
-                      placeholder="Construire l'échange"
-                      className={FIELD}
+              <p className="text-xs text-muted-foreground">
+                Ajoute une photo du barème (PNG, JPG ou WEBP, 8 Mo maximum).
+              </p>
+
+              {current.scale_image_url ? (
+                <div className="space-y-3">
+                  <a href={current.scale_image_url} target="_blank" rel="noreferrer" className="block">
+                    <img
+                      src={current.scale_image_url}
+                      alt={`Barème de la séquence ${current.name}`}
+                      className="max-h-80 w-full rounded-xl border border-border object-contain"
+                      loading="lazy"
                     />
-                    <select
-                      value={item.competencyId}
-                      onChange={(event) => {
-                        const competency = activityCompetencies.find(
-                          (row) => row.id === event.target.value,
-                        );
-                        setCriteria(
-                          criteria.map((row, i) =>
-                            i === index
-                              ? {
-                                  ...row,
-                                  competencyId: event.target.value,
-                                  label: competency ? competency.label : row.label,
-                                }
-                              : row,
-                          ),
-                        );
-                      }}
-                      className={FIELD}
-                    >
-                      <option value="">Compétence liée (optionnel)…</option>
-                      {activityCompetencies.map((row) => (
-                        <option key={row.id} value={row.id}>
-                          {row.afl} · {row.label}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.5}
-                      value={item.points}
-                      onChange={(event) =>
-                        setCriteria(
-                          criteria.map((row, i) =>
-                            i === index ? { ...row, points: event.target.value } : row,
-                          ),
-                        )
-                      }
-                      placeholder="8"
-                      className={FIELD}
-                    />
+                  </a>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary">
+                      <ImageIcon className="size-3.5" /> Remplacer l'image
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (file) void handleScaleUpload(file);
+                        }}
+                      />
+                    </label>
                     <button
                       type="button"
-                      onClick={() => setCriteria(criteria.filter((_, i) => i !== index))}
-                      className="text-muted-foreground hover:text-destructive"
-                      aria-label="Supprimer le critère"
+                      disabled={busy}
+                      onClick={() => void handleScaleDelete()}
+                      className="inline-flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:border-destructive hover:text-destructive disabled:opacity-60"
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-3.5" /> Supprimer l'image
                     </button>
                   </div>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCriteria([...criteria, { label: "", points: "", competencyId: "" }])
-                  }
-                  className="inline-flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary"
-                >
-                  <Plus className="size-3.5" /> Ajouter un critère
-                </button>
-                <p className="text-sm font-bold uppercase">
-                  Total <span className="text-primary">/{total}</span>
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void handleSaveCriteria()}
-                disabled={busy}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
-              >
-                <Save className="size-4" /> Enregistrer le barème
-              </button>
+                </div>
+              ) : (
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground">
+                  <ImageIcon className="size-4" /> {busy ? "Envoi…" : "Ajouter une photo"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) void handleScaleUpload(file);
+                    }}
+                  />
+                </label>
+              )}
             </section>
           )}
         </>

@@ -358,6 +358,8 @@ alter table competencies add column if not exists afl text not null default 'AFL
 -- Constructeur de séquences (période réelle, séances numérotées, ressources, barème).
 alter table program_sequences add column if not exists start_date date;
 alter table program_sequences add column if not exists end_date date;
+alter table program_sequences add column if not exists scale_file_id uuid
+  references app_files(id) on delete set null;
 
 alter table program_sessions add column if not exists sequence_id uuid
   references program_sequences(id) on delete cascade;

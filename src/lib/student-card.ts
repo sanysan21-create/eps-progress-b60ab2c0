@@ -685,28 +685,55 @@ function drawBack(data: StudentCardData) {
 }
 
 
-/** Construit un PDF (recto page 1, verso page 2 pour chaque élève) et le télécharge. */
+/**
+ * Construit un PDF A4 : plusieurs cartes (format carte bancaire) disposées en grille
+ * avec espacement. Les rectos d'un lot occupent une page, les versos la page suivante —
+ * jamais recto et verso d'une même carte sur la même page.
+ */
 export async function downloadStudentCardsPdf(cards: StudentCardData[], fileName: string) {
   const { jsPDF } = await import("jspdf");
-  const pdf = new jsPDF({
-    unit: "mm",
-    format: [CARD_W_MM, CARD_H_MM],
-    orientation: "portrait",
-  });
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
-  let first = true;
-  for (const card of cards) {
-    const front = await drawFront(card);
-    const back = drawBack(card);
-    for (const canvas of [front, back]) {
-      if (!first) pdf.addPage([CARD_W_MM, CARD_H_MM], "portrait");
-      first = false;
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, CARD_W_MM, CARD_H_MM);
+  const PAGE_W = 210;
+  const PAGE_H = 297;
+  const GAP = 6;
+  const COLS = Math.max(1, Math.floor((PAGE_W - 2 * 8 + GAP) / (CARD_W_MM + GAP)));
+  const ROWS = Math.max(1, Math.floor((PAGE_H - 2 * 8 + GAP) / (CARD_H_MM + GAP)));
+  const PER_PAGE = COLS * ROWS;
+  const offsetX = (PAGE_W - (COLS * CARD_W_MM + (COLS - 1) * GAP)) / 2;
+  const offsetY = (PAGE_H - (ROWS * CARD_H_MM + (ROWS - 1) * GAP)) / 2;
+
+  const placeGrid = (images: string[], firstPage: boolean) => {
+    if (!firstPage) pdf.addPage("a4", "portrait");
+    images.forEach((dataUrl, index) => {
+      const col = index % COLS;
+      const row = Math.floor(index / COLS);
+      const x = offsetX + col * (CARD_W_MM + GAP);
+      const y = offsetY + row * (CARD_H_MM + GAP);
+      pdf.addImage(dataUrl, "PNG", x, y, CARD_W_MM, CARD_H_MM);
+      pdf.setDrawColor(190, 195, 200);
+      pdf.setLineWidth(0.1);
+      pdf.rect(x, y, CARD_W_MM, CARD_H_MM);
+    });
+  };
+
+  let firstPage = true;
+  for (let start = 0; start < cards.length; start += PER_PAGE) {
+    const batch = cards.slice(start, start + PER_PAGE);
+    const fronts: string[] = [];
+    const backs: string[] = [];
+    for (const card of batch) {
+      fronts.push((await drawFront(card)).toDataURL("image/png"));
+      backs.push(drawBack(card).toDataURL("image/png"));
     }
+    placeGrid(fronts, firstPage);
+    firstPage = false;
+    placeGrid(backs, false);
   }
 
   pdf.save(fileName);
 }
+
 
 /** Aperçu image (data URL) du recto et du verso, pour l'affichage à l'écran. */
 export async function renderStudentCardPreview(card: StudentCardData) {

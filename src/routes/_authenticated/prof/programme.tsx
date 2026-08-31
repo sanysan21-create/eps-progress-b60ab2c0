@@ -52,7 +52,7 @@ const FIELD =
 const CARD = "space-y-4 rounded-2xl border border-border bg-surface p-5";
 const LABEL = "text-xs text-muted-foreground";
 
-type CriterionDraft = { label: string; points: string; competencyId: string };
+
 
 function TeacherProgram() {
   const queryClient = useQueryClient();

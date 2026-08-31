@@ -138,11 +138,22 @@ function TeacherProgram() {
 
   async function handleCreate() {
     if (creating) return;
-    if (!form.name.trim()) return toast.error("Donne un nom à la séquence.");
-    if (!form.classId) return toast.error("Choisis une classe.");
-    if (!form.activityId) return toast.error("Choisis une activité.");
-    if (!form.startDate || !form.endDate) return toast.error("Choisis la période (du … au …).");
-    if (form.endDate < form.startDate) return toast.error("La date de fin doit suivre le début.");
+    const problem =
+      !form.name.trim()
+        ? "Donne un nom à la séquence."
+        : !form.classId
+          ? "Choisis une classe."
+          : !form.activityId
+            ? "Choisis une activité."
+            : !form.startDate || !form.endDate
+              ? "Choisis la période (du … au …)."
+              : form.endDate < form.startDate
+                ? "La date de fin doit suivre le début."
+                : null;
+    if (problem) {
+      toast.error(problem);
+      return;
+    }
 
     setCreating(true);
     try {
@@ -259,7 +270,10 @@ function TeacherProgram() {
 
   async function handleUpload(file: File) {
     if (!session) return;
-    if (file.size > 8 * 1024 * 1024) return toast.error("Fichier trop lourd (8 Mo maximum).");
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Fichier trop lourd (8 Mo maximum).");
+      return;
+    }
     setBusy(true);
     try {
       const buffer = new Uint8Array(await file.arrayBuffer());

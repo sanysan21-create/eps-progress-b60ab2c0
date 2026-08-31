@@ -940,8 +940,8 @@ function ClassDetailPage() {
           <DialogHeader>
             <DialogTitle>Importer des élèves dans {klass?.name}</DialogTitle>
             <DialogDescription>
-              Fichier CSV avec une ligne par élève : prénom ; nom. Vérifiez le résumé avant
-              validation.
+              Une ligne par élève. Le texte EN MAJUSCULES est lu comme le nom, le reste comme le
+              prénom (ex. « DUPONT Jean » ou « jean ; DUPONT »). Vérifiez le résumé avant validation.
             </DialogDescription>
           </DialogHeader>
 

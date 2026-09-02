@@ -195,14 +195,27 @@ function QuickCompetencies() {
     const term = query.trim().toLowerCase();
     const all = students.data ?? [];
     const classIds = new Set((classStudents.data ?? []).map((student) => student.id));
-    const list = classId ? all.filter((student) => classIds.has(student.id)) : all;
-    if (!term) return list;
-    return list.filter((s) =>
-      `${s.first_name} ${s.last_name} ${s.student_code} ${s.class_names.join(" ")}`
-        .toLowerCase()
-        .includes(term),
+    let list = classId ? all.filter((student) => classIds.has(student.id)) : all;
+    if (term) {
+      list = list.filter((s) =>
+        `${s.first_name} ${s.last_name} ${s.student_code} ${s.class_names.join(" ")}`
+          .toLowerCase()
+          .includes(term),
+      );
+    }
+    return [...list].sort((a, b) =>
+      sortBy === "last"
+        ? `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, "fr")
+        : `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`, "fr"),
     );
-  }, [students.data, query, classId, classStudents.data]);
+  }, [students.data, query, classId, classStudents.data, sortBy]);
+
+  /** Nom affiché : l'ordre suit le tri choisi (NOM Prénom ou Prénom NOM). */
+  function displayName(student: { first_name: string; last_name: string }) {
+    return sortBy === "last"
+      ? `${student.last_name.toUpperCase()} ${student.first_name}`
+      : `${student.first_name} ${student.last_name.toUpperCase()}`;
+  }
 
   function toggle(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));

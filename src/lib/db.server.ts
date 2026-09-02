@@ -395,6 +395,18 @@ create index if not exists idx_program_sessions_sequence on program_sessions(seq
 create index if not exists idx_program_session_files_session on program_session_files(session_id);
 create index if not exists idx_program_criteria_sequence on program_criteria(sequence_id);
 
+-- Cotation d'escalade maximale réussie (uniquement pour l'activité Escalade).
+create table if not exists student_climbing_grades (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  activity_id uuid not null references activities(id) on delete cascade,
+  grade text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (student_id, activity_id)
+);
+
 
 create index if not exists idx_students_teacher on students(teacher_id);
 

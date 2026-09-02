@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireTeacher, withDb } from "./auth-middleware";
 import { DEFAULT_LEVELS } from "@/lib/levels";
 import { AFL_CODES, type AflCode, toAfl } from "@/lib/afl";
+import { CLIMBING_GRADES } from "@/lib/climbing";
 
 export type CompetencyLevel = {
   id: string;
@@ -40,6 +41,8 @@ export type StudentMark = { competency_id: string; level_id: string };
 export type StudentProfileActivity = {
   activity_id: string;
   activity_name: string;
+  /** Cotation d'escalade maximale réussie (uniquement activité Escalade). */
+  climbing_grade: string | null;
   competencies: {
     id: string;
     label: string;
@@ -54,6 +57,7 @@ export type StudentProfileActivity = {
     next_level_tip: string | null;
   }[];
 };
+
 
 
 const labelSchema = z.string().trim().min(1, "Champ requis").max(200);
@@ -469,11 +473,18 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
       order by a.name asc, c.afl asc, c.position asc, c.label asc
     `;
 
+    const climbing = await context.sql<{ activity_id: string; grade: string }[]>`
+      select activity_id, grade from student_climbing_grades
+      where student_id = ${studentId}
+    `;
+    const gradeByActivity = new Map(climbing.map((row) => [row.activity_id, row.grade]));
+
     const grouped = new Map<string, StudentProfileActivity>();
     for (const row of rows) {
-      const entry = grouped.get(row.activity_id) ?? {
+      const entry: StudentProfileActivity = grouped.get(row.activity_id) ?? {
         activity_id: row.activity_id,
         activity_name: row.activity_name,
+        climbing_grade: gradeByActivity.get(row.activity_id) ?? null,
         competencies: [],
       };
       entry.competencies.push({
@@ -493,4 +504,67 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
 
 
     return Array.from(grouped.values());
+
+  });
+
+/** Cotation d'escalade maximale réussie par un élève (activité Escalade). */
+export const getStudentClimbingGrade = createServerFn({ method: "GET" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentId: string; activityId: string }) =>
+    z.object({ studentId: z.string().uuid(), activityId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<string | null> => {
+    const rows = await context.sql<{ grade: string }[]>`
+      select grade from student_climbing_grades
+      where teacher_id = ${context.userId}
+        and student_id = ${data.studentId}
+        and activity_id = ${data.activityId}
+      limit 1
+    `;
+    return rows[0]?.grade ?? null;
+  });
+
+/** Enregistre la cotation d'escalade pour un ou plusieurs élèves. */
+export const setStudentClimbingGrade = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentIds: string[]; activityId: string; grade: string }) =>
+    z
+      .object({
+        studentIds: z.array(z.string().uuid()).min(1).max(200),
+        activityId: z.string().uuid(),
+        grade: z.enum(CLIMBING_GRADES),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await context.sql`
+      insert into student_climbing_grades (teacher_id, student_id, activity_id, grade)
+      select ${context.userId}, s.id, ${data.activityId}, ${data.grade}
+      from students s
+      where s.teacher_id = ${context.userId} and s.id = any(${data.studentIds}::uuid[])
+      on conflict (student_id, activity_id)
+      do update set grade = excluded.grade, updated_at = now()
+    `;
+    return { saved: data.studentIds.length };
+  });
+
+/** Retire la cotation d'escalade enregistrée. */
+export const clearStudentClimbingGrade = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentIds: string[]; activityId: string }) =>
+    z
+      .object({
+        studentIds: z.array(z.string().uuid()).min(1).max(200),
+        activityId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await context.sql`
+      delete from student_climbing_grades
+      where teacher_id = ${context.userId}
+        and activity_id = ${data.activityId}
+        and student_id = any(${data.studentIds}::uuid[])
+    `;
+    return { ok: true };
   });

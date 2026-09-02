@@ -173,10 +173,24 @@ function StudentProfile() {
                 key={activity.activity_id}
                 className="rounded-2xl border border-border bg-surface p-5"
               >
-                <h3 className="flex items-center gap-2 text-base font-semibold">
-                  <span aria-hidden className="text-2xl leading-none">{activityEmoji(activity.activity_name)}</span>
-                  {activity.activity_name}
-                </h3>
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="flex items-center gap-2 text-base font-semibold">
+                    <span aria-hidden className="text-2xl leading-none">{activityEmoji(activity.activity_name)}</span>
+                    {activity.activity_name}
+                  </h3>
+                  {activity.climbing_grade && (
+                    <span
+                      className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-center"
+                      title="Ma cotation max réussie"
+                    >
+                      <span className="mono-label block text-[0.6rem] text-primary">🧗 Cotation</span>
+                      <span className="display-title block text-xl leading-none text-primary">
+                        {activity.climbing_grade}
+                      </span>
+                    </span>
+                  )}
+                </div>
+
                 <ul className="mt-4 space-y-4">
                   {activity.competencies.map((competency) => (
                     <li key={competency.id} className="space-y-1.5">

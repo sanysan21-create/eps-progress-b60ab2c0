@@ -295,7 +295,7 @@ function QuickCompetencies() {
               <option value="">Choisir un élève…</option>
               {filtered.map((student) => (
                 <option key={student.id} value={student.id}>
-                  {student.first_name} {student.last_name}
+                  {displayName(student)}
                 </option>
               ))}
             </select>

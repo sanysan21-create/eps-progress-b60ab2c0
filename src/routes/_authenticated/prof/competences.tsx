@@ -429,11 +429,23 @@ function QuickCompetencies() {
 
             {activityList.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Crée d'abord une activité et ses compétences cibles dans{" "}
-                <Link to="/prof/activites" className="text-primary underline">
-                  Activités & compétences cibles
-                </Link>
-                .
+                {classId ? (
+                  <>
+                    Aucune activité n'est programmée pour cette classe. Crée une séquence dans{" "}
+                    <Link to="/prof/programme" className="text-primary underline">
+                      Programme
+                    </Link>{" "}
+                    en lui associant une activité : elle deviendra alors évaluable ici.
+                  </>
+                ) : (
+                  <>
+                    Crée d'abord une activité et ses compétences cibles dans{" "}
+                    <Link to="/prof/activites" className="text-primary underline">
+                      Activités & compétences cibles
+                    </Link>
+                    .
+                  </>
+                )}
               </p>
             )}
 

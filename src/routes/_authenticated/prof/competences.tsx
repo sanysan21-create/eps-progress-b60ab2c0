@@ -77,6 +77,7 @@ function QuickCompetencies() {
   const [classId, setClassId] = useState("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<"last" | "first">("last");
   const [activityId, setActivityId] = useState<string>("");
 
   const students = useQuery({ queryKey: ["teacher-students"], queryFn: () => fetchStudents() });

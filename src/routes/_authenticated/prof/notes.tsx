@@ -384,13 +384,20 @@ function TeacherGrades() {
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   >
                     <option value="">Choisir une activité…</option>
-                    {(activities.data ?? []).map((row) => (
+                    {activityOptions.map((row) => (
                       <option key={row.id} value={row.id}>
                         {row.name}
                       </option>
                     ))}
                   </select>
                 </label>
+
+                {activityOptions.length === 0 && !programmed.isPending && (
+                  <p className="text-sm text-muted-foreground">
+                    Aucune activité n'est programmée pour cette classe. Ajoute une séquence liée à
+                    une activité dans l'onglet « Programme » : elle deviendra alors évaluable ici.
+                  </p>
+                )}
 
                 {activityId && competencies.length === 0 && (
                   <p className="text-sm text-muted-foreground">

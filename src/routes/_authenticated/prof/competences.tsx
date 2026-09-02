@@ -34,6 +34,7 @@ import {
 import { listClasses } from "@/lib/classes.functions";
 import { listClassStudents } from "@/lib/achievements.functions";
 import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
+import { useProgrammedActivities } from "@/hooks/use-programmed-activities";
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({
   head: () => ({
@@ -76,6 +77,7 @@ function QuickCompetencies() {
   const [classId, setClassId] = useState("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<"last" | "first">("last");
   const [activityId, setActivityId] = useState<string>("");
 
   const students = useQuery({ queryKey: ["teacher-students"], queryFn: () => fetchStudents() });
@@ -141,7 +143,13 @@ function QuickCompetencies() {
     }
   }
 
-  const activityList = activities.data ?? [];
+  /** Seules les activités programmées pour la classe sélectionnée sont évaluables. */
+  const programmed = useProgrammedActivities({ classId });
+  const programmedIds = programmed.ids;
+  const activityList = useMemo(() => {
+    const all = activities.data ?? [];
+    return programmedIds ? all.filter((a) => programmedIds.has(a.id)) : all;
+  }, [activities.data, programmedIds]);
   const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;
   const isClimbing = isClimbingActivity(activity?.name);
 
@@ -188,14 +196,27 @@ function QuickCompetencies() {
     const term = query.trim().toLowerCase();
     const all = students.data ?? [];
     const classIds = new Set((classStudents.data ?? []).map((student) => student.id));
-    const list = classId ? all.filter((student) => classIds.has(student.id)) : all;
-    if (!term) return list;
-    return list.filter((s) =>
-      `${s.first_name} ${s.last_name} ${s.student_code} ${s.class_names.join(" ")}`
-        .toLowerCase()
-        .includes(term),
+    let list = classId ? all.filter((student) => classIds.has(student.id)) : all;
+    if (term) {
+      list = list.filter((s) =>
+        `${s.first_name} ${s.last_name} ${s.student_code} ${s.class_names.join(" ")}`
+          .toLowerCase()
+          .includes(term),
+      );
+    }
+    return [...list].sort((a, b) =>
+      sortBy === "last"
+        ? `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, "fr")
+        : `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`, "fr"),
     );
-  }, [students.data, query, classId, classStudents.data]);
+  }, [students.data, query, classId, classStudents.data, sortBy]);
+
+  /** Nom affiché : l'ordre suit le tri choisi (NOM Prénom ou Prénom NOM). */
+  function displayName(student: { first_name: string; last_name: string }) {
+    return sortBy === "last"
+      ? `${student.last_name.toUpperCase()} ${student.first_name}`
+      : `${student.first_name} ${student.last_name.toUpperCase()}`;
+  }
 
   function toggle(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -274,7 +295,7 @@ function QuickCompetencies() {
               <option value="">Choisir un élève…</option>
               {filtered.map((student) => (
                 <option key={student.id} value={student.id}>
-                  {student.first_name} {student.last_name}
+                  {displayName(student)}
                 </option>
               ))}
             </select>
@@ -293,6 +314,34 @@ function QuickCompetencies() {
               className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
             />
           </div>
+
+          <div
+            role="group"
+            aria-label="Trier les élèves"
+            className="flex gap-1 rounded-xl border border-border bg-background p-1"
+          >
+            {(
+              [
+                { value: "last", label: "Nom" },
+                { value: "first", label: "Prénom" },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSortBy(option.value)}
+                aria-pressed={sortBy === option.value}
+                className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
+                  sortBy === option.value
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Tri {option.label}
+              </button>
+            ))}
+          </div>
+
 
           <div className="flex items-center justify-between">
             <p className="mono-label text-muted-foreground">
@@ -336,7 +385,7 @@ function QuickCompetencies() {
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-bold">
-                      {s.first_name} {s.last_name}
+                      {displayName(s)}
                     </span>
                     <span className="mono-label block text-muted-foreground">
                       {s.class_names.join(" · ") || "Sans classe"}
@@ -380,11 +429,23 @@ function QuickCompetencies() {
 
             {activityList.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Crée d'abord une activité et ses compétences cibles dans{" "}
-                <Link to="/prof/activites" className="text-primary underline">
-                  Activités & compétences cibles
-                </Link>
-                .
+                {classId ? (
+                  <>
+                    Aucune activité n'est programmée pour cette classe. Crée une séquence dans{" "}
+                    <Link to="/prof/programme" className="text-primary underline">
+                      Programme
+                    </Link>{" "}
+                    en lui associant une activité : elle deviendra alors évaluable ici.
+                  </>
+                ) : (
+                  <>
+                    Crée d'abord une activité et ses compétences cibles dans{" "}
+                    <Link to="/prof/activites" className="text-primary underline">
+                      Activités & compétences cibles
+                    </Link>
+                    .
+                  </>
+                )}
               </p>
             )}
 

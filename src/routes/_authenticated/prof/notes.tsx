@@ -16,6 +16,7 @@ import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 import { NumberField } from "@/components/eps/NumberField";
 import { NumericButtons } from "@/components/eps/NumericButtons";
+import { useProgrammedActivities } from "@/hooks/use-programmed-activities";
 
 
 export const Route = createFileRoute("/_authenticated/prof/notes")({
@@ -93,10 +94,25 @@ function TeacherGrades() {
   });
 
   const student = (students.data ?? []).find((row) => row.id === studentId) ?? null;
-  const activity = (activities.data ?? []).find((row) => row.id === activityId) ?? null;
+  /** Seules les activités programmées pour la classe sélectionnée sont évaluables. */
+  const programmed = useProgrammedActivities({ className: selectedClass });
+  const programmedIds = programmed.ids;
+  const activityOptions = useMemo(() => {
+    const all = activities.data ?? [];
+    return programmedIds ? all.filter((row) => programmedIds.has(row.id)) : all;
+  }, [activities.data, programmedIds]);
+  const activity = activityOptions.find((row) => row.id === activityId) ?? null;
   const competencies = activity?.competencies ?? [];
   /** Compétences classées dans l'AFL actif (catégorie choisie à la création). */
   const aflCompetencies = competencies.filter((competency) => competency.afl === activeAfl);
+
+  /** Si la classe change et que l'activité n'est plus programmée, on la réinitialise. */
+  useEffect(() => {
+    if (activityId && !activityOptions.some((row) => row.id === activityId)) {
+      setActivityId("");
+      setAfl(initialAflState());
+    }
+  }, [activityId, activityOptions]);
 
   const classNames = useMemo(() => {
     const set = new Set<string>();
@@ -368,13 +384,20 @@ function TeacherGrades() {
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   >
                     <option value="">Choisir une activité…</option>
-                    {(activities.data ?? []).map((row) => (
+                    {activityOptions.map((row) => (
                       <option key={row.id} value={row.id}>
                         {row.name}
                       </option>
                     ))}
                   </select>
                 </label>
+
+                {activityOptions.length === 0 && !programmed.isPending && (
+                  <p className="text-sm text-muted-foreground">
+                    Aucune activité n'est programmée pour cette classe. Ajoute une séquence liée à
+                    une activité dans l'onglet « Programme » : elle deviendra alors évaluable ici.
+                  </p>
+                )}
 
                 {activityId && competencies.length === 0 && (
                   <p className="text-sm text-muted-foreground">

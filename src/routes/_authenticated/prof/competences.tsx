@@ -357,7 +357,7 @@ function QuickCompetencies() {
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-bold">
-                      {s.first_name} {s.last_name}
+                      {displayName(s)}
                     </span>
                     <span className="mono-label block text-muted-foreground">
                       {s.class_names.join(" · ") || "Sans classe"}

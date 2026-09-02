@@ -93,10 +93,25 @@ function TeacherGrades() {
   });
 
   const student = (students.data ?? []).find((row) => row.id === studentId) ?? null;
-  const activity = (activities.data ?? []).find((row) => row.id === activityId) ?? null;
+  /** Seules les activités programmées pour la classe sélectionnée sont évaluables. */
+  const programmed = useProgrammedActivities({ className: selectedClass });
+  const programmedIds = programmed.ids;
+  const activityOptions = useMemo(() => {
+    const all = activities.data ?? [];
+    return programmedIds ? all.filter((row) => programmedIds.has(row.id)) : all;
+  }, [activities.data, programmedIds]);
+  const activity = activityOptions.find((row) => row.id === activityId) ?? null;
   const competencies = activity?.competencies ?? [];
   /** Compétences classées dans l'AFL actif (catégorie choisie à la création). */
   const aflCompetencies = competencies.filter((competency) => competency.afl === activeAfl);
+
+  /** Si la classe change et que l'activité n'est plus programmée, on la réinitialise. */
+  useEffect(() => {
+    if (activityId && !activityOptions.some((row) => row.id === activityId)) {
+      setActivityId("");
+      setAfl(initialAflState());
+    }
+  }, [activityId, activityOptions]);
 
   const classNames = useMemo(() => {
     const set = new Set<string>();

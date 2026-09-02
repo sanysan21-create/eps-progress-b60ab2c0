@@ -40,6 +40,8 @@ export type StudentMark = { competency_id: string; level_id: string };
 export type StudentProfileActivity = {
   activity_id: string;
   activity_name: string;
+  /** Cotation d'escalade maximale réussie (uniquement activité Escalade). */
+  climbing_grade: string | null;
   competencies: {
     id: string;
     label: string;
@@ -54,6 +56,7 @@ export type StudentProfileActivity = {
     next_level_tip: string | null;
   }[];
 };
+
 
 
 const labelSchema = z.string().trim().min(1, "Champ requis").max(200);

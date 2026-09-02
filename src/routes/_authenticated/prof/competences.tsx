@@ -11,8 +11,13 @@ import {
   listTeacherStudents,
   setStudentLevel,
   clearStudentLevel,
+  getStudentClimbingGrade,
+  setStudentClimbingGrade,
+  clearStudentClimbingGrade,
 } from "@/lib/competencies.functions";
+import { CLIMBING_GRADES, isClimbingActivity } from "@/lib/climbing";
 import { AFL_HINTS, groupByAfl } from "@/lib/afl";
+
 import {
   listStudentEngagement,
   getStudentStrengthChoices,

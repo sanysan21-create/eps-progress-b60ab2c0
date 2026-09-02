@@ -141,7 +141,13 @@ function QuickCompetencies() {
     }
   }
 
-  const activityList = activities.data ?? [];
+  /** Seules les activités programmées pour la classe sélectionnée sont évaluables. */
+  const programmed = useProgrammedActivities({ classId });
+  const programmedIds = programmed.ids;
+  const activityList = useMemo(() => {
+    const all = activities.data ?? [];
+    return programmedIds ? all.filter((a) => programmedIds.has(a.id)) : all;
+  }, [activities.data, programmedIds]);
   const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;
   const isClimbing = isClimbingActivity(activity?.name);
 

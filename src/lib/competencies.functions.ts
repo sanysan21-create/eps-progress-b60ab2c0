@@ -472,11 +472,18 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
       order by a.name asc, c.afl asc, c.position asc, c.label asc
     `;
 
+    const climbing = await context.sql<{ activity_id: string; grade: string }[]>`
+      select activity_id, grade from student_climbing_grades
+      where student_id = ${studentId}
+    `;
+    const gradeByActivity = new Map(climbing.map((row) => [row.activity_id, row.grade]));
+
     const grouped = new Map<string, StudentProfileActivity>();
     for (const row of rows) {
-      const entry = grouped.get(row.activity_id) ?? {
+      const entry: StudentProfileActivity = grouped.get(row.activity_id) ?? {
         activity_id: row.activity_id,
         activity_name: row.activity_name,
+        climbing_grade: gradeByActivity.get(row.activity_id) ?? null,
         competencies: [],
       };
       entry.competencies.push({
@@ -496,4 +503,5 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
 
 
     return Array.from(grouped.values());
+
   });

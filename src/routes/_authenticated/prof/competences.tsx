@@ -34,6 +34,7 @@ import {
 import { listClasses } from "@/lib/classes.functions";
 import { listClassStudents } from "@/lib/achievements.functions";
 import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
+import { useProgrammedActivities } from "@/hooks/use-programmed-activities";
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({
   head: () => ({

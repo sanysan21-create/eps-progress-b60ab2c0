@@ -315,6 +315,34 @@ function QuickCompetencies() {
             />
           </div>
 
+          <div
+            role="group"
+            aria-label="Trier les élèves"
+            className="flex gap-1 rounded-xl border border-border bg-background p-1"
+          >
+            {(
+              [
+                { value: "last", label: "Nom" },
+                { value: "first", label: "Prénom" },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSortBy(option.value)}
+                aria-pressed={sortBy === option.value}
+                className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
+                  sortBy === option.value
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Tri {option.label}
+              </button>
+            ))}
+          </div>
+
+
           <div className="flex items-center justify-between">
             <p className="mono-label text-muted-foreground">
               {selected.length} sélectionné{selected.length > 1 ? "s" : ""}

@@ -143,12 +143,46 @@ function QuickCompetencies() {
 
   const activityList = activities.data ?? [];
   const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;
+  const isClimbing = isClimbingActivity(activity?.name);
+
+  const fetchClimbingGrade = useServerFn(getStudentClimbingGrade);
+  const saveClimbingGrade = useServerFn(setStudentClimbingGrade);
+  const removeClimbingGrade = useServerFn(clearStudentClimbingGrade);
+
+  const climbingGrade = useQuery({
+    queryKey: ["student-climbing-grade", soloId, activity?.id],
+    queryFn: () =>
+      fetchClimbingGrade({ data: { studentId: soloId!, activityId: activity!.id } }),
+    enabled: Boolean(soloId && activity?.id && isClimbing),
+  });
+
+  async function handleClimbingChange(value: string) {
+    if (!selected.length || !activity) {
+      toast.error("Sélectionne au moins un élève");
+      return;
+    }
+    try {
+      if (value) {
+        await saveClimbingGrade({
+          data: { studentIds: selected, activityId: activity.id, grade: value as never },
+        });
+        toast.success(`Cotation ${value} enregistrée`);
+      } else {
+        await removeClimbingGrade({ data: { studentIds: selected, activityId: activity.id } });
+        toast.success("Cotation retirée");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["student-climbing-grade"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
+    }
+  }
 
   const markByCompetency = useMemo(() => {
     const map = new Map<string, string>();
     for (const mark of marks.data ?? []) map.set(mark.competency_id, mark.level_id);
     return map;
   }, [marks.data]);
+
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();

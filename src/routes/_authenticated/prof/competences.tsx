@@ -388,6 +388,42 @@ function QuickCompetencies() {
               </p>
             )}
 
+            {isClimbing && activity && (
+              <article className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-4">
+                <div className="min-w-[200px] flex-1">
+                  <p className="text-sm font-bold">🧗 Cotation max réussie</p>
+                  <p className="text-xs text-muted-foreground">
+                    Spécifique à l'escalade : la plus haute voie réussie par l'élève.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={soloId ? (climbingGrade.data ?? "") : ""}
+                    onChange={(e) => void handleClimbingChange(e.target.value)}
+                    className="min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+                  >
+                    <option value="">Non renseigné</option>
+                    {CLIMBING_GRADES.map((grade) => (
+                      <option key={grade} value={grade}>
+                        {grade}
+                      </option>
+                    ))}
+                  </select>
+                  {soloId && climbingGrade.data && (
+                    <button
+                      onClick={() => void handleClimbingChange("")}
+                      aria-label="Retirer la cotation"
+                      className="rounded-xl border border-border p-2 text-muted-foreground hover:text-primary"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
+                </div>
+              </article>
+            )}
+
+
+
             {activity && activity.competencies.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 Cette activité n'a pas encore de compétence cible.

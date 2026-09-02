@@ -16,6 +16,7 @@ import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 import { NumberField } from "@/components/eps/NumberField";
 import { NumericButtons } from "@/components/eps/NumericButtons";
+import { useProgrammedActivities } from "@/hooks/use-programmed-activities";
 
 
 export const Route = createFileRoute("/_authenticated/prof/notes")({

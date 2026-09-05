@@ -37,7 +37,7 @@ function TeacherLayout() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto grid min-h-dvh max-w-[1440px] grid-cols-1 items-start lg:grid-cols-[280px_1fr]">
+      <div className="grid min-h-dvh w-full grid-cols-1 items-start lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="hidden flex-col border-r border-sidebar-border bg-sidebar p-6 text-sidebar-foreground lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-y-auto">
           <div className="mb-10">
             <Link

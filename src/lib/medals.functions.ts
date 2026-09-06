@@ -2,52 +2,92 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireTeacher, withDb } from "./auth-middleware";
-
-const medalSchema = z.enum(["bronze", "silver", "gold"]);
+import { computeMedalProgress, highestMedal, type MedalProgress } from "./medals";
 
 export type StudentMedalRow = { student_id: string; medal: string };
 
-/** Médailles déjà attribuées par l'enseignant (une seule par élève). */
+type AchievementStateRow = {
+  medal_type: string | null;
+  is_required: boolean;
+  earned: boolean;
+};
+
+/**
+ * Progression des médailles d'un élève : les médailles ne sont plus attribuées
+ * manuellement, elles découlent des réussites obtenues dans chaque parcours.
+ */
+async function progressForStudent(
+  sql: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>,
+  studentId: string,
+): Promise<MedalProgress[]> {
+  const rows = (await sql`
+    select a.medal_type, a.is_required, (sa.id is not null) as earned
+    from students s
+    join achievements a on a.teacher_id = s.teacher_id
+    left join student_achievements sa
+      on sa.achievement_id = a.id and sa.student_id = s.id
+    where s.id = ${studentId}
+  `) as AchievementStateRow[];
+
+  return computeMedalProgress(
+    rows.map((row) => ({
+      medal_type: row.medal_type,
+      is_required: row.is_required,
+      earned: row.earned,
+    })),
+  );
+}
+
+/** Médailles obtenues automatiquement par les élèves de l'enseignant. */
 export const listStudentMedals = createServerFn({ method: "GET" })
   .middleware([requireTeacher])
   .handler(async ({ context }): Promise<StudentMedalRow[]> => {
-    return await context.sql<StudentMedalRow[]>`
-      select student_id, medal from student_medals where teacher_id = ${context.userId}
+    const rows = await context.sql<
+      {
+        student_id: string;
+        medal_type: string | null;
+        is_required: boolean;
+        earned: boolean;
+      }[]
+    >`
+      select s.id as student_id, a.medal_type, a.is_required, (sa.id is not null) as earned
+      from students s
+      join achievements a on a.teacher_id = s.teacher_id
+      left join student_achievements sa
+        on sa.achievement_id = a.id and sa.student_id = s.id
+      where s.teacher_id = ${context.userId}
     `;
+
+    const byStudent = new Map<string, AchievementStateRow[]>();
+    for (const row of rows) {
+      const list = byStudent.get(row.student_id) ?? [];
+      list.push({ medal_type: row.medal_type, is_required: row.is_required, earned: row.earned });
+      byStudent.set(row.student_id, list);
+    }
+
+    const result: StudentMedalRow[] = [];
+    for (const [studentId, list] of byStudent) {
+      const code = highestMedal(computeMedalProgress(list));
+      if (code) result.push({ student_id: studentId, medal: code });
+    }
+    return result;
   });
 
-/** Attribue (ou remplace) la médaille d'un élève. */
-export const setStudentMedal = createServerFn({ method: "POST" })
-  .middleware([requireTeacher])
-  .inputValidator((input: { studentId: string; medal: string }) =>
-    z.object({ studentId: z.string().uuid(), medal: medalSchema }).parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    await context.sql`
-      insert into student_medals (student_id, teacher_id, medal)
-      select ${data.studentId}, ${context.userId}, ${data.medal}
-      where exists (
-        select 1 from students where id = ${data.studentId} and teacher_id = ${context.userId}
-      )
-      on conflict (student_id) do update set medal = excluded.medal, updated_at = now()
-    `;
-    return { ok: true };
-  });
-
-export const clearStudentMedal = createServerFn({ method: "POST" })
+/** Progression détaillée d'un élève (vue enseignant). */
+export const getStudentMedalProgress = createServerFn({ method: "GET" })
   .middleware([requireTeacher])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data, context }) => {
-    await context.sql`
-      delete from student_medals
-      where student_id = ${data.studentId} and teacher_id = ${context.userId}
+  .handler(async ({ data, context }): Promise<MedalProgress[]> => {
+    const [owned] = await context.sql<{ id: string }[]>`
+      select id from students where id = ${data.studentId} and teacher_id = ${context.userId}
     `;
-    return { ok: true };
+    if (!owned) return [];
+    return await progressForStudent(context.sql as never, data.studentId);
   });
 
-/** Lecture seule : médaille de l'élève identifié par son cookie de session QR. */
+/** Lecture seule : médaille la plus élevée obtenue par l'élève connecté. */
 export const getMyMedal = createServerFn({ method: "GET" })
   .middleware([withDb])
   .handler(async ({ context }): Promise<string | null> => {
@@ -56,67 +96,17 @@ export const getMyMedal = createServerFn({ method: "GET" })
     const studentId = session.data.studentId;
     if (!studentId) return null;
 
-    const [row] = await context.sql<{ medal: string }[]>`
-      select medal from student_medals where student_id = ${studentId} limit 1
-    `;
-    return row?.medal ?? null;
+    const progress = await progressForStudent(context.sql as never, studentId);
+    return highestMedal(progress);
   });
 
-export type MedalThresholds = { bronze: number; silver: number; gold: number };
-
-const DEFAULT_THRESHOLDS: MedalThresholds = { bronze: 5, silver: 10, gold: 15 };
-
-const thresholdsSchema = z.object({
-  bronze: z.coerce.number().int().min(1).max(200),
-  silver: z.coerce.number().int().min(1).max(200),
-  gold: z.coerce.number().int().min(1).max(200),
-});
-
-function normalize(row: { bronze: number; silver: number; gold: number } | undefined) {
-  if (!row) return DEFAULT_THRESHOLDS;
-  return { bronze: Number(row.bronze), silver: Number(row.silver), gold: Number(row.gold) };
-}
-
-/** Seuils de réussites définis par l'enseignant (valeurs par défaut si non configurés). */
-export const getMedalThresholds = createServerFn({ method: "GET" })
-  .middleware([requireTeacher])
-  .handler(async ({ context }): Promise<MedalThresholds> => {
-    const [row] = await context.sql<MedalThresholds[]>`
-      select bronze, silver, gold from medal_thresholds where teacher_id = ${context.userId} limit 1
-    `;
-    return normalize(row);
-  });
-
-/** Enregistre les seuils : seul l'enseignant peut les modifier. */
-export const setMedalThresholds = createServerFn({ method: "POST" })
-  .middleware([requireTeacher])
-  .inputValidator((input: MedalThresholds) => thresholdsSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    await context.sql`
-      insert into medal_thresholds (teacher_id, bronze, silver, gold)
-      values (${context.userId}, ${data.bronze}, ${data.silver}, ${data.gold})
-      on conflict (teacher_id) do update
-        set bronze = excluded.bronze, silver = excluded.silver,
-            gold = excluded.gold, updated_at = now()
-    `;
-    return { ok: true };
-  });
-
-/** Lecture seule côté élève : seuils fixés par son enseignant. */
-export const getMyMedalThresholds = createServerFn({ method: "GET" })
+/** Lecture seule : progression complète des 3 parcours pour l'élève connecté. */
+export const getMyMedalProgress = createServerFn({ method: "GET" })
   .middleware([withDb])
-  .handler(async ({ context }): Promise<MedalThresholds> => {
+  .handler(async ({ context }): Promise<MedalProgress[]> => {
     const { getStudentSession } = await import("./student-qr.server");
     const session = await getStudentSession();
     const studentId = session.data.studentId;
-    if (!studentId) return DEFAULT_THRESHOLDS;
-
-    const [row] = await context.sql<MedalThresholds[]>`
-      select t.bronze, t.silver, t.gold
-      from students s
-      join medal_thresholds t on t.teacher_id = s.teacher_id
-      where s.id = ${studentId}
-      limit 1
-    `;
-    return normalize(row);
+    if (!studentId) return [];
+    return await progressForStudent(context.sql as never, studentId);
   });

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Search, Trash2, Check } from "lucide-react";
+import { Plus, Search, Trash2, Check, Pencil, Star } from "lucide-react";
 
 import { listClasses } from "@/lib/classes.functions";
 import {
@@ -12,23 +12,26 @@ import {
   deleteAchievement,
   listAchievements,
   listClassStudents,
+  updateAchievement,
+  type AchievementRow,
 } from "@/lib/achievements.functions";
-import { MedalAssign } from "@/components/eps/MedalAssign";
-import { MedalThresholds } from "@/components/eps/MedalThresholds";
+import { listStudentMedals } from "@/lib/medals.functions";
+import { MEDALS, requiredCount, type MedalCode } from "@/lib/medals";
+import { MedalBadge } from "@/components/eps/MedalBadge";
 
 export const Route = createFileRoute("/_authenticated/prof/reussites")({
   head: () => ({
     meta: [
-      { title: "Réussites des élèves — EPS Progress" },
+      { title: "Réussites et parcours des médailles — EPS Progress" },
       {
         name: "description",
         content:
-          "Créez les réussites possibles de votre enseignement et attribuez-les manuellement aux élèves de vos classes.",
+          "Créez vos réussites, classez-les dans les parcours bronze, argent et or, rendez-en certaines obligatoires puis attribuez-les à vos élèves.",
       },
-      { property: "og:title", content: "Réussites des élèves — EPS Progress" },
+      { property: "og:title", content: "Réussites et parcours des médailles — EPS Progress" },
       {
         property: "og:description",
-        content: "Créez et attribuez les réussites pédagogiques de vos élèves en EPS.",
+        content: "Parcours bronze, argent, or : 5 réussites nécessaires par médaille.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -56,23 +59,41 @@ const ICONS = [
   "🫱",
 ];
 
+type FormState = {
+  id: string | null;
+  name: string;
+  description: string;
+  icon: string;
+  medalType: MedalCode | "";
+  isRequired: boolean;
+};
+
+const EMPTY_FORM: FormState = {
+  id: null,
+  name: "",
+  description: "",
+  icon: "🏅",
+  medalType: "bronze",
+  isRequired: false,
+};
+
 function TeacherAchievements() {
   const queryClient = useQueryClient();
 
   const fetchAchievements = useServerFn(listAchievements);
   const fetchClasses = useServerFn(listClasses);
   const fetchClassStudents = useServerFn(listClassStudents);
+  const fetchMedals = useServerFn(listStudentMedals);
   const create = useServerFn(createAchievement);
+  const update = useServerFn(updateAchievement);
   const remove = useServerFn(deleteAchievement);
   const award = useServerFn(awardAchievement);
 
   const achievements = useQuery({ queryKey: ["achievements"], queryFn: () => fetchAchievements() });
   const classes = useQuery({ queryKey: ["classes"], queryFn: () => fetchClasses() });
+  const medals = useQuery({ queryKey: ["student-medals"], queryFn: () => fetchMedals() });
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [icon, setIcon] = useState("🏅");
+  const [form, setForm] = useState<FormState | null>(null);
 
   const [classId, setClassId] = useState("");
   const [search, setSearch] = useState("");
@@ -95,30 +116,50 @@ function TeacherAchievements() {
     );
   }, [students.data, search]);
 
-  const chosenAchievement = (achievements.data ?? []).find((row) => row.id === achievementId);
+  const list = achievements.data ?? [];
+  const unclassified = list.filter((row) => !row.medal_type);
+  const byMedal = (code: MedalCode) => list.filter((row) => row.medal_type === code);
+
+  const chosenAchievement = list.find((row) => row.id === achievementId);
   const selectedStudents = (students.data ?? []).filter((student) =>
     selected.includes(student.id),
   );
+  const medalOf = (id: string) =>
+    (medals.data ?? []).find((row) => row.student_id === id)?.medal ?? null;
 
-  const createMutation = useMutation({
-    mutationFn: () => create({ data: { name, description, icon } }),
+  function refresh() {
+    void queryClient.invalidateQueries({ queryKey: ["achievements"] });
+    void queryClient.invalidateQueries({ queryKey: ["student-medals"] });
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      const current = form!;
+      const payload = {
+        name: current.name,
+        description: current.description,
+        icon: current.icon,
+        medalType: current.medalType === "" ? null : current.medalType,
+        isRequired: current.isRequired,
+      };
+      return current.id
+        ? update({ data: { achievementId: current.id, ...payload } })
+        : create({ data: payload });
+    },
     onSuccess: () => {
-      toast.success("Réussite créée");
-      setName("");
-      setDescription("");
-      setIcon("🏅");
-      setFormOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["achievements"] });
+      toast.success(form?.id ? "Réussite modifiée" : "Réussite créée");
+      setForm(null);
+      refresh();
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Création impossible"),
+      toast.error(error instanceof Error ? error.message : "Enregistrement impossible"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => remove({ data: { achievementId: id } }),
     onSuccess: () => {
       toast.success("Réussite supprimée");
-      queryClient.invalidateQueries({ queryKey: ["achievements"] });
+      refresh();
     },
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : "Suppression impossible"),
@@ -127,10 +168,10 @@ function TeacherAchievements() {
   const awardMutation = useMutation({
     mutationFn: () => award({ data: { achievementId, studentIds: selected } }),
     onSuccess: () => {
-      toast.success("✓ Réussite attribuée avec succès.");
+      toast.success("✓ Réussite attribuée. Médailles recalculées.");
       setConfirming(false);
       setSelected([]);
-      queryClient.invalidateQueries({ queryKey: ["achievements"] });
+      refresh();
     },
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : "Attribution impossible"),
@@ -140,22 +181,82 @@ function TeacherAchievements() {
     setSelected((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
   }
 
+  function openCreate(medalType: MedalCode | "") {
+    setForm({ ...EMPTY_FORM, medalType });
+  }
+
+  function openEdit(row: AchievementRow) {
+    setForm({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      icon: row.icon,
+      medalType: (row.medal_type as MedalCode | null) ?? "",
+      isRequired: row.is_required,
+    });
+  }
+
+  function AchievementCard({ row }: { row: AchievementRow }) {
+    return (
+      <li className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+        <span
+          aria-hidden
+          className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-lg"
+        >
+          {row.icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold leading-snug">{row.name}</p>
+          {row.description && (
+            <p className="text-xs leading-relaxed text-muted-foreground">{row.description}</p>
+          )}
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            {row.is_required && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-bold uppercase text-primary">
+                <Star className="size-3" /> Obligatoire
+              </span>
+            )}
+            <span className="mono-label text-muted-foreground">
+              Attribuée à {row.awarded_count} élève{row.awarded_count > 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
+        <span className="flex shrink-0 flex-col gap-1">
+          <button
+            onClick={() => openEdit(row)}
+            aria-label={`Modifier la réussite ${row.name}`}
+            className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <Pencil className="size-4" />
+          </button>
+          <button
+            onClick={() => deleteMutation.mutate(row.id)}
+            aria-label={`Supprimer la réussite ${row.name}`}
+            className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-destructive"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        </span>
+      </li>
+    );
+  }
+
   return (
     <div className="space-y-10">
       <header className="space-y-1">
         <h1 className="display-title text-3xl">🏅 Réussites</h1>
         <p className="text-sm text-muted-foreground">
-          Tu observes, tu choisis, tu valides : la réussite apparaît alors dans le parcours de
-          l'élève.
+          Tu écris tes réussites, tu les classes dans un parcours de médaille et tu les valides :
+          la médaille se débloque automatiquement.
         </p>
       </header>
 
-      {/* Réussites possibles */}
+      {/* Formulaire de création / modification */}
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Réussites possibles</h2>
+          <h2 className="text-lg font-semibold">Créer une réussite</h2>
           <button
-            onClick={() => setFormOpen((open) => !open)}
+            onClick={() => (form ? setForm(null) : openCreate("bronze"))}
             className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground"
           >
             <Plus className="size-4" />
@@ -163,15 +264,15 @@ function TeacherAchievements() {
           </button>
         </div>
 
-        {formOpen && (
+        {form && (
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              if (!name.trim()) {
+              if (!form.name.trim()) {
                 toast.error("Donne un nom à la réussite.");
                 return;
               }
-              createMutation.mutate();
+              saveMutation.mutate();
             }}
             className="space-y-4 rounded-2xl border border-border bg-surface p-5"
           >
@@ -180,22 +281,25 @@ function TeacherAchievements() {
                 Nom de la réussite
               </label>
               <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Coach affirmé"
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                placeholder="Je m'investis"
                 className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Description</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                Description / critère d'obtention
+              </label>
               <textarea
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                value={form.description}
+                onChange={(event) => setForm({ ...form, description: event.target.value })}
                 rows={2}
-                placeholder="Tu sais accompagner et conseiller tes partenaires."
+                placeholder="Tu participes activement du début à la fin de la séance."
                 className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm"
               />
             </div>
+
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">Icône</label>
               <div className="flex flex-wrap gap-2">
@@ -203,10 +307,10 @@ function TeacherAchievements() {
                   <button
                     key={option}
                     type="button"
-                    onClick={() => setIcon(option)}
-                    aria-pressed={icon === option}
+                    onClick={() => setForm({ ...form, icon: option })}
+                    aria-pressed={form.icon === option}
                     className={`grid size-11 place-items-center rounded-xl border text-lg transition-colors ${
-                      icon === option
+                      form.icon === option
                         ? "border-primary bg-primary/10"
                         : "border-border bg-background hover:bg-accent"
                     }`}
@@ -216,58 +320,151 @@ function TeacherAchievements() {
                 ))}
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="rounded-full bg-primary px-5 py-2.5 text-xs font-bold uppercase text-primary-foreground disabled:opacity-60"
-            >
-              Créer la réussite
-            </button>
-          </form>
-        )}
 
-        {achievements.data && achievements.data.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border/70 bg-surface/50 p-5 text-sm text-muted-foreground">
-            Aucune réussite pour le moment. Inscris la première réussite de ton enseignement.
-          </p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {(achievements.data ?? []).map((achievement) => (
-              <li
-                key={achievement.id}
-                className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4"
-              >
-                <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-lg">
-                  {achievement.icon}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold leading-snug">{achievement.name}</p>
-                  {achievement.description && (
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      {achievement.description}
-                    </p>
-                  )}
-                  <p className="mono-label mt-1 text-muted-foreground">
-                    Attribuée à {achievement.awarded_count} élève
-                    {achievement.awarded_count > 1 ? "s" : ""}
-                  </p>
-                </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                Médaille associée
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {MEDALS.map((item) => (
+                  <button
+                    key={item.code}
+                    type="button"
+                    onClick={() => setForm({ ...form, medalType: item.code })}
+                    aria-pressed={form.medalType === item.code}
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${
+                      form.medalType === item.code
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border bg-background text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <span aria-hidden>{item.emoji}</span> {item.label}
+                  </button>
+                ))}
                 <button
-                  onClick={() => deleteMutation.mutate(achievement.id)}
-                  aria-label={`Supprimer la réussite ${achievement.name}`}
-                  className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
+                  type="button"
+                  onClick={() => setForm({ ...form, medalType: "" })}
+                  aria-pressed={form.medalType === ""}
+                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${
+                    form.medalType === ""
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-background text-muted-foreground hover:bg-accent"
+                  }`}
                 >
-                  <Trash2 className="size-4" />
+                  À classer
                 </button>
-              </li>
-            ))}
-          </ul>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3 text-sm">
+              <input
+                type="checkbox"
+                checked={form.isRequired}
+                onChange={(event) => setForm({ ...form, isRequired: event.target.checked })}
+                className="size-4 accent-[oklch(var(--primary))]"
+              />
+              ⭐ Réussite obligatoire pour obtenir cette médaille
+            </label>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="submit"
+                disabled={saveMutation.isPending}
+                className="rounded-full bg-primary px-5 py-2.5 text-xs font-bold uppercase text-primary-foreground disabled:opacity-60"
+              >
+                {form.id ? "Enregistrer" : "Créer la réussite"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm(null)}
+                className="rounded-full border border-border px-5 py-2.5 text-xs font-bold uppercase text-muted-foreground"
+              >
+                Annuler
+              </button>
+            </div>
+          </form>
         )}
       </section>
 
-      {/* Attribuer une réussite */}
+      {/* Parcours des médailles */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Attribuer une réussite</h2>
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold">🏅 Parcours des médailles</h2>
+          <p className="text-sm text-muted-foreground">
+            Chaque médaille possède sa propre liste de réussites. L'élève doit en valider{" "}
+            {requiredCount("bronze")} et obtenir toutes les réussites obligatoires du parcours.
+          </p>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          {MEDALS.map((item) => {
+            const rows = byMedal(item.code);
+            const need = requiredCount(item.code);
+            return (
+              <div
+                key={item.code}
+                className="space-y-4 rounded-3xl border border-border bg-surface p-5"
+              >
+                <div className="flex items-center gap-3">
+                  <MedalBadge code={item.code} size={44} />
+                  <div>
+                    <p className="font-display text-base uppercase tracking-wide">{item.label}</p>
+                    <p className="mono-label text-muted-foreground">
+                      {rows.length} réussite{rows.length > 1 ? "s" : ""} disponible
+                      {rows.length > 1 ? "s" : ""} · {need} nécessaires
+                    </p>
+                  </div>
+                </div>
+
+                {rows.length < need && (
+                  <p className="rounded-xl border border-dashed border-border/70 bg-surface-2/60 px-3 py-2 text-xs text-muted-foreground">
+                    Il manque {need - rows.length} réussite{need - rows.length > 1 ? "s" : ""} pour
+                    que ce parcours puisse être validé par un élève.
+                  </p>
+                )}
+
+                {rows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucune réussite dans ce parcours.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {rows.map((row) => (
+                      <AchievementCard key={row.id} row={row} />
+                    ))}
+                  </ul>
+                )}
+
+                <button
+                  onClick={() => openCreate(item.code)}
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/50 px-4 py-2 text-xs font-bold uppercase text-primary"
+                >
+                  <Plus className="size-4" /> Ajouter une réussite
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {unclassified.length > 0 && (
+          <div className="space-y-3 rounded-3xl border border-dashed border-border bg-surface/60 p-5">
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold">Réussites à classer</h3>
+              <p className="text-sm text-muted-foreground">
+                Ces réussites existent déjà et restent attribuées aux élèves. Affecte-les à Bronze,
+                Argent ou Or pour qu'elles comptent dans un parcours.
+              </p>
+            </div>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {unclassified.map((row) => (
+                <AchievementCard key={row.id} row={row} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {/* Attribuer des réussites */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold">Attribuer des réussites</h2>
 
         <div className="space-y-5 rounded-2xl border border-border bg-surface p-5">
           <div className="space-y-1.5">
@@ -291,27 +488,39 @@ function TeacherAchievements() {
 
           {classId && (
             <>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <label className="text-xs font-medium text-muted-foreground">
                   Réussite à attribuer
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {(achievements.data ?? []).map((achievement) => (
-                    <button
-                      key={achievement.id}
-                      onClick={() => setAchievementId(achievement.id)}
-                      aria-pressed={achievementId === achievement.id}
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
-                        achievementId === achievement.id
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border bg-background text-muted-foreground hover:bg-accent"
-                      }`}
-                    >
-                      <span aria-hidden>{achievement.icon}</span>
-                      {achievement.name}
-                    </button>
+                {[...MEDALS.map((item) => ({ ...item, rows: byMedal(item.code) })),
+                  { code: "", label: "À classer", emoji: "•", rows: unclassified },
+                ]
+                  .filter((group) => group.rows.length > 0)
+                  .map((group) => (
+                    <div key={group.code || "unclassified"} className="space-y-2">
+                      <p className="mono-label text-muted-foreground">
+                        <span aria-hidden>{group.emoji}</span> {group.label}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {group.rows.map((achievement) => (
+                          <button
+                            key={achievement.id}
+                            onClick={() => setAchievementId(achievement.id)}
+                            aria-pressed={achievementId === achievement.id}
+                            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
+                              achievementId === achievement.id
+                                ? "border-primary bg-primary/10 text-foreground"
+                                : "border-border bg-background text-muted-foreground hover:bg-accent"
+                            }`}
+                          >
+                            <span aria-hidden>{achievement.icon}</span>
+                            {achievement.name}
+                            {achievement.is_required && <span aria-hidden>⭐</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
-                </div>
               </div>
 
               <div className="space-y-3">
@@ -334,6 +543,7 @@ function TeacherAchievements() {
                 <ul className="grid gap-2 sm:grid-cols-2">
                   {visibleStudents.map((student) => {
                     const checked = selected.includes(student.id);
+                    const code = medalOf(student.id);
                     return (
                       <li key={student.id}>
                         <label
@@ -347,7 +557,10 @@ function TeacherAchievements() {
                             onChange={() => toggleStudent(student.id)}
                             className="size-4 accent-[oklch(var(--primary))]"
                           />
-                          {student.first_name} {student.last_name}
+                          <span className="min-w-0 flex-1 truncate">
+                            {student.first_name} {student.last_name}
+                          </span>
+                          {code && <MedalBadge code={code} size={24} />}
                         </label>
                       </li>
                     );
@@ -381,10 +594,6 @@ function TeacherAchievements() {
           )}
         </div>
       </section>
-
-      <MedalThresholds />
-
-      <MedalAssign />
 
       {confirming && chosenAchievement && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">

@@ -413,6 +413,16 @@ create index if not exists idx_students_teacher on students(teacher_id);
 
 create index if not exists idx_class_students_class on class_students(class_id);
 create index if not exists idx_qr_tokens_hash on student_qr_tokens(token_hash);
+
+-- Parcours des médailles : chaque réussite appartient à un parcours (bronze,
+-- argent, or) et peut être obligatoire. Les réussites existantes restent en
+-- place avec medal_type NULL, à classer manuellement par l'enseignant.
+alter table achievements add column if not exists medal_type text;
+alter table achievements add column if not exists is_required boolean not null default false;
+alter table achievements drop constraint if exists achievements_medal_type_check;
+alter table achievements add constraint achievements_medal_type_check
+  check (medal_type is null or medal_type in ('bronze', 'silver', 'gold'));
+create index if not exists idx_achievements_medal on achievements(teacher_id, medal_type);
 `;
 
 /** Génère un code élève unique (ELV-XXXXXX). */

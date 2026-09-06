@@ -8,6 +8,9 @@ export type AchievementRow = {
   name: string;
   description: string;
   icon: string;
+  /** Parcours de médaille : bronze, silver, gold — null si pas encore classée. */
+  medal_type: string | null;
+  is_required: boolean;
   awarded_count: number;
 };
 
@@ -23,10 +26,13 @@ export type StudentAchievementView = {
   name: string;
   description: string;
   icon: string;
+  medal_type: string | null;
+  is_required: boolean;
   earned: boolean;
 };
 
 const idSchema = z.string().uuid();
+const medalTypeSchema = z.enum(["bronze", "silver", "gold"]).nullable();
 const labelSchema = z.string().trim().min(1, "Champ requis").max(80);
 
 /** Réussites possibles créées par l'enseignant. */
@@ -39,10 +45,12 @@ export const listAchievements = createServerFn({ method: "GET" })
         name: string;
         description: string | null;
         icon: string | null;
+        medal_type: string | null;
+        is_required: boolean;
         awarded_count: string | number;
       }[]
     >`
-      select a.id, a.name, a.description, a.icon,
+      select a.id, a.name, a.description, a.icon, a.medal_type, a.is_required,
              count(sa.id) as awarded_count
       from achievements a
       left join student_achievements sa on sa.achievement_id = a.id
@@ -56,29 +64,74 @@ export const listAchievements = createServerFn({ method: "GET" })
       name: row.name,
       description: row.description ?? "",
       icon: row.icon ?? "🏅",
+      medal_type: row.medal_type,
+      is_required: row.is_required,
       awarded_count: Number(row.awarded_count) || 0,
     }));
   });
 
 export const createAchievement = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
-  .inputValidator((input: { name: string; description: string; icon: string }) =>
-    z
-      .object({
-        name: labelSchema,
-        description: z.string().trim().max(280).default(""),
-        icon: z.string().trim().min(1).max(8),
-      })
-      .parse(input),
+  .inputValidator(
+    (input: {
+      name: string;
+      description: string;
+      icon: string;
+      medalType: string | null;
+      isRequired: boolean;
+    }) =>
+      z
+        .object({
+          name: labelSchema,
+          description: z.string().trim().max(280).default(""),
+          icon: z.string().trim().min(1).max(8),
+          medalType: medalTypeSchema.default(null),
+          isRequired: z.boolean().default(false),
+        })
+        .parse(input),
   )
   .handler(async ({ data, context }) => {
     const [row] = await context.sql<{ id: string }[]>`
-      insert into achievements (name, description, icon, teacher_id)
-      values (${data.name}, ${data.description}, ${data.icon}, ${context.userId})
+      insert into achievements (name, description, icon, medal_type, is_required, teacher_id)
+      values (${data.name}, ${data.description}, ${data.icon},
+              ${data.medalType}, ${data.isRequired}, ${context.userId})
       returning id
     `;
     if (!row) throw new Error("Création impossible");
     return { id: row.id };
+  });
+
+/** Modification d'une réussite : nom, description, icône, parcours, obligation. */
+export const updateAchievement = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator(
+    (input: {
+      achievementId: string;
+      name: string;
+      description: string;
+      icon: string;
+      medalType: string | null;
+      isRequired: boolean;
+    }) =>
+      z
+        .object({
+          achievementId: idSchema,
+          name: labelSchema,
+          description: z.string().trim().max(280).default(""),
+          icon: z.string().trim().min(1).max(8),
+          medalType: medalTypeSchema.default(null),
+          isRequired: z.boolean().default(false),
+        })
+        .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await context.sql`
+      update achievements
+      set name = ${data.name}, description = ${data.description}, icon = ${data.icon},
+          medal_type = ${data.medalType}, is_required = ${data.isRequired}, updated_at = now()
+      where id = ${data.achievementId} and teacher_id = ${context.userId}
+    `;
+    return { ok: true };
   });
 
 export const deleteAchievement = createServerFn({ method: "POST" })
@@ -181,10 +234,12 @@ export const getMyAchievements = createServerFn({ method: "GET" })
         name: string;
         description: string | null;
         icon: string | null;
+        medal_type: string | null;
+        is_required: boolean;
         earned: boolean;
       }[]
     >`
-      select a.id, a.name, a.description, a.icon,
+      select a.id, a.name, a.description, a.icon, a.medal_type, a.is_required,
              (sa.id is not null) as earned
       from students s
       join achievements a on a.teacher_id = s.teacher_id
@@ -199,6 +254,8 @@ export const getMyAchievements = createServerFn({ method: "GET" })
       name: row.name,
       description: row.description ?? "",
       icon: row.icon ?? "🏅",
+      medal_type: row.medal_type,
+      is_required: row.is_required,
       earned: row.earned,
     }));
   });

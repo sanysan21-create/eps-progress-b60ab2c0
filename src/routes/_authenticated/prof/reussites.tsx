@@ -133,7 +133,7 @@ function TeacherAchievements() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async (): Promise<void> => {
       const current = form!;
       const payload = {
         name: current.name,
@@ -142,9 +142,11 @@ function TeacherAchievements() {
         medalType: current.medalType === "" ? null : current.medalType,
         isRequired: current.isRequired,
       };
-      return current.id
-        ? update({ data: { achievementId: current.id, ...payload } })
-        : create({ data: payload });
+      if (current.id) {
+        await update({ data: { achievementId: current.id, ...payload } });
+      } else {
+        await create({ data: payload });
+      }
     },
     onSuccess: () => {
       toast.success(form?.id ? "Réussite modifiée" : "Réussite créée");

@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 
 import { AchievementBadges } from "@/components/eps/AchievementBadges";
 import { MedalBadge } from "@/components/eps/MedalBadge";
-import { getMyMedalThresholds } from "@/lib/medals.functions";
-import { medal } from "@/lib/medals";
-import { useMyAchievements, useMyMedal } from "@/hooks/use-student-profile";
+import { computeMedalProgress, highestMedal, MEDAL_ORDER } from "@/lib/medals";
+import { useMyAchievements } from "@/hooks/use-student-profile";
 
 export const Route = createFileRoute("/eleve/reussites")({
   head: () => ({
@@ -15,12 +12,12 @@ export const Route = createFileRoute("/eleve/reussites")({
       {
         name: "description",
         content:
-          "Réussites de l'élève en EPS : reconnaissances pédagogiques attribuées par l'enseignant et statut de progression par paliers.",
+          "Parcours bronze, argent et or : suis les réussites obtenues et celles qu'il te reste à valider pour débloquer chaque médaille.",
       },
       { property: "og:title", content: "Mes réussites EPS — EPS Progress" },
       {
         property: "og:description",
-        content: "Réussites reconnues par ton enseignant et paliers bronze, argent, or.",
+        content: "Chaque médaille se débloque avec 5 réussites de son parcours.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -31,127 +28,156 @@ export const Route = createFileRoute("/eleve/reussites")({
 
 function StudentAchievements() {
   const achievements = useMyAchievements();
-  const myMedal = useMyMedal();
-  const fetchThresholds = useServerFn(getMyMedalThresholds);
-  const thresholds = useQuery({
-    queryKey: ["my-medal-thresholds"],
-    queryFn: () => fetchThresholds(),
-  });
-
   const list = achievements.data ?? [];
-  const earned = list.filter((item) => item.earned).length;
-  const limits = thresholds.data;
 
-  const steps = limits
-    ? ([
-        { code: "bronze", label: "Bronze", emoji: "🥉", need: limits.bronze },
-        { code: "silver", label: "Argent", emoji: "🥈", need: limits.silver },
-        { code: "gold", label: "Or", emoji: "🥇", need: limits.gold },
-      ] as const)
-    : [];
-
-  const reached = [...steps].reverse().find((step) => earned >= step.need) ?? null;
-  const next = steps.find((step) => earned < step.need) ?? null;
-  const assigned = medal(myMedal.data ?? null);
+  const progress = computeMedalProgress(list);
+  const best = highestMedal(progress);
+  const unclassified = list.filter((item) => !item.medal_type);
 
   return (
     <div className="animate-slide-up space-y-8 pb-4">
       <header className="space-y-1">
         <h1 className="display-title text-3xl leading-tight">Mes réussites</h1>
         <p className="text-sm text-muted-foreground">
-          Ton enseignant reconnaît ces réussites dans ton parcours.
+          Trois parcours, trois médailles : 5 réussites suffisent pour chaque médaille.
         </p>
       </header>
 
-      {/* Médaille distincte : décidée manuellement par l'enseignant */}
+      {/* Médaille la plus élevée débloquée */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          🎖️ Ma médaille attribuée
+          🎖️ Ma médaille
         </h2>
         <div className="flex items-center gap-4 rounded-3xl border border-primary/40 bg-primary/10 p-6">
-          {assigned ? (
+          {best ? (
             <>
-              <MedalBadge code={assigned.code} size={80} />
+              <MedalBadge code={best} size={80} />
               <div>
-                <p className="text-sm font-bold">Médaille {assigned.label}</p>
+                <p className="text-sm font-bold">
+                  🎉 Médaille {progress.find((item) => item.code === best)?.label} obtenue !
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Choisie par ton enseignant, indépendamment du nombre de réussites.
+                  Débloquée grâce aux réussites validées par ton enseignant.
                 </p>
               </div>
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Aucune médaille attribuée pour le moment. Elle est décidée par ton enseignant.
+              Aucune médaille débloquée pour le moment. Valide 5 réussites du parcours Bronze pour
+              obtenir ta première médaille.
             </p>
           )}
-        </div>
-      </section>
-
-      {/* Statut automatique, calculé sur le nombre de réussites obtenues */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          🏆 Mon nombre de réussites
-        </h2>
-        <div className="rounded-3xl border border-border bg-surface p-6">
-          <div className="flex items-baseline gap-2">
-            <span className="display-title text-4xl text-primary">{earned}</span>
-            <span className="text-sm text-muted-foreground">
-              réussite{earned > 1 ? "s" : ""} obtenue{earned > 1 ? "s" : ""} sur {list.length}
-            </span>
-          </div>
-          <p className="mt-2 text-sm font-semibold">
-            {reached ? (
-              <>
-                Statut atteint : <span aria-hidden>{reached.emoji}</span> {reached.label}
-              </>
-            ) : (
-              "Statut : en route vers ton premier palier"
-            )}
-          </p>
-          {next && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Encore {next.need - earned} réussite{next.need - earned > 1 ? "s" : ""} pour le palier{" "}
-              {next.emoji} {next.label}.
-            </p>
-          )}
-
-          <ul className="mt-5 space-y-3">
-            {steps.map((step) => {
-              const ratio = step.need > 0 ? Math.min(100, (earned / step.need) * 100) : 0;
-              return (
-                <li key={step.code} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold">
-                      <span aria-hidden>{step.emoji}</span> {step.label}
-                    </span>
-                    <span className="font-mono text-muted-foreground">
-                      {Math.min(earned, step.need)}/{step.need}
-                    </span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
-                    <div
-                      className="animate-bar-grow h-full origin-left rounded-full bg-primary"
-                      style={{ width: `${ratio}%` }}
-                    />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="mono-label mt-4 text-muted-foreground">
-            Paliers définis par ton enseignant · calcul automatique
-          </p>
         </div>
       </section>
 
       {achievements.isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
 
-      <section className="space-y-3">
+      {/* Parcours Bronze → Argent → Or */}
+      <section className="space-y-4">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          ⭐ Toutes mes réussites
+          🏅 Mes parcours
         </h2>
-        <AchievementBadges achievements={list} />
+
+        {MEDAL_ORDER.map((code) => {
+          const step = progress.find((item) => item.code === code)!;
+          const items = list.filter((item) => item.medal_type === code);
+          const ratio = step.need > 0 ? Math.min(100, (step.earnedCount / step.need) * 100) : 0;
+          const remaining = Math.max(0, step.need - step.earnedCount);
+
+          return (
+            <div key={code} className="space-y-3 rounded-3xl border border-border bg-surface p-5">
+              <div className="flex items-center gap-3">
+                <MedalBadge code={code} size={44} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-base uppercase tracking-wide">
+                    {step.emoji} {step.label}
+                  </p>
+                  <p className="mono-label text-muted-foreground">
+                    {step.earnedCount} / {step.need} réussites
+                  </p>
+                </div>
+                {step.obtained && (
+                  <span className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase text-primary">
+                    Obtenue
+                  </span>
+                )}
+              </div>
+
+              <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+                <div
+                  className="animate-bar-grow h-full origin-left rounded-full bg-primary"
+                  style={{ width: `${ratio}%` }}
+                />
+              </div>
+
+              {items.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Ton enseignant n'a pas encore proposé de réussites pour ce parcours.
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {items.map((item) => (
+                    <li
+                      key={item.id}
+                      className={`flex items-start gap-2 text-sm ${
+                        item.earned ? "" : "text-muted-foreground"
+                      }`}
+                    >
+                      <span aria-hidden className="mt-0.5">
+                        {item.earned ? "✓" : "○"}
+                      </span>
+                      <span className="min-w-0">
+                        {item.is_required && <span aria-hidden>⭐ </span>}
+                        {item.icon} {item.name}
+                        {item.is_required && (
+                          <span className="mono-label ml-1 text-primary">Obligatoire</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {step.obtained ? (
+                <p className="text-sm font-semibold text-primary">
+                  🎉 Médaille {step.label} obtenue !
+                </p>
+              ) : (
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  {remaining > 0 && (
+                    <p>
+                      Encore {remaining} réussite{remaining > 1 ? "s" : ""} pour obtenir la médaille{" "}
+                      {step.label}.
+                    </p>
+                  )}
+                  {step.missingRequired > 0 && (
+                    <p>
+                      Il te manque {step.missingRequired} réussite
+                      {step.missingRequired > 1 ? "s" : ""} obligatoire
+                      {step.missingRequired > 1 ? "s" : ""} ⭐.
+                    </p>
+                  )}
+                  {step.conditionsMet && !step.previousObtained && (
+                    <p>
+                      Tout est validé ici : la médaille {step.label} se débloquera dès que le palier
+                      précédent sera obtenu.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </section>
+
+      {unclassified.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+            ⭐ Mes autres réussites
+          </h2>
+          <AchievementBadges achievements={unclassified} />
+        </section>
+      )}
     </div>
   );
 }

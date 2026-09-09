@@ -260,5 +260,10 @@ export const getMyAchievements = createServerFn({ method: "GET" })
       medal_type: row.medal_type,
       is_required: row.is_required,
       earned: row.earned,
+      earned_at: row.earned_at
+        ? row.earned_at instanceof Date
+          ? row.earned_at.toISOString()
+          : row.earned_at
+        : null,
     }));
   });

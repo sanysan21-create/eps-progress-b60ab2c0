@@ -4,8 +4,15 @@ import type { StudentAchievementView } from "@/lib/achievements.functions";
  * Réussites reconnues par l'enseignant.
  * Les réussites obtenues s'affichent normalement, celles encore à obtenir
  * apparaissent grisées : aucun classement, aucun score, aucune comparaison.
+ * Chaque carte est cliquable pour consulter la description de la réussite.
  */
-export function AchievementBadges({ achievements }: { achievements: StudentAchievementView[] }) {
+export function AchievementBadges({
+  achievements,
+  onSelect,
+}: {
+  achievements: StudentAchievementView[];
+  onSelect?: (achievement: StudentAchievementView) => void;
+}) {
   const earned = achievements.filter((achievement) => achievement.earned);
 
   if (achievements.length === 0) {
@@ -28,39 +35,42 @@ export function AchievementBadges({ achievements }: { achievements: StudentAchie
 
       <ul className="space-y-3">
         {achievements.map((achievement) => (
-          <li
-            key={achievement.id}
-            className={
-              achievement.earned
-                ? "flex items-start gap-3 rounded-2xl border border-border bg-surface p-4"
-                : "flex items-start gap-3 rounded-2xl border border-dashed border-border/60 bg-surface/40 p-4 opacity-60"
-            }
-          >
-            <span
-              aria-hidden
-              className={`grid size-11 shrink-0 place-items-center rounded-xl text-lg ${
-                achievement.earned ? "bg-primary/10" : "bg-surface-2 grayscale"
+          <li key={achievement.id}>
+            <button
+              type="button"
+              onClick={() => onSelect?.(achievement)}
+              className={`flex w-full items-start gap-3 rounded-2xl p-4 text-left transition active:scale-[0.99] ${
+                achievement.earned
+                  ? "border border-border bg-surface hover:border-primary/50"
+                  : "border border-dashed border-border/60 bg-surface/40 opacity-60 hover:opacity-90"
               }`}
             >
-              {achievement.icon}
-            </span>
-            <div className="min-w-0">
-              <p
-                className={`text-sm font-medium leading-snug ${
-                  achievement.earned ? "" : "text-muted-foreground"
+              <span
+                aria-hidden
+                className={`grid size-11 shrink-0 place-items-center rounded-xl text-lg ${
+                  achievement.earned ? "bg-primary/10" : "bg-surface-2 grayscale"
                 }`}
               >
-                {achievement.name}
-              </p>
-              {achievement.description && (
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {achievement.description}
+                {achievement.icon}
+              </span>
+              <div className="min-w-0">
+                <p
+                  className={`text-sm font-medium leading-snug ${
+                    achievement.earned ? "" : "text-muted-foreground"
+                  }`}
+                >
+                  {achievement.name}
                 </p>
-              )}
-              {!achievement.earned && (
-                <p className="mono-label mt-1 text-muted-foreground">Pas encore obtenue</p>
-              )}
-            </div>
+                {achievement.description && (
+                  <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                    {achievement.description}
+                  </p>
+                )}
+                <p className="mono-label mt-1 text-muted-foreground">
+                  {achievement.earned ? "Voir le détail" : "Pas encore obtenue · voir le détail"}
+                </p>
+              </div>
+            </button>
           </li>
         ))}
       </ul>

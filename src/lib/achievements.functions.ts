@@ -29,6 +29,8 @@ export type StudentAchievementView = {
   medal_type: string | null;
   is_required: boolean;
   earned: boolean;
+  /** Date d'obtention (null si pas encore obtenue). */
+  earned_at: string | null;
 };
 
 const idSchema = z.string().uuid();

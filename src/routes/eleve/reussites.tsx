@@ -121,22 +121,25 @@ function StudentAchievements() {
               ) : (
                 <ul className="space-y-1.5">
                   {items.map((item) => (
-                    <li
-                      key={item.id}
-                      className={`flex items-start gap-2 text-sm ${
-                        item.earned ? "" : "text-muted-foreground"
-                      }`}
-                    >
-                      <span aria-hidden className="mt-0.5">
-                        {item.earned ? "✓" : "○"}
-                      </span>
-                      <span className="min-w-0">
-                        {item.is_required && <span aria-hidden>⭐ </span>}
-                        {item.icon} {item.name}
-                        {item.is_required && (
-                          <span className="mono-label ml-1 text-primary">Obligatoire</span>
-                        )}
-                      </span>
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelected(item)}
+                        className={`flex w-full items-start gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition hover:bg-surface-2/70 active:scale-[0.99] ${
+                          item.earned ? "" : "text-muted-foreground"
+                        }`}
+                      >
+                        <span aria-hidden className="mt-0.5">
+                          {item.earned ? "✓" : "🔒"}
+                        </span>
+                        <span className="min-w-0">
+                          {item.is_required && <span aria-hidden>⭐ </span>}
+                          {item.icon} {item.name}
+                          {item.is_required && (
+                            <span className="mono-label ml-1 text-primary">Obligatoire</span>
+                          )}
+                        </span>
+                      </button>
                     </li>
                   ))}
                 </ul>

@@ -239,10 +239,11 @@ export const getMyAchievements = createServerFn({ method: "GET" })
         medal_type: string | null;
         is_required: boolean;
         earned: boolean;
+        earned_at: string | Date | null;
       }[]
     >`
       select a.id, a.name, a.description, a.icon, a.medal_type, a.is_required,
-             (sa.id is not null) as earned
+             (sa.id is not null) as earned, sa.created_at as earned_at
       from students s
       join achievements a on a.teacher_id = s.teacher_id
       left join student_achievements sa

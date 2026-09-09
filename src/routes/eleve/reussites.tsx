@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { AchievementBadges } from "@/components/eps/AchievementBadges";
+import { AchievementDetailDialog } from "@/components/eps/AchievementDetailDialog";
 import { MedalBadge } from "@/components/eps/MedalBadge";
 import { computeMedalProgress, highestMedal, MEDAL_ORDER } from "@/lib/medals";
 import { useMyAchievements } from "@/hooks/use-student-profile";
+import type { StudentAchievementView } from "@/lib/achievements.functions";
 
 export const Route = createFileRoute("/eleve/reussites")({
   head: () => ({

@@ -29,6 +29,8 @@ export type StudentAchievementView = {
   medal_type: string | null;
   is_required: boolean;
   earned: boolean;
+  /** Date d'obtention (null si pas encore obtenue). */
+  earned_at: string | null;
 };
 
 const idSchema = z.string().uuid();
@@ -237,10 +239,11 @@ export const getMyAchievements = createServerFn({ method: "GET" })
         medal_type: string | null;
         is_required: boolean;
         earned: boolean;
+        earned_at: string | Date | null;
       }[]
     >`
       select a.id, a.name, a.description, a.icon, a.medal_type, a.is_required,
-             (sa.id is not null) as earned
+             (sa.id is not null) as earned, sa.created_at as earned_at
       from students s
       join achievements a on a.teacher_id = s.teacher_id
       left join student_achievements sa
@@ -257,5 +260,10 @@ export const getMyAchievements = createServerFn({ method: "GET" })
       medal_type: row.medal_type,
       is_required: row.is_required,
       earned: row.earned,
+      earned_at: row.earned_at
+        ? row.earned_at instanceof Date
+          ? row.earned_at.toISOString()
+          : row.earned_at
+        : null,
     }));
   });

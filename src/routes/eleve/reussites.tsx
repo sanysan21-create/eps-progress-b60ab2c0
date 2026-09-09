@@ -182,9 +182,11 @@ function StudentAchievements() {
           <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
             ⭐ Mes autres réussites
           </h2>
-          <AchievementBadges achievements={unclassified} />
+          <AchievementBadges achievements={unclassified} onSelect={setSelected} />
         </section>
       )}
+
+      <AchievementDetailDialog achievement={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }

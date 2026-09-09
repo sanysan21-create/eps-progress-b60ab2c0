@@ -36,6 +36,7 @@ function StudentAchievements() {
   const progress = computeMedalProgress(list);
   const best = highestMedal(progress);
   const unclassified = list.filter((item) => !item.medal_type);
+  const [selected, setSelected] = useState<StudentAchievementView | null>(null);
 
   return (
     <div className="animate-slide-up space-y-8 pb-4">

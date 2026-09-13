@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { generateStudentQr, getStudentQr } from "@/lib/student-qr.functions";
+import { PremiumCardButton } from "@/components/eps/PremiumCardButton";
 import { downloadStudentCardsPdf, renderStudentCardPreview } from "@/lib/student-card";
 
 export type QrDialogStudent = {
@@ -291,6 +292,10 @@ export function StudentQrDialog({ student, className, onOpenChange }: Props) {
                   )}
                   Carte PDF
                 </button>
+                <PremiumCardButton
+                  student={student!}
+                  className={className}
+                />
                 <button
                   onClick={() => void print()}
                   className="flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-xs font-bold uppercase"

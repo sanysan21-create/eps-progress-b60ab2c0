@@ -6,7 +6,7 @@ import { ActivityEmoji } from "@/components/eps/ActivityEmoji";
 import { RankJourney } from "@/components/eps/RankJourney";
 import { computeProgression } from "@/lib/progression";
 import { goal as goalByCode } from "@/lib/engagement";
-import { AFL_HINTS, groupByAfl } from "@/lib/afl";
+import { AFL_HINTS, AFL_LABELS, groupByAfl } from "@/lib/afl";
 
 import {
   averageProgress,
@@ -201,7 +201,7 @@ function StudentProgress() {
                       <div key={group.afl} className="space-y-3">
                         <div className="flex items-baseline gap-2">
                           <span className="rounded-lg bg-primary/15 px-2 py-1 font-mono text-[0.7rem] font-bold uppercase text-primary">
-                            {group.afl}
+                            {AFL_LABELS[group.afl]}
                           </span>
                           <span className="text-[0.7rem] text-muted-foreground">
                             {AFL_HINTS[group.afl]}
@@ -279,7 +279,7 @@ function StudentProgress() {
                           <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                             <div className="min-w-0">
                               <p className="text-sm font-bold">
-                                🎯 {group.afl} — {AFL_HINTS[group.afl]}
+                                🎯 {AFL_LABELS[group.afl]} — {AFL_HINTS[group.afl]}
                               </p>
                               <p className="mono-label text-muted-foreground">
                                 {group.items.length} compétence

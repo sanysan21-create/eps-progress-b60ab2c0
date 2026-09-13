@@ -522,7 +522,7 @@ function TeacherAchievements() {
             <>
               <div className="space-y-4">
                 <label className="text-xs font-medium text-muted-foreground">
-                  Réussite à attribuer
+                  Réussites à attribuer (plusieurs possibles)
                 </label>
                 {[...MEDALS.map((item) => ({ ...item, rows: byMedal(item.code) })),
                   { code: "", label: "À classer", emoji: "•", rows: unclassified },

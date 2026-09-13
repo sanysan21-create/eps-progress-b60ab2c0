@@ -17,6 +17,7 @@ import {
 } from "@/lib/achievements.functions";
 import { listStudentMedals } from "@/lib/medals.functions";
 import { MEDALS, requiredCount, type MedalCode } from "@/lib/medals";
+import { PremiumCardButton } from "@/components/eps/PremiumCardButton";
 import { MedalBadge } from "@/components/eps/MedalBadge";
 
 export const Route = createFileRoute("/_authenticated/prof/reussites")({

@@ -105,11 +105,18 @@ function TeacherAchievements() {
   const [selected, setSelected] = useState<string[]>([]);
   const [achievementId, setAchievementId] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [detailStudentId, setDetailStudentId] = useState("");
 
   const students = useQuery({
     queryKey: ["class-students", classId],
     queryFn: () => fetchClassStudents({ data: { classId } }),
     enabled: Boolean(classId),
+  });
+
+  const studentAchievements = useQuery({
+    queryKey: ["student-achievements", detailStudentId],
+    queryFn: () => fetchStudentAchievements({ data: { studentId: detailStudentId } }),
+    enabled: Boolean(detailStudentId),
   });
 
   const visibleStudents = useMemo(() => {

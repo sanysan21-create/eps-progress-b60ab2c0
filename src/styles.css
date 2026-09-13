@@ -414,13 +414,29 @@
 }
 
 /*
- * Or Premium — faisceaux dorés cinématiques peints directement dans le fond
- * global : toujours au-dessus du noir, toujours derrière tout le contenu.
- * Grand faisceau depuis le coin supérieur droit, second beaucoup plus faible
- * depuis le coin supérieur gauche, plus quelques particules dorées statiques.
+ * Or Premium — le body porte le noir profond et isole un calque fixe dédié.
+ * Le premier conteneur de l'application reste transparent dans ce thème :
+ * ainsi son fond plein écran ne recouvre plus les faisceaux après hydration.
  */
 .theme-gold body {
   --beam: 1;
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+}
+
+.theme-gold body > div:first-child {
+  position: relative;
+  z-index: 1;
+  background-color: transparent;
+}
+
+.theme-gold body::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
   background-image:
     /* Particules dorées, densité très faible. */
     radial-gradient(1.5px 1.5px at 12% 22%, color-mix(in oklab, #ffd54a 55%, transparent), transparent 60%),
@@ -459,7 +475,6 @@
     radial-gradient(70% 50% at 92% -4%, color-mix(in oklab, #ffd54a calc(18% * var(--beam)), transparent), transparent 62%),
     radial-gradient(80% 50% at 8% 100%, color-mix(in oklab, #806515 calc(16% * var(--beam)), transparent), transparent 65%);
   background-repeat: no-repeat;
-  background-attachment: fixed;
 }
 
 /* Mobile : faisceaux nettement atténués mais toujours perceptibles. */

@@ -76,6 +76,10 @@ function StudentAchievements() {
 
       {achievements.isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
 
+      {/* Récompenses cosmétiques liées aux trois paliers */}
+      <RewardsSection progress={progress} />
+
+
       {/* Parcours Bronze → Argent → Or */}
       <section className="space-y-4">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">

@@ -47,12 +47,6 @@ function StudentSettings() {
         <ProfileTitlePicker />
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          🌗 Autres apparences
-        </h2>
-        <ThemeSetting />
-      </section>
     </div>
   );
 }

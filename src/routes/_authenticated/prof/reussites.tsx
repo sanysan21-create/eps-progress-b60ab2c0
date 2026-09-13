@@ -103,7 +103,7 @@ function TeacherAchievements() {
   const [classId, setClassId] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-  const [achievementId, setAchievementId] = useState("");
+  const [achievementIds, setAchievementIds] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [detailStudentId, setDetailStudentId] = useState("");
 
@@ -132,7 +132,7 @@ function TeacherAchievements() {
   const unclassified = list.filter((row) => !row.medal_type);
   const byMedal = (code: MedalCode) => list.filter((row) => row.medal_type === code);
 
-  const chosenAchievement = list.find((row) => row.id === achievementId);
+  const chosenAchievements = list.filter((row) => achievementIds.includes(row.id));
   const selectedStudents = (students.data ?? []).filter((student) =>
     selected.includes(student.id),
   );
@@ -187,9 +187,17 @@ function TeacherAchievements() {
   });
 
   const awardMutation = useMutation({
-    mutationFn: () => award({ data: { achievementId, studentIds: selected } }),
+    mutationFn: async (): Promise<void> => {
+      for (const id of achievementIds) {
+        await award({ data: { achievementId: id, studentIds: selected } });
+      }
+    },
     onSuccess: () => {
-      toast.success("✓ Réussite attribuée. Médailles recalculées.");
+      toast.success(
+        achievementIds.length > 1
+          ? "✓ Réussites attribuées. Médailles recalculées."
+          : "✓ Réussite attribuée. Médailles recalculées.",
+      );
       setConfirming(false);
       setSelected([]);
       refresh();
@@ -211,6 +219,12 @@ function TeacherAchievements() {
 
   function toggleStudent(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+  }
+
+  function toggleAchievement(id: string) {
+    setAchievementIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
   }
 
   function openCreate(medalType: MedalCode | "") {
@@ -522,7 +536,7 @@ function TeacherAchievements() {
             <>
               <div className="space-y-4">
                 <label className="text-xs font-medium text-muted-foreground">
-                  Réussite à attribuer
+                  Réussites à attribuer (plusieurs possibles)
                 </label>
                 {[...MEDALS.map((item) => ({ ...item, rows: byMedal(item.code) })),
                   { code: "", label: "À classer", emoji: "•", rows: unclassified },
@@ -534,22 +548,25 @@ function TeacherAchievements() {
                         <span aria-hidden>{group.emoji}</span> {group.label}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {group.rows.map((achievement) => (
-                          <button
-                            key={achievement.id}
-                            onClick={() => setAchievementId(achievement.id)}
-                            aria-pressed={achievementId === achievement.id}
-                            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
-                              achievementId === achievement.id
-                                ? "border-primary bg-primary/10 text-foreground"
-                                : "border-border bg-background text-muted-foreground hover:bg-accent"
-                            }`}
-                          >
-                            <span aria-hidden>{achievement.icon}</span>
-                            {achievement.name}
-                            {achievement.is_required && <span aria-hidden>⭐</span>}
-                          </button>
-                        ))}
+                        {group.rows.map((achievement) => {
+                          const picked = achievementIds.includes(achievement.id);
+                          return (
+                            <button
+                              key={achievement.id}
+                              onClick={() => toggleAchievement(achievement.id)}
+                              aria-pressed={picked}
+                              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
+                                picked
+                                  ? "border-primary bg-primary/10 text-foreground"
+                                  : "border-border bg-background text-muted-foreground hover:bg-accent"
+                              }`}
+                            >
+                              <span aria-hidden>{picked ? "✓" : achievement.icon}</span>
+                              {achievement.name}
+                              {achievement.is_required && <span aria-hidden>⭐</span>}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -668,8 +685,8 @@ function TeacherAchievements() {
                 </p>
                 <button
                   onClick={() => {
-                    if (!achievementId) {
-                      toast.error("Choisis une réussite.");
+                    if (achievementIds.length === 0) {
+                      toast.error("Choisis au moins une réussite.");
                       return;
                     }
                     if (selected.length === 0) {
@@ -680,7 +697,7 @@ function TeacherAchievements() {
                   }}
                   className="rounded-full bg-primary px-5 py-2.5 text-xs font-bold uppercase text-primary-foreground"
                 >
-                  Attribuer la réussite
+                  Attribuer {achievementIds.length > 1 ? "les réussites" : "la réussite"}
                 </button>
               </div>
             </>
@@ -688,13 +705,21 @@ function TeacherAchievements() {
         </div>
       </section>
 
-      {confirming && chosenAchievement && (
+      {confirming && chosenAchievements.length > 0 && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
           <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-surface p-6">
             <h3 className="text-base font-semibold">
-              Attribuer « {chosenAchievement.name} » à {selectedStudents.length} élève
+              Attribuer {chosenAchievements.length} réussite
+              {chosenAchievements.length > 1 ? "s" : ""} à {selectedStudents.length} élève
               {selectedStudents.length > 1 ? "s" : ""} ?
             </h3>
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              {chosenAchievements.map((row) => (
+                <li key={row.id}>
+                  <span aria-hidden>{row.icon}</span> {row.name}
+                </li>
+              ))}
+            </ul>
             <ul className="max-h-52 space-y-1 overflow-y-auto text-sm text-muted-foreground">
               {selectedStudents.map((student) => (
                 <li key={student.id}>

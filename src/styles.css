@@ -465,7 +465,7 @@
 /* Mobile : faisceaux nettement atténués mais toujours perceptibles. */
 @media (max-width: 640px) {
   .theme-gold body {
-    --beam: 0.45;
+    --beam: 0.65;
   }
 }
 

@@ -213,6 +213,12 @@ function TeacherAchievements() {
     setSelected((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
   }
 
+  function toggleAchievement(id: string) {
+    setAchievementIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
+  }
+
   function openCreate(medalType: MedalCode | "") {
     setForm({ ...EMPTY_FORM, medalType });
   }

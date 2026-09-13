@@ -35,7 +35,14 @@ function StudentSettings() {
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          🎨 Apparence débloquée
+          🎨 Apparence de l'application
+        </h2>
+        <ThemeSetting hideMedalThemes />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+          🏅 Apparences de récompense
         </h2>
         <RewardThemeSetting />
       </section>

@@ -24,7 +24,10 @@ import {
   useMyAsMember,
 } from "@/hooks/use-student-profile";
 import { MedalBadge } from "@/components/eps/MedalBadge";
+import { MedalTierBadge } from "@/components/eps/MedalTierBadge";
 import { AsBadge } from "@/components/eps/AsBadge";
+import { useMyRewards } from "@/hooks/use-rewards";
+import { profileTitleLabel } from "@/lib/rewards";
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({
@@ -72,6 +75,8 @@ function StudentProfile() {
   const myGoal = useMyGoal();
   const myMedal = useMyMedal();
   const myAs = useMyAsMember();
+  const rewards = useMyRewards();
+  const titleLabel = profileTitleLabel(rewards.data?.title);
 
   const info = session.data;
   const activities = profile.data ?? [];
@@ -105,7 +110,11 @@ function StudentProfile() {
     <div className="animate-slide-up space-y-10 pb-4">
       {/* Identité */}
       <header className="flex items-center gap-4">
-        <div className="grid size-16 shrink-0 place-items-center rounded-full bg-surface ring-1 ring-border">
+        <div
+          className={`grid size-16 shrink-0 place-items-center rounded-full bg-surface ${
+            myMedal.data ? "reward-ring" : "ring-1 ring-border"
+          }`}
+        >
           <span className="display-title text-xl text-primary">
             {info ? initialsOf(info.firstName, info.lastName) : "?"}
           </span>
@@ -118,6 +127,12 @@ function StudentProfile() {
             {info ? `${info.firstName} ${info.lastName}` : ""}
             {info?.className ? ` · ${info.className}` : ""}
           </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <MedalTierBadge code={myMedal.data ?? null} />
+            {titleLabel && (
+              <span className="text-xs font-semibold text-foreground/80">{titleLabel}</span>
+            )}
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {myAs.data && (

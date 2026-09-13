@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ThemeSetting } from "@/components/eps/ThemeSetting";
+import { RewardThemeSetting } from "@/components/eps/RewardThemeSetting";
+import { ProfileTitlePicker } from "@/components/eps/ProfileTitlePicker";
 
 export const Route = createFileRoute("/eleve/parametres")({
   head: () => ({
@@ -9,12 +11,12 @@ export const Route = createFileRoute("/eleve/parametres")({
       {
         name: "description",
         content:
-          "Réglages personnels de l'élève : choix de l'apparence claire, sombre ou automatique de EPS Progress.",
+          "Réglages personnels de l'élève : apparence claire, sombre ou automatique, thèmes de récompense et titre de profil EPS Progress.",
       },
       { property: "og:title", content: "Mes paramètres — EPS Progress" },
       {
         property: "og:description",
-        content: "Choisis l'apparence de ton espace élève : sombre, claire ou automatique.",
+        content: "Choisis ton apparence, tes thèmes de récompense et ton titre de profil.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -33,7 +35,21 @@ function StudentSettings() {
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          🌗 Apparence
+          🎨 Apparence débloquée
+        </h2>
+        <RewardThemeSetting />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+          ✨ Mon titre de profil
+        </h2>
+        <ProfileTitlePicker />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+          🌗 Autres apparences
         </h2>
         <ThemeSetting />
       </section>

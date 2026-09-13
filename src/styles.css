@@ -52,6 +52,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* Couleur de récompense (médaille) : vert EPS Progress par défaut. */
+  --color-medal: var(--medal);
 
   --font-display: "Anton", sans-serif;
   --font-body: "Inter", sans-serif;
@@ -91,6 +93,8 @@
 
 :root {
   --radius: 1rem;
+  /* Couleur de récompense : identique à l'accent principal hors thème médaille. */
+  --medal: var(--primary);
   --background: oklch(0.145 0.012 285);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.014 285);
@@ -252,6 +256,133 @@
   --sidebar-accent-foreground: oklch(1 0 0);
   --sidebar-border: oklch(0.4 0.075 251);
   --sidebar-ring: oklch(0.757 0.196 128);
+}
+
+/*
+ * Thèmes de récompense (Bronze / Argent / Or) : même identité EPS Progress —
+ * fond sombre conservé, vert volt toujours présent comme couleur principale.
+ * La couleur de la médaille agit comme accent secondaire (bordures, contours,
+ * badges) via --medal. Rien de tout cela n'affecte les fonctions pédagogiques.
+ */
+.theme-bronze {
+  --background: oklch(0.16 0.018 62);
+  --foreground: oklch(0.985 0.004 80);
+  --card: oklch(0.225 0.024 62);
+  --card-foreground: oklch(0.985 0.004 80);
+  --surface: oklch(0.225 0.024 62);
+  --surface-2: oklch(0.275 0.028 62);
+  --popover: oklch(0.225 0.024 62);
+  --popover-foreground: oklch(0.985 0.004 80);
+  --primary: oklch(0.885 0.215 117);
+  --primary-foreground: oklch(0.16 0.018 62);
+  --medal: oklch(0.73 0.105 62);
+  --secondary: oklch(0.29 0.03 62);
+  --secondary-foreground: oklch(0.985 0.004 80);
+  --muted: oklch(0.29 0.03 62);
+  --muted-foreground: oklch(0.735 0.026 70);
+  --accent: oklch(0.33 0.038 62);
+  --accent-foreground: oklch(0.985 0.004 80);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.38 0.05 62);
+  --input: oklch(0.38 0.05 62);
+  --ring: oklch(0.73 0.105 62);
+  --chart-1: oklch(0.885 0.215 117);
+  --chart-2: oklch(0.73 0.105 62);
+  --chart-3: oklch(0.75 0.17 60);
+  --chart-4: oklch(0.65 0.2 300);
+  --chart-5: oklch(0.68 0.2 20);
+  --sidebar: oklch(0.2 0.022 62);
+  --sidebar-foreground: oklch(0.985 0.004 80);
+  --sidebar-primary: oklch(0.885 0.215 117);
+  --sidebar-primary-foreground: oklch(0.16 0.018 62);
+  --sidebar-accent: oklch(0.29 0.03 62);
+  --sidebar-accent-foreground: oklch(0.985 0.004 80);
+  --sidebar-border: oklch(0.38 0.05 62);
+  --sidebar-ring: oklch(0.73 0.105 62);
+}
+
+.theme-silver {
+  --background: oklch(0.16 0.008 250);
+  --foreground: oklch(0.99 0.002 250);
+  --card: oklch(0.23 0.01 250);
+  --card-foreground: oklch(0.99 0.002 250);
+  --surface: oklch(0.23 0.01 250);
+  --surface-2: oklch(0.285 0.012 250);
+  --popover: oklch(0.23 0.01 250);
+  --popover-foreground: oklch(0.99 0.002 250);
+  --primary: oklch(0.885 0.215 117);
+  --primary-foreground: oklch(0.16 0.008 250);
+  --medal: oklch(0.87 0.018 250);
+  --secondary: oklch(0.3 0.012 250);
+  --secondary-foreground: oklch(0.99 0.002 250);
+  --muted: oklch(0.3 0.012 250);
+  --muted-foreground: oklch(0.755 0.012 250);
+  --accent: oklch(0.345 0.014 250);
+  --accent-foreground: oklch(0.99 0.002 250);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.42 0.016 250);
+  --input: oklch(0.42 0.016 250);
+  --ring: oklch(0.87 0.018 250);
+  --chart-1: oklch(0.885 0.215 117);
+  --chart-2: oklch(0.87 0.018 250);
+  --chart-3: oklch(0.75 0.17 60);
+  --chart-4: oklch(0.65 0.2 300);
+  --chart-5: oklch(0.68 0.2 20);
+  --sidebar: oklch(0.2 0.01 250);
+  --sidebar-foreground: oklch(0.99 0.002 250);
+  --sidebar-primary: oklch(0.885 0.215 117);
+  --sidebar-primary-foreground: oklch(0.16 0.008 250);
+  --sidebar-accent: oklch(0.3 0.012 250);
+  --sidebar-accent-foreground: oklch(0.99 0.002 250);
+  --sidebar-border: oklch(0.42 0.016 250);
+  --sidebar-ring: oklch(0.87 0.018 250);
+}
+
+.theme-gold {
+  --background: oklch(0.15 0.016 88);
+  --foreground: oklch(0.99 0.006 95);
+  --card: oklch(0.215 0.022 88);
+  --card-foreground: oklch(0.99 0.006 95);
+  --surface: oklch(0.215 0.022 88);
+  --surface-2: oklch(0.27 0.026 88);
+  --popover: oklch(0.215 0.022 88);
+  --popover-foreground: oklch(0.99 0.006 95);
+  --primary: oklch(0.885 0.215 117);
+  --primary-foreground: oklch(0.15 0.016 88);
+  --medal: oklch(0.86 0.145 90);
+  --secondary: oklch(0.29 0.028 88);
+  --secondary-foreground: oklch(0.99 0.006 95);
+  --muted: oklch(0.29 0.028 88);
+  --muted-foreground: oklch(0.75 0.03 92);
+  --accent: oklch(0.335 0.036 88);
+  --accent-foreground: oklch(0.99 0.006 95);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.42 0.06 88);
+  --input: oklch(0.42 0.06 88);
+  --ring: oklch(0.86 0.145 90);
+  --chart-1: oklch(0.885 0.215 117);
+  --chart-2: oklch(0.86 0.145 90);
+  --chart-3: oklch(0.75 0.17 60);
+  --chart-4: oklch(0.65 0.2 300);
+  --chart-5: oklch(0.68 0.2 20);
+  --sidebar: oklch(0.19 0.02 88);
+  --sidebar-foreground: oklch(0.99 0.006 95);
+  --sidebar-primary: oklch(0.885 0.215 117);
+  --sidebar-primary-foreground: oklch(0.15 0.016 88);
+  --sidebar-accent: oklch(0.29 0.028 88);
+  --sidebar-accent-foreground: oklch(0.99 0.006 95);
+  --sidebar-border: oklch(0.42 0.06 88);
+  --sidebar-ring: oklch(0.86 0.145 90);
+}
+
+/* Contour de récompense autour de l'avatar (discret, sans animation permanente). */
+@utility reward-ring {
+  box-shadow:
+    0 0 0 2px var(--color-medal),
+    0 0 12px color-mix(in oklab, var(--color-medal) 35%, transparent);
 }
 
 @layer base {

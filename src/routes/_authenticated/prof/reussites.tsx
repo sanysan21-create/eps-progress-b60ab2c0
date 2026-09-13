@@ -17,6 +17,7 @@ import {
 } from "@/lib/achievements.functions";
 import { listStudentMedals } from "@/lib/medals.functions";
 import { MEDALS, requiredCount, type MedalCode } from "@/lib/medals";
+import { PremiumCardButton } from "@/components/eps/PremiumCardButton";
 import { MedalBadge } from "@/components/eps/MedalBadge";
 
 export const Route = createFileRoute("/_authenticated/prof/reussites")({
@@ -564,6 +565,19 @@ function TeacherAchievements() {
                           </span>
                           {code && <MedalBadge code={code} size={24} />}
                         </label>
+                        {code === "gold" && (
+                          <div className="mt-1.5 space-y-2 rounded-xl border border-dashed border-border bg-surface/60 px-4 py-3">
+                            <p className="mono-label text-[10px] font-bold text-muted-foreground">
+                              🥇 Or — carte Premium débloquée
+                            </p>
+                            <PremiumCardButton
+                              student={student}
+                              className={
+                                (classes.data ?? []).find((row) => row.id === classId)?.name ?? ""
+                              }
+                            />
+                          </div>
+                        )}
                       </li>
                     );
                   })}

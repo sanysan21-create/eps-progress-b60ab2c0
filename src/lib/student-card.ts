@@ -741,3 +741,304 @@ export async function renderStudentCardPreview(card: StudentCardData) {
   const back = drawBack(card);
   return { front: front.toDataURL("image/png"), back: back.toDataURL("image/png") };
 }
+
+/* ------------------------------------------------------------------------- */
+/* Carte PREMIUM OR — récompense de la médaille Or.                          */
+/* Même format (carte bancaire) et mêmes outils de dessin que la carte        */
+/* standard : seule l'identité visuelle change (noir / or).                   */
+/* ------------------------------------------------------------------------- */
+
+const INK = "#08090C";
+const INK_2 = "#141821";
+const GOLD = "#D4A017";
+const GOLD_LIGHT = "#F2D888";
+
+export type PremiumCardData = {
+  firstName: string;
+  lastName: string;
+  className: string;
+  accessUrl: string | null;
+  /** Titre de profil choisi par l'élève (facultatif). */
+  title?: string | null;
+};
+
+/** Étoile pleine (pictogramme "Or"), sans emoji pour un rendu net à l'impression. */
+function starShape(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const rad = i % 2 === 0 ? r : r * 0.45;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const px = cx + Math.cos(a) * rad;
+    const py = cy + Math.sin(a) * rad;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** Fond commun : noir profond + chevrons dorés très discrets. */
+function premiumBackground(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = INK;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = INK_2;
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.34);
+  ctx.lineTo(W, H * 0.2);
+  ctx.lineTo(W, H * 0.78);
+  ctx.lineTo(0, H * 0.9);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  stroke(ctx, GOLD, 12);
+  for (let row = -1; row < 9; row++) {
+    const baseY = row * 170;
+    for (let col = -1; col < 4; col++) {
+      const baseX = col * 300 + (row % 2 === 0 ? 0 : 150);
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY + 110);
+      ctx.lineTo(baseX + 150, baseY);
+      ctx.lineTo(baseX + 300, baseY + 110);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // liseré doré intérieur
+  stroke(ctx, GOLD, 8);
+  roundRect(ctx, 18, 18, W - 36, H - 36, 30);
+  ctx.stroke();
+}
+
+function drawPremiumFront(data: PremiumCardData) {
+  const { canvas, ctx } = newCanvas();
+  roundRect(ctx, 0, 0, W, H, 40);
+  ctx.save();
+  ctx.clip();
+  premiumBackground(ctx);
+
+  /* en-tête : EPS PROGRESS */
+  const titleSize = fitOneLine(ctx, "EPS PROGRESS", W - 130, 62, 40, "900");
+  ctx.font = font(titleSize, "900");
+  const eps = "EPS ";
+  const rest = "PROGRESS";
+  const totalW = ctx.measureText(eps).width + ctx.measureText(rest).width;
+  let x = W / 2 - totalW / 2;
+  ctx.textAlign = "left";
+  ctx.fillStyle = WHITE;
+  ctx.fillText(eps, x, 92);
+  x += ctx.measureText(eps).width;
+  ctx.fillStyle = GREEN;
+  ctx.fillText(rest, x, 92);
+
+  /* bandeau CARTE PREMIUM */
+  const bandY = 118;
+  ctx.fillStyle = GOLD;
+  roundRect(ctx, 64, bandY, W - 128, 62, 20);
+  ctx.fill();
+  starShape(ctx, 104, bandY + 31, 17, INK);
+  ctx.textAlign = "center";
+  ctx.fillStyle = INK;
+  ctx.font = font(28, "900");
+  ctx.letterSpacing = "4px";
+  ctx.fillText("CARTE PREMIUM", W / 2 + 14, bandY + 41);
+  ctx.letterSpacing = "0px";
+
+  /* médaille Or (disque doré + étoile) */
+  const medalCy = 330;
+  const grad = ctx.createLinearGradient(W / 2 - 90, medalCy - 90, W / 2 + 90, medalCy + 90);
+  grad.addColorStop(0, GOLD_LIGHT);
+  grad.addColorStop(1, GOLD);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(W / 2, medalCy, 88, 0, Math.PI * 2);
+  ctx.fill();
+  stroke(ctx, GOLD_LIGHT, 5);
+  ctx.beginPath();
+  ctx.arc(W / 2, medalCy, 100, 0, Math.PI * 2);
+  ctx.stroke();
+  starShape(ctx, W / 2, medalCy - 4, 46, INK);
+  ctx.textAlign = "center";
+  ctx.fillStyle = GOLD_LIGHT;
+  ctx.font = font(24, "900");
+  ctx.letterSpacing = "6px";
+  ctx.fillText("MÉDAILLE OR", W / 2, medalCy + 154);
+  ctx.letterSpacing = "0px";
+
+  /* identité */
+  const firstSize = fitOneLine(ctx, data.firstName.toUpperCase(), W - 130, 62, 30, "900");
+  ctx.font = font(firstSize, "900");
+  ctx.fillStyle = WHITE;
+  ctx.fillText(data.firstName.toUpperCase(), W / 2, 596);
+
+  const lastSize = fitOneLine(ctx, data.lastName.toUpperCase(), W - 130, 52, 24, "900");
+  ctx.font = font(lastSize, "900");
+  ctx.fillStyle = GOLD_LIGHT;
+  ctx.fillText(data.lastName.toUpperCase(), W / 2, 596 + lastSize + 14);
+
+  ctx.font = font(30, "700");
+  ctx.fillStyle = WHITE;
+  ctx.letterSpacing = "3px";
+  ctx.fillText(data.className || "Classe", W / 2, 720);
+  ctx.letterSpacing = "0px";
+
+  if (data.title) {
+    ctx.font = font(26, "700");
+    ctx.fillStyle = GREEN_LIGHT;
+    ctx.fillText(data.title, W / 2, 766);
+  }
+
+  /* pied : ÉLÈVE OR */
+  const footY = H - 132;
+  ctx.fillStyle = GOLD;
+  roundRect(ctx, 64, footY, W - 128, 6, 3);
+  ctx.fill();
+  ctx.fillStyle = GOLD_LIGHT;
+  ctx.font = font(30, "900");
+  ctx.letterSpacing = "8px";
+  ctx.fillText("ÉLÈVE OR", W / 2, footY + 62);
+  ctx.letterSpacing = "0px";
+
+  ctx.restore();
+  return canvas;
+}
+
+async function drawPremiumBack(data: PremiumCardData) {
+  const { canvas, ctx } = newCanvas();
+  roundRect(ctx, 0, 0, W, H, 40);
+  ctx.save();
+  ctx.clip();
+  premiumBackground(ctx);
+
+  const titleSize = fitOneLine(ctx, "EPS PROGRESS", W - 130, 56, 36, "900");
+  ctx.font = font(titleSize, "900");
+  const eps = "EPS ";
+  const rest = "PROGRESS";
+  const totalW = ctx.measureText(eps).width + ctx.measureText(rest).width;
+  let x = W / 2 - totalW / 2;
+  ctx.textAlign = "left";
+  ctx.fillStyle = WHITE;
+  ctx.fillText(eps, x, 92);
+  x += ctx.measureText(eps).width;
+  ctx.fillStyle = GREEN;
+  ctx.fillText(rest, x, 92);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = GOLD_LIGHT;
+  ctx.font = font(24, "900");
+  ctx.letterSpacing = "5px";
+  ctx.fillText("CARTE PREMIUM", W / 2, 136);
+  ctx.letterSpacing = "0px";
+
+  /* QR code : volontairement grand pour rester lisible après plastification */
+  const qrSize = 470;
+  const pad = 26;
+  const qrX = Math.round((W - qrSize) / 2);
+  const qrY = 210;
+  ctx.fillStyle = WHITE;
+  stroke(ctx, GOLD, 8);
+  roundRect(ctx, qrX - pad, qrY - pad, qrSize + pad * 2, qrSize + pad * 2, 26);
+  ctx.fill();
+  ctx.stroke();
+
+  if (data.accessUrl) {
+    const dataUrl = await QRCode.toDataURL(data.accessUrl, {
+      width: 900,
+      margin: 0,
+      errorCorrectionLevel: "M",
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+    const img = new Image();
+    img.src = dataUrl;
+    await img.decode();
+    ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+  } else {
+    ctx.fillStyle = "#9AA5B1";
+    ctx.font = font(24, "700");
+    ctx.fillText("QR non généré", W / 2, qrY + qrSize / 2);
+  }
+
+  ctx.fillStyle = WHITE;
+  ctx.font = font(29, "700");
+  wrapCentered(
+    ctx,
+    "Scanne pour accéder à ton espace EPS Progress",
+    W / 2,
+    qrY + qrSize + 86,
+    W - 150,
+    38,
+  );
+
+  ctx.fillStyle = GOLD;
+  roundRect(ctx, 64, H - 152, W - 128, 5, 3);
+  ctx.fill();
+  ctx.fillStyle = GOLD_LIGHT;
+  ctx.font = font(24, "700");
+  ctx.fillText("Cette carte est personnelle.", W / 2, H - 100);
+  ctx.fillStyle = LIGHT;
+  ctx.font = font(22, "400");
+  ctx.fillText(`${data.firstName} ${data.lastName} · ${data.className || "Classe"}`, W / 2, H - 64);
+
+  ctx.restore();
+  return canvas;
+}
+
+/**
+ * PDF imprimable de la carte Premium : recto et verso côte à côte sur une page A4,
+ * au format carte bancaire, avec un trait de découpe fin et des marges confortables.
+ */
+export async function downloadPremiumCardPdf(card: PremiumCardData, fileName: string) {
+  const { jsPDF } = await import("jspdf");
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+
+  const front = drawPremiumFront(card).toDataURL("image/png");
+  const back = (await drawPremiumBack(card)).toDataURL("image/png");
+
+  const GAP = 12;
+  const totalW = CARD_W_MM * 2 + GAP;
+  const x0 = (210 - totalW) / 2;
+  const y0 = 40;
+
+  pdf.setTextColor(60, 60, 60);
+  pdf.setFontSize(11);
+  pdf.text("EPS Progress — Carte Premium Or", x0, 24);
+  pdf.setFontSize(9);
+  pdf.text(
+    `${card.firstName} ${card.lastName}${card.className ? ` · ${card.className}` : ""}`,
+    x0,
+    30,
+  );
+
+  [front, back].forEach((image, index) => {
+    const x = x0 + index * (CARD_W_MM + GAP);
+    pdf.addImage(image, "PNG", x, y0, CARD_W_MM, CARD_H_MM);
+    pdf.setDrawColor(170, 170, 170);
+    pdf.setLineWidth(0.1);
+    pdf.rect(x, y0, CARD_W_MM, CARD_H_MM);
+  });
+
+  pdf.setFontSize(8);
+  pdf.text("Recto", x0, y0 + CARD_H_MM + 6);
+  pdf.text("Verso", x0 + CARD_W_MM + GAP, y0 + CARD_H_MM + 6);
+  pdf.text(
+    "Imprimer à 100 % (sans mise à l'échelle), découper sur les traits puis plastifier.",
+    x0,
+    y0 + CARD_H_MM + 14,
+  );
+
+  pdf.save(fileName);
+}
+
+/** Aperçu écran (data URLs) du recto et du verso de la carte Premium. */
+export async function renderPremiumCardPreview(card: PremiumCardData) {
+  const front = drawPremiumFront(card);
+  const back = await drawPremiumBack(card);
+  return { front: front.toDataURL("image/png"), back: back.toDataURL("image/png") };
+}

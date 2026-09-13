@@ -1,8 +1,28 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type ThemeChoice = "dark" | "light" | "navy-light" | "navy" | "system";
+export type ThemeChoice =
+  | "dark"
+  | "light"
+  | "navy-light"
+  | "navy"
+  | "system"
+  /* Thèmes de récompense, débloqués par les médailles (espace élève). */
+  | "bronze"
+  | "silver"
+  | "gold";
 
 const STORAGE_KEY = "eps-progress:theme";
+
+const CHOICES: ThemeChoice[] = [
+  "dark",
+  "light",
+  "navy-light",
+  "navy",
+  "system",
+  "bronze",
+  "silver",
+  "gold",
+];
 
 export const THEME_OPTIONS: { value: ThemeChoice; label: string; emoji: string; hint: string }[] = [
   {
@@ -23,14 +43,14 @@ export const THEME_OPTIONS: { value: ThemeChoice; label: string; emoji: string; 
 ];
 
 /** Script inline : applique le thème avant le premier rendu pour éviter tout flash. */
-export const themeBootstrapScript = `(function(){try{var c=localStorage.getItem('${STORAGE_KEY}')||'navy';var m=c==='system'?(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):c;var e=document.documentElement;e.classList.toggle('light',m==='light');e.classList.toggle('theme-navy',m==='navy');e.classList.toggle('theme-navy-light',m==='navy-light');e.style.colorScheme=(m==='light'||m==='navy-light')?'light':'dark';}catch(e){}})();`;
+export const themeBootstrapScript = `(function(){try{var c=localStorage.getItem('${STORAGE_KEY}')||'navy';var m=c==='system'?(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):c;var e=document.documentElement;e.classList.toggle('light',m==='light');e.classList.toggle('theme-navy',m==='navy');e.classList.toggle('theme-navy-light',m==='navy-light');e.classList.toggle('theme-bronze',m==='bronze');e.classList.toggle('theme-silver',m==='silver');e.classList.toggle('theme-gold',m==='gold');e.style.colorScheme=(m==='light'||m==='navy-light')?'light':'dark';}catch(e){}})();`;
 
 function systemTheme(): "dark" | "light" {
   if (typeof window === "undefined") return "dark";
   return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
-type Resolved = "dark" | "light" | "navy-light" | "navy";
+type Resolved = Exclude<ThemeChoice, "system">;
 
 function resolveChoice(choice: ThemeChoice): Resolved {
   return choice === "system" ? systemTheme() : choice;
@@ -43,6 +63,9 @@ function applyTheme(choice: ThemeChoice) {
   el.classList.toggle("light", resolved === "light");
   el.classList.toggle("theme-navy", resolved === "navy");
   el.classList.toggle("theme-navy-light", resolved === "navy-light");
+  el.classList.toggle("theme-bronze", resolved === "bronze");
+  el.classList.toggle("theme-silver", resolved === "silver");
+  el.classList.toggle("theme-gold", resolved === "gold");
   el.style.colorScheme = resolved === "light" || resolved === "navy-light" ? "light" : "dark";
 }
 
@@ -60,14 +83,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as ThemeChoice | null;
-    const next: ThemeChoice =
-      stored === "dark" ||
-      stored === "light" ||
-      stored === "navy" ||
-      stored === "navy-light" ||
-      stored === "system"
-        ? stored
-        : "navy";
+    const next: ThemeChoice = stored && CHOICES.includes(stored) ? stored : "navy";
     setThemeState(next);
     setResolved(resolveChoice(next));
     applyTheme(next);

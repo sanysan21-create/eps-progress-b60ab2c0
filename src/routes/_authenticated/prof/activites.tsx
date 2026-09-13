@@ -255,7 +255,7 @@ function ActivityCard({
           >
             {AFL_CODES.map((code) => (
               <option key={code} value={code}>
-                {code}
+                {AFL_LABELS[code]}
               </option>
             ))}
           </select>

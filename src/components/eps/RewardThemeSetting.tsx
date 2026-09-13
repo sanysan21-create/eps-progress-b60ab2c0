@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useMyMedal } from "@/hooks/use-student-profile";
 import { useMyRewards, useSetRewardTheme } from "@/hooks/use-rewards";
 import { REWARD_THEMES, isRewardThemeUnlocked, type RewardThemeCode } from "@/lib/rewards";
-import { useTheme, type ThemeChoice } from "@/lib/theme";
+import { themeSwatch, useTheme, type ThemeChoice } from "@/lib/theme";
 import type { MedalCode } from "@/lib/medals";
 
 /**

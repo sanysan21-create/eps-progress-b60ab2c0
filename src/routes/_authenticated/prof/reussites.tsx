@@ -588,6 +588,54 @@ function TeacherAchievements() {
                           </span>
                           {code && <MedalBadge code={code} size={24} />}
                         </label>
+                        <button
+                          onClick={() =>
+                            setDetailStudentId((prev) => (prev === student.id ? "" : student.id))
+                          }
+                          aria-expanded={detailStudentId === student.id}
+                          className="mt-1.5 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-[11px] font-bold uppercase text-muted-foreground hover:bg-accent hover:text-foreground"
+                        >
+                          <ListChecks className="size-3.5" />
+                          {detailStudentId === student.id
+                            ? "Masquer ses réussites"
+                            : "Voir ses réussites"}
+                        </button>
+                        {detailStudentId === student.id && (
+                          <div className="mt-1.5 space-y-2 rounded-xl border border-border bg-surface-2/50 px-4 py-3">
+                            {studentAchievements.isPending ? (
+                              <p className="text-xs text-muted-foreground">Chargement…</p>
+                            ) : awardedRows.length === 0 ? (
+                              <p className="text-xs text-muted-foreground">
+                                Aucune réussite attribuée pour le moment.
+                              </p>
+                            ) : (
+                              <ul className="space-y-1.5">
+                                {awardedRows.map((row) => (
+                                  <li
+                                    key={row.id}
+                                    className="flex items-center gap-2 rounded-lg bg-background px-3 py-2 text-xs"
+                                  >
+                                    <span aria-hidden>{row.icon}</span>
+                                    <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                                    <button
+                                      onClick={() =>
+                                        revokeMutation.mutate({
+                                          achievementId: row.id,
+                                          studentId: student.id,
+                                        })
+                                      }
+                                      disabled={revokeMutation.isPending}
+                                      aria-label={`Retirer la réussite ${row.name} à ${student.first_name} ${student.last_name}`}
+                                      className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive disabled:opacity-60"
+                                    >
+                                      <X className="size-3.5" />
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
                         {code === "gold" && (
                           <div className="mt-1.5 space-y-2 rounded-xl border border-dashed border-border bg-surface/60 px-4 py-3">
                             <p className="mono-label text-[10px] font-bold text-muted-foreground">

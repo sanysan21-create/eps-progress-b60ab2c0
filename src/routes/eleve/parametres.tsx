@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ThemeSetting } from "@/components/eps/ThemeSetting";
+
 import { RewardThemeSetting } from "@/components/eps/RewardThemeSetting";
 import { ProfileTitlePicker } from "@/components/eps/ProfileTitlePicker";
 
@@ -47,12 +47,6 @@ function StudentSettings() {
         <ProfileTitlePicker />
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          🌗 Autres apparences
-        </h2>
-        <ThemeSetting />
-      </section>
     </div>
   );
 }

@@ -139,6 +139,12 @@ function TeacherAchievements() {
   const medalOf = (id: string) =>
     (medals.data ?? []).find((row) => row.student_id === id)?.medal ?? null;
 
+  /** Réussites déjà attribuées à l'élève ouvert dans le panneau de détail. */
+  const awardedRows = useMemo(() => {
+    const ids = studentAchievements.data ?? [];
+    return list.filter((row) => ids.includes(row.id));
+  }, [studentAchievements.data, list]);
+
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["achievements"] });
     void queryClient.invalidateQueries({ queryKey: ["student-medals"] });

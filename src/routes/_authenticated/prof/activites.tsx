@@ -21,7 +21,7 @@ import {
   type Competency,
 } from "@/lib/competencies.functions";
 import { DEFAULT_LEVELS } from "@/lib/levels";
-import { AFL_CODES, AFL_HINTS, type AflCode } from "@/lib/afl";
+import { AFL_CODES, AFL_HINTS, AFL_LABELS, type AflCode } from "@/lib/afl";
 import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
 
 export const Route = createFileRoute("/_authenticated/prof/activites")({
@@ -334,7 +334,7 @@ function CompetencyCard({
         >
           {AFL_CODES.map((code) => (
             <option key={code} value={code}>
-              {code}
+              {AFL_LABELS[code]}
             </option>
           ))}
         </select>

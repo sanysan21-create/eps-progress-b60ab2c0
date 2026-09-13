@@ -23,6 +23,7 @@ import {
 import { DEFAULT_LEVELS } from "@/lib/levels";
 import { AFL_CODES, AFL_HINTS, AFL_LABELS, type AflCode } from "@/lib/afl";
 import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
+import { LevelProgressIcon } from "@/components/eps/LevelProgressIcon";
 
 export const Route = createFileRoute("/_authenticated/prof/activites")({
   head: () => ({
@@ -387,14 +388,11 @@ function CompetencyCard({
           const next = competency.levels[index + 1];
           return (
             <div key={level.id} className="flex items-start gap-2">
-              <span
-                className="grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold text-primary"
-                style={{
-                  backgroundColor: `color-mix(in oklab, var(--primary) ${(index + 1) * 16}%, transparent)`,
-                }}
-              >
-                {index + 1}
-              </span>
+              <LevelProgressIcon
+                currentLevel={index + 1}
+                totalLevels={competency.levels.length}
+                size={32}
+              />
               <div className="flex-1 space-y-1.5">
                 <input
                   defaultValue={level.label}

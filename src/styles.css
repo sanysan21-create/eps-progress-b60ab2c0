@@ -311,46 +311,46 @@
   --sidebar-ring: #cd7f32;
 }
 
-/* 🥈 Argent — graphite froid, métal lumineux, sophistication. */
+/* 🥈 Argent — noir bleuté, graphite, métal froid et élégant. */
 .theme-silver {
-  --background: #080d11;
-  --foreground: #f6fafc;
-  --card: #101820;
-  --card-foreground: #f6fafc;
-  --surface: #101820;
-  --surface-2: #18232b;
-  --popover: #101820;
-  --popover-foreground: #f6fafc;
+  --background: #070a0d;
+  --foreground: #f4f8fa;
+  --card: #0d1318;
+  --card-foreground: #f4f8fa;
+  --surface: #0d1318;
+  --surface-2: #131c23;
+  --popover: #0d1318;
+  --popover-foreground: #f4f8fa;
   --primary: oklch(0.885 0.215 117);
-  --primary-foreground: #080d11;
-  --medal: #c7ced4;
-  --medal-light: #edf2f5;
-  --medal-dark: #78848d;
-  --theme-glow: 0.55;
-  --secondary: #1c2831;
-  --secondary-foreground: #f6fafc;
-  --muted: #1c2831;
-  --muted-foreground: #a8b5bf;
-  --accent: #22303a;
-  --accent-foreground: #f6fafc;
+  --primary-foreground: #070a0d;
+  --medal: #bfc7cd;
+  --medal-light: #e8edf0;
+  --medal-dark: #66727c;
+  --theme-glow: 0.4;
+  --secondary: #131c23;
+  --secondary-foreground: #f4f8fa;
+  --muted: #131c23;
+  --muted-foreground: #9aa7b1;
+  --accent: #17222a;
+  --accent-foreground: #f4f8fa;
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: #33414c;
-  --input: #33414c;
-  --ring: #c7ced4;
+  --border: #253039;
+  --input: #253039;
+  --ring: #bfc7cd;
   --chart-1: oklch(0.885 0.215 117);
-  --chart-2: #c7ced4;
+  --chart-2: #bfc7cd;
   --chart-3: oklch(0.75 0.17 60);
   --chart-4: oklch(0.65 0.2 300);
   --chart-5: oklch(0.68 0.2 20);
-  --sidebar: #0b1319;
-  --sidebar-foreground: #f6fafc;
+  --sidebar: #090d11;
+  --sidebar-foreground: #f4f8fa;
   --sidebar-primary: oklch(0.885 0.215 117);
-  --sidebar-primary-foreground: #080d11;
-  --sidebar-accent: #1c2831;
-  --sidebar-accent-foreground: #f6fafc;
-  --sidebar-border: #33414c;
-  --sidebar-ring: #c7ced4;
+  --sidebar-primary-foreground: #070a0d;
+  --sidebar-accent: #131c23;
+  --sidebar-accent-foreground: #f4f8fa;
+  --sidebar-border: #253039;
+  --sidebar-ring: #bfc7cd;
 }
 
 /* 🥇 Or Premium — noir profond, or lumineux, prestige maximal. */

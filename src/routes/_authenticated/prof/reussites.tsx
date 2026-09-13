@@ -142,6 +142,7 @@ function TeacherAchievements() {
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["achievements"] });
     void queryClient.invalidateQueries({ queryKey: ["student-medals"] });
+    void queryClient.invalidateQueries({ queryKey: ["student-achievements"] });
   }
 
   const saveMutation = useMutation({

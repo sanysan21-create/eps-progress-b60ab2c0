@@ -91,6 +91,8 @@ function TeacherAchievements() {
   const update = useServerFn(updateAchievement);
   const remove = useServerFn(deleteAchievement);
   const award = useServerFn(awardAchievement);
+  const revoke = useServerFn(revokeAchievement);
+  const fetchStudentAchievements = useServerFn(listStudentAchievements);
 
   const achievements = useQuery({ queryKey: ["achievements"], queryFn: () => fetchAchievements() });
   const classes = useQuery({ queryKey: ["classes"], queryFn: () => fetchClasses() });

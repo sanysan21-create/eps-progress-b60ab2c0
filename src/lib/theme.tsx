@@ -55,9 +55,9 @@ export const THEME_SWATCHES: Record<Exclude<ThemeChoice, "system">, string> = {
   "navy-light": "linear-gradient(90deg,#FFFFFF,#123B6B,#7FBF17)",
   dark: "linear-gradient(90deg,#14161C,#2A2F3A,#C8FF2E)",
   light: "linear-gradient(90deg,#FFFFFF,#E5E7EB,#7FBF17)",
-  bronze: "linear-gradient(90deg,#0E1017,#7A4A22,#CD7F32)",
-  silver: "linear-gradient(90deg,#151A21,#9EA4AA,#D6D9DD)",
-  gold: "linear-gradient(90deg,#07090C,#D4AF37,#F2C94C)",
+  bronze: "linear-gradient(90deg,#0B0908,#7A4426,#E39A62)",
+  silver: "linear-gradient(90deg,#080D11,#78848D,#EDF2F5)",
+  gold: "linear-gradient(90deg,#050505,#D4AF37,#FFD54A)",
 };
 
 export function themeSwatch(choice: ThemeChoice): string {

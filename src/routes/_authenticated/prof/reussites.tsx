@@ -668,8 +668,8 @@ function TeacherAchievements() {
                 </p>
                 <button
                   onClick={() => {
-                    if (!achievementId) {
-                      toast.error("Choisis une réussite.");
+                    if (achievementIds.length === 0) {
+                      toast.error("Choisis au moins une réussite.");
                       return;
                     }
                     if (selected.length === 0) {
@@ -680,7 +680,7 @@ function TeacherAchievements() {
                   }}
                   className="rounded-full bg-primary px-5 py-2.5 text-xs font-bold uppercase text-primary-foreground"
                 >
-                  Attribuer la réussite
+                  Attribuer {achievementIds.length > 1 ? "les réussites" : "la réussite"}
                 </button>
               </div>
             </>

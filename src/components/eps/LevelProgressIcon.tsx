@@ -37,10 +37,12 @@ export function LevelProgressIcon({
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         aria-hidden
-        className={isBest ? "drop-shadow-[0_0_4px_hsl(var(--primary)/0.55)]" : undefined}
         style={
           isBest
-            ? { filter: "drop-shadow(0 0 4px color-mix(in oklab, var(--color-primary) 60%, transparent))" }
+            ? {
+                filter:
+                  "drop-shadow(0 0 4px color-mix(in oklab, var(--color-primary) 60%, transparent))",
+              }
             : undefined
         }
       >

@@ -527,6 +527,15 @@
   );
 }
 
+/* Or : lumière concentrée derrière la médaille + reflet métallique. */
+.theme-gold img[alt^="Médaille"] {
+  filter:
+    drop-shadow(0 0 10px color-mix(in oklab, var(--medal-light) 70%, transparent))
+    drop-shadow(0 0 26px color-mix(in oklab, var(--medal) 45%, transparent))
+    drop-shadow(0 2px 1px color-mix(in oklab, #000 45%, transparent))
+    saturate(1.08) brightness(1.06);
+}
+
 /* Contour de récompense autour de l'avatar (discret, sans animation permanente). */
 @utility reward-ring {
   box-shadow:

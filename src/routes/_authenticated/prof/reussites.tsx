@@ -187,9 +187,17 @@ function TeacherAchievements() {
   });
 
   const awardMutation = useMutation({
-    mutationFn: () => award({ data: { achievementId, studentIds: selected } }),
+    mutationFn: async (): Promise<void> => {
+      for (const id of achievementIds) {
+        await award({ data: { achievementId: id, studentIds: selected } });
+      }
+    },
     onSuccess: () => {
-      toast.success("✓ Réussite attribuée. Médailles recalculées.");
+      toast.success(
+        achievementIds.length > 1
+          ? "✓ Réussites attribuées. Médailles recalculées."
+          : "✓ Réussite attribuée. Médailles recalculées.",
+      );
       setConfirming(false);
       setSelected([]);
       refresh();

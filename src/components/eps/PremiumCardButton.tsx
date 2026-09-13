@@ -10,7 +10,7 @@ import { downloadPremiumCardPdf } from "@/lib/student-card";
 import { profileTitleLabel } from "@/lib/rewards";
 
 type Props = {
-  student: { id: string; first_name: string; last_name: string; student_code: string };
+  student: { id: string; first_name: string; last_name: string; student_code?: string };
   className?: string | undefined;
 };
 
@@ -48,7 +48,7 @@ export function PremiumCardButton({ student, className }: Props) {
           accessUrl: `${window.location.origin}/acces-eleve/${token}`,
           title: profileTitleLabel(rewards.data?.title),
         },
-        `carte-premium-${student.student_code}.pdf`,
+        `carte-premium-${student.student_code ?? student.last_name.toLowerCase()}.pdf`,
       );
       toast.success("Carte Premium générée — imprimer à 100 %, découper puis plastifier.");
     } catch {

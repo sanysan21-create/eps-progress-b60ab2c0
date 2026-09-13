@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Search, Trash2, Check, Pencil, Star } from "lucide-react";
+import { Plus, Search, Trash2, Check, Pencil, Star, X, ListChecks } from "lucide-react";
 
 import { listClasses } from "@/lib/classes.functions";
 import {
@@ -12,6 +12,8 @@ import {
   deleteAchievement,
   listAchievements,
   listClassStudents,
+  listStudentAchievements,
+  revokeAchievement,
   updateAchievement,
   type AchievementRow,
 } from "@/lib/achievements.functions";
@@ -89,6 +91,8 @@ function TeacherAchievements() {
   const update = useServerFn(updateAchievement);
   const remove = useServerFn(deleteAchievement);
   const award = useServerFn(awardAchievement);
+  const revoke = useServerFn(revokeAchievement);
+  const fetchStudentAchievements = useServerFn(listStudentAchievements);
 
   const achievements = useQuery({ queryKey: ["achievements"], queryFn: () => fetchAchievements() });
   const classes = useQuery({ queryKey: ["classes"], queryFn: () => fetchClasses() });
@@ -101,11 +105,18 @@ function TeacherAchievements() {
   const [selected, setSelected] = useState<string[]>([]);
   const [achievementId, setAchievementId] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [detailStudentId, setDetailStudentId] = useState("");
 
   const students = useQuery({
     queryKey: ["class-students", classId],
     queryFn: () => fetchClassStudents({ data: { classId } }),
     enabled: Boolean(classId),
+  });
+
+  const studentAchievements = useQuery({
+    queryKey: ["student-achievements", detailStudentId],
+    queryFn: () => fetchStudentAchievements({ data: { studentId: detailStudentId } }),
+    enabled: Boolean(detailStudentId),
   });
 
   const visibleStudents = useMemo(() => {
@@ -128,9 +139,16 @@ function TeacherAchievements() {
   const medalOf = (id: string) =>
     (medals.data ?? []).find((row) => row.student_id === id)?.medal ?? null;
 
+  /** Réussites déjà attribuées à l'élève ouvert dans le panneau de détail. */
+  const awardedRows = useMemo(() => {
+    const ids = studentAchievements.data ?? [];
+    return list.filter((row) => ids.includes(row.id));
+  }, [studentAchievements.data, list]);
+
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["achievements"] });
     void queryClient.invalidateQueries({ queryKey: ["student-medals"] });
+    void queryClient.invalidateQueries({ queryKey: ["student-achievements"] });
   }
 
   const saveMutation = useMutation({
@@ -178,6 +196,17 @@ function TeacherAchievements() {
     },
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : "Attribution impossible"),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (input: { achievementId: string; studentId: string }) =>
+      revoke({ data: { achievementId: input.achievementId, studentIds: [input.studentId] } }),
+    onSuccess: () => {
+      toast.success("Réussite retirée. Médailles recalculées.");
+      refresh();
+    },
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "Retrait impossible"),
   });
 
   function toggleStudent(id: string) {
@@ -565,6 +594,54 @@ function TeacherAchievements() {
                           </span>
                           {code && <MedalBadge code={code} size={24} />}
                         </label>
+                        <button
+                          onClick={() =>
+                            setDetailStudentId((prev) => (prev === student.id ? "" : student.id))
+                          }
+                          aria-expanded={detailStudentId === student.id}
+                          className="mt-1.5 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-[11px] font-bold uppercase text-muted-foreground hover:bg-accent hover:text-foreground"
+                        >
+                          <ListChecks className="size-3.5" />
+                          {detailStudentId === student.id
+                            ? "Masquer ses réussites"
+                            : "Voir ses réussites"}
+                        </button>
+                        {detailStudentId === student.id && (
+                          <div className="mt-1.5 space-y-2 rounded-xl border border-border bg-surface-2/50 px-4 py-3">
+                            {studentAchievements.isPending ? (
+                              <p className="text-xs text-muted-foreground">Chargement…</p>
+                            ) : awardedRows.length === 0 ? (
+                              <p className="text-xs text-muted-foreground">
+                                Aucune réussite attribuée pour le moment.
+                              </p>
+                            ) : (
+                              <ul className="space-y-1.5">
+                                {awardedRows.map((row) => (
+                                  <li
+                                    key={row.id}
+                                    className="flex items-center gap-2 rounded-lg bg-background px-3 py-2 text-xs"
+                                  >
+                                    <span aria-hidden>{row.icon}</span>
+                                    <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                                    <button
+                                      onClick={() =>
+                                        revokeMutation.mutate({
+                                          achievementId: row.id,
+                                          studentId: student.id,
+                                        })
+                                      }
+                                      disabled={revokeMutation.isPending}
+                                      aria-label={`Retirer la réussite ${row.name} à ${student.first_name} ${student.last_name}`}
+                                      className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive disabled:opacity-60"
+                                    >
+                                      <X className="size-3.5" />
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
                         {code === "gold" && (
                           <div className="mt-1.5 space-y-2 rounded-xl border border-dashed border-border bg-surface/60 px-4 py-3">
                             <p className="mono-label text-[10px] font-bold text-muted-foreground">

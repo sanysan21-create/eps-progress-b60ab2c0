@@ -24,7 +24,10 @@ import {
   useMyAsMember,
 } from "@/hooks/use-student-profile";
 import { MedalBadge } from "@/components/eps/MedalBadge";
+import { MedalTierBadge } from "@/components/eps/MedalTierBadge";
 import { AsBadge } from "@/components/eps/AsBadge";
+import { useMyRewards } from "@/hooks/use-rewards";
+import { profileTitleLabel } from "@/lib/rewards";
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({

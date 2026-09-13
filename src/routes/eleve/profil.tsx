@@ -209,29 +209,31 @@ function StudentProfile() {
 
                 <ul className="mt-4 space-y-4">
                   {activity.competencies.map((competency) => (
-                    <li key={competency.id} className="space-y-1.5">
+                    <li key={competency.id} className="space-y-2">
                       <p className="text-sm font-medium leading-snug">{competency.label}</p>
-                      <div className="flex items-center gap-3">
-                        <LevelProgressIcon
-                          currentLevel={competency.level_position}
-                          totalLevels={competency.level_max}
-                          label={`${competency.label} : niveau ${competency.level_position} sur ${competency.level_max}`}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {competency.level_label}
-                        </span>
-                      </div>
-                      {competency.level_tip && (
-                        <div className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
-                          <p className="mono-label text-primary">
-                            💡 Conseil de ton enseignant
-                          </p>
-                          <p className="mt-1 text-xs leading-relaxed text-foreground/80">
-                            {competency.level_tip}
-                          </p>
+                      <div className="space-y-2 pl-1">
+                        <p className="mono-label text-muted-foreground">Niveaux de cette compétence</p>
+                        <div className="flex items-start gap-2">
+                          <LevelProgressIcon
+                            currentLevel={competency.level_position}
+                            totalLevels={competency.level_max}
+                            size={32}
+                            label={`${competency.label} : niveau ${competency.level_position} sur ${competency.level_max}`}
+                          />
+                          <div className="flex-1 space-y-1.5">
+                            <p className="rounded-xl border border-border bg-surface px-3 py-2 text-sm">
+                              {competency.level_label}
+                            </p>
+                            {competency.level_tip && (
+                              <p className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground/80">
+                                💡 {competency.level_tip}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </li>
+
                   ))}
                 </ul>
               </article>

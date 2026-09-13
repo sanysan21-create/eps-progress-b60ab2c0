@@ -27,7 +27,7 @@ export function MedalBadge({
 
   return (
     <span
-      className={`inline-flex items-center align-middle ${
+      className={`medal-figure inline-flex items-center align-middle ${
         large ? "flex-col gap-1" : "flex-row gap-1.5"
       }`}
     >
@@ -39,7 +39,7 @@ export function MedalBadge({
         width={size}
         height={size}
         style={{ width: size, height: size }}
-        className={`shrink-0 object-contain ${large ? "drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]" : ""}`}
+        className="shrink-0 object-contain"
       />
       {withLabel && (
         <span

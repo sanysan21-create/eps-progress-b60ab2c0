@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ThemeSetting } from "@/components/eps/ThemeSetting";
+
 import { RewardThemeSetting } from "@/components/eps/RewardThemeSetting";
 import { ProfileTitlePicker } from "@/components/eps/ProfileTitlePicker";
 

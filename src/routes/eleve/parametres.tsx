@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 
 import { RewardThemeSetting } from "@/components/eps/RewardThemeSetting";
+import { ThemeSetting } from "@/components/eps/ThemeSetting";
 import { ProfileTitlePicker } from "@/components/eps/ProfileTitlePicker";
 
 export const Route = createFileRoute("/eleve/parametres")({

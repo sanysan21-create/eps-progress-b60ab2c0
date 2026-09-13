@@ -16,7 +16,7 @@ import {
   clearStudentClimbingGrade,
 } from "@/lib/competencies.functions";
 import { CLIMBING_GRADES, isClimbingActivity } from "@/lib/climbing";
-import { AFL_HINTS, groupByAfl } from "@/lib/afl";
+import { AFL_HINTS, AFL_LABELS, groupByAfl } from "@/lib/afl";
 
 import {
   listStudentEngagement,
@@ -496,7 +496,7 @@ function QuickCompetencies() {
                 <div key={group.afl} className="space-y-3">
                   <div className="flex items-baseline gap-2">
                     <span className="rounded-lg bg-primary/15 px-2 py-1 font-mono text-xs font-bold uppercase text-primary">
-                      {group.afl}
+                      {AFL_LABELS[group.afl]}
                     </span>
                     <span className="text-xs text-muted-foreground">{AFL_HINTS[group.afl]}</span>
                   </div>

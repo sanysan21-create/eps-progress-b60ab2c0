@@ -680,34 +680,34 @@
     0 0 12px color-mix(in oklab, var(--medal) 30%, transparent);
 }
 
-/* Argent : anneau métallique dégradé + halo froid très léger. */
+/* Argent : anneau métallique nuancé + halo froid très léger (pas de gros glow). */
 .theme-silver .reward-ring {
   position: relative;
   box-shadow:
-    0 0 0 1.5px var(--medal-light),
-    0 0 0 4px color-mix(in oklab, var(--medal-dark) 55%, transparent),
-    0 0 14px color-mix(in oklab, var(--medal-light) 18%, transparent);
+    0 0 0 1.5px color-mix(in oklab, var(--medal) 85%, transparent),
+    0 0 0 3.5px color-mix(in oklab, var(--medal-dark) 45%, transparent),
+    0 0 10px rgb(232 237 240 / 0.14);
 }
 
-/* Anneau métallique brossé : sombre → clair → blanc → sombre. */
+/* Anneau brossé : argent sombre → argent clair → highlight blanc → sombre. */
 .theme-silver .reward-ring::before {
   content: "";
   position: absolute;
-  inset: -5px;
+  inset: -4px;
   border-radius: 999px;
   pointer-events: none;
   background: conic-gradient(
-    from 200deg,
-    color-mix(in oklab, var(--medal-dark) 70%, transparent),
-    color-mix(in oklab, var(--medal) 65%, transparent) 18%,
-    color-mix(in oklab, var(--medal-light) 85%, transparent) 32%,
-    color-mix(in oklab, var(--medal-dark) 60%, transparent) 55%,
-    color-mix(in oklab, var(--medal-light) 60%, transparent) 78%,
-    color-mix(in oklab, var(--medal-dark) 70%, transparent)
+    from 210deg,
+    color-mix(in oklab, var(--medal-dark) 65%, transparent),
+    color-mix(in oklab, var(--medal) 70%, transparent) 16%,
+    rgb(255 255 255 / 0.85) 28%,
+    color-mix(in oklab, var(--medal-dark) 55%, transparent) 52%,
+    color-mix(in oklab, var(--medal-light) 55%, transparent) 76%,
+    color-mix(in oklab, var(--medal-dark) 65%, transparent)
   );
-  mask-image: radial-gradient(closest-side, transparent 68%, black 82%, transparent 100%);
-  filter: blur(2px);
-  opacity: calc(0.7 * var(--theme-glow) + 0.25);
+  mask-image: radial-gradient(closest-side, transparent 70%, black 84%, transparent 100%);
+  filter: blur(1.5px);
+  opacity: calc(0.55 * var(--theme-glow) + 0.3);
 }
 
 /* Or Premium : double anneau doré + halo lumineux localisé. */

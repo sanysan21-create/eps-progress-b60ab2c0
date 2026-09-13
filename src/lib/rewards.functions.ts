@@ -29,15 +29,14 @@ export const getMyRewards = createServerFn({ method: "GET" })
     return { theme: row?.theme ?? null, title: row?.profile_title ?? null };
   });
 
-async function studentContext(sql: never) {
+/** Élève réellement connecté (cookie signé) + enseignant propriétaire. */
+async function studentContext(sql: { <T>(s: TemplateStringsArray, ...v: unknown[]): Promise<T> }) {
   const { getStudentSession } = await import("./student-qr.server");
   const session = await getStudentSession();
   const studentId = session.data.studentId;
   if (!studentId) throw new Error("Session élève expirée");
 
-  const [student] = await (
-    sql as unknown as <T>(s: TemplateStringsArray, ...v: unknown[]) => Promise<T>
-  )<{ teacher_id: string }[]>`
+  const [student] = await sql<{ teacher_id: string }[]>`
     select teacher_id from students where id = ${studentId} limit 1
   `;
   if (!student) throw new Error("Élève introuvable");

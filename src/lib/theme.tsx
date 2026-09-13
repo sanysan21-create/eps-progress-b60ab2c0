@@ -46,6 +46,26 @@ export const THEME_OPTIONS: { value: ThemeChoice; label: string; emoji: string; 
   { value: "gold", label: "Or Premium", emoji: "🥇", hint: "Accents dorés, sensation Premium" },
 ];
 
+/**
+ * Aperçu de couleur affiché dans les sélecteurs d'apparence (source unique,
+ * réutilisée côté enseignant comme côté élève).
+ */
+export const THEME_SWATCHES: Record<Exclude<ThemeChoice, "system">, string> = {
+  navy: "linear-gradient(90deg,#0B1B33,#123B6B,#C8FF2E)",
+  "navy-light": "linear-gradient(90deg,#FFFFFF,#123B6B,#7FBF17)",
+  dark: "linear-gradient(90deg,#14161C,#2A2F3A,#C8FF2E)",
+  light: "linear-gradient(90deg,#FFFFFF,#E5E7EB,#7FBF17)",
+  bronze: "linear-gradient(90deg,#0E1017,#7A4A22,#CD7F32)",
+  silver: "linear-gradient(90deg,#151A21,#9EA4AA,#D6D9DD)",
+  gold: "linear-gradient(90deg,#07090C,#D4AF37,#F2C94C)",
+};
+
+export function themeSwatch(choice: ThemeChoice): string {
+  return choice === "system"
+    ? "linear-gradient(90deg,#07090C,#FFFFFF)"
+    : THEME_SWATCHES[choice];
+}
+
 /** Script inline : applique le thème avant le premier rendu pour éviter tout flash. */
 export const themeBootstrapScript = `(function(){try{var c=localStorage.getItem('${STORAGE_KEY}')||'navy';var m=c==='system'?(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):c;var e=document.documentElement;e.classList.toggle('light',m==='light');e.classList.toggle('theme-navy',m==='navy');e.classList.toggle('theme-navy-light',m==='navy-light');e.classList.toggle('theme-bronze',m==='bronze');e.classList.toggle('theme-silver',m==='silver');e.classList.toggle('theme-gold',m==='gold');e.style.colorScheme=(m==='light'||m==='navy-light')?'light':'dark';}catch(e){}})();`;
 

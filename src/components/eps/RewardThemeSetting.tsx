@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useMyMedal } from "@/hooks/use-student-profile";
 import { useMyRewards, useSetRewardTheme } from "@/hooks/use-rewards";
 import { REWARD_THEMES, isRewardThemeUnlocked, type RewardThemeCode } from "@/lib/rewards";
-import { useTheme, type ThemeChoice } from "@/lib/theme";
+import { themeSwatch, useTheme, type ThemeChoice } from "@/lib/theme";
 import type { MedalCode } from "@/lib/medals";
 
 /**
@@ -59,7 +59,7 @@ export function RewardThemeSetting() {
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <span aria-hidden>{option.emoji}</span>
                 {option.label}
-                {!unlocked && <span aria-hidden>🔒</span>}
+                <span aria-hidden>{unlocked ? "✓" : "🔒"}</span>
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {unlocked
@@ -68,6 +68,11 @@ export function RewardThemeSetting() {
                       REWARD_THEMES.find((item) => item.code === option.code)?.label
                     }.`}
               </p>
+              <span
+                aria-hidden
+                className={`theme-swatch mt-2 ${unlocked ? "" : "opacity-40"}`}
+                style={{ background: themeSwatch(option.theme) }}
+              />
             </button>
           );
         })}

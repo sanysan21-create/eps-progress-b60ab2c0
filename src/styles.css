@@ -93,6 +93,8 @@
 
 :root {
   --radius: 1rem;
+  /* Couleur de récompense : identique à l'accent principal hors thème médaille. */
+  --medal: var(--primary);
   --background: oklch(0.145 0.012 285);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.014 285);

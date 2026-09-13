@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Search, Trash2, Check, Pencil, Star } from "lucide-react";
+import { Plus, Search, Trash2, Check, Pencil, Star, X, ListChecks } from "lucide-react";
 
 import { listClasses } from "@/lib/classes.functions";
 import {
@@ -12,6 +12,8 @@ import {
   deleteAchievement,
   listAchievements,
   listClassStudents,
+  listStudentAchievements,
+  revokeAchievement,
   updateAchievement,
   type AchievementRow,
 } from "@/lib/achievements.functions";

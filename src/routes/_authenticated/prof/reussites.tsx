@@ -688,13 +688,21 @@ function TeacherAchievements() {
         </div>
       </section>
 
-      {confirming && chosenAchievement && (
+      {confirming && chosenAchievements.length > 0 && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
           <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-surface p-6">
             <h3 className="text-base font-semibold">
-              Attribuer « {chosenAchievement.name} » à {selectedStudents.length} élève
+              Attribuer {chosenAchievements.length} réussite
+              {chosenAchievements.length > 1 ? "s" : ""} à {selectedStudents.length} élève
               {selectedStudents.length > 1 ? "s" : ""} ?
             </h3>
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              {chosenAchievements.map((row) => (
+                <li key={row.id}>
+                  <span aria-hidden>{row.icon}</span> {row.name}
+                </li>
+              ))}
+            </ul>
             <ul className="max-h-52 space-y-1 overflow-y-auto text-sm text-muted-foreground">
               {selectedStudents.map((student) => (
                 <li key={student.id}>

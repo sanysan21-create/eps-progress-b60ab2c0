@@ -103,7 +103,7 @@ function TeacherAchievements() {
   const [classId, setClassId] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-  const [achievementId, setAchievementId] = useState("");
+  const [achievementIds, setAchievementIds] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [detailStudentId, setDetailStudentId] = useState("");
 

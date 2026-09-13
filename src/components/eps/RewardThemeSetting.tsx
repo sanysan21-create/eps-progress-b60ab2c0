@@ -59,7 +59,7 @@ export function RewardThemeSetting() {
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <span aria-hidden>{option.emoji}</span>
                 {option.label}
-                {!unlocked && <span aria-hidden>🔒</span>}
+                <span aria-hidden>{unlocked ? "✓" : "🔒"}</span>
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {unlocked
@@ -68,6 +68,11 @@ export function RewardThemeSetting() {
                       REWARD_THEMES.find((item) => item.code === option.code)?.label
                     }.`}
               </p>
+              <span
+                aria-hidden
+                className={`theme-swatch mt-2 ${unlocked ? "" : "opacity-40"}`}
+                style={{ background: themeSwatch(option.theme) }}
+              />
             </button>
           );
         })}

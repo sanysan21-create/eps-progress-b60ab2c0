@@ -261,132 +261,212 @@
 }
 
 /*
- * Thèmes de récompense (Bronze / Argent / Or) : même identité EPS Progress —
- * fond très sombre conservé, vert volt toujours la couleur fonctionnelle.
- * La couleur de la médaille sert d'accent de statut (bordures, contours,
- * badges, états sélectionnés) via --medal / --medal-light.
- * Progression voulue : Bronze (cuivre sobre) < Argent (graphite lumineux)
- * < Or Premium (noir profond + or). Aucune fonction pédagogique n'est touchée.
+ * Thèmes de récompense (Bronze / Argent / Or Premium) : trois « éditions »
+ * visuelles d'EPS Progress. Le vert volt (--primary) reste la couleur
+ * fonctionnelle (actions, validation, progression) dans les trois thèmes ;
+ * la couleur de médaille (--medal) porte uniquement le STATUT et le prestige.
+ * Intensité voulue : Bronze ★★ < Argent ★★★ < Or Premium ★★★★★.
+ * Aucune structure, dimension ni logique n'est modifiée ici.
  */
 
-/* 🥉 Bronze — fond bleu-noir EPS Progress, cartes graphite chaud, cuivre discret. */
+/* 🥉 Bronze — noir chaud, cuivre sobre, premier palier. */
 .theme-bronze {
-  --background: oklch(0.152 0.012 280);
-  --foreground: oklch(0.985 0.003 80);
-  --card: oklch(0.212 0.014 50);
-  --card-foreground: oklch(0.985 0.003 80);
-  --surface: oklch(0.212 0.014 50);
-  --surface-2: oklch(0.258 0.018 50);
-  --popover: oklch(0.212 0.014 50);
-  --popover-foreground: oklch(0.985 0.003 80);
+  --background: #0b0908;
+  --foreground: #fdf8f4;
+  --card: #15100d;
+  --card-foreground: #fdf8f4;
+  --surface: #15100d;
+  --surface-2: #1d1510;
+  --popover: #15100d;
+  --popover-foreground: #fdf8f4;
   --primary: oklch(0.885 0.215 117);
-  --primary-foreground: oklch(0.152 0.012 280);
-  --medal: oklch(0.655 0.105 55);
-  --medal-light: oklch(0.76 0.095 62);
-  --secondary: oklch(0.278 0.02 50);
-  --secondary-foreground: oklch(0.985 0.003 80);
-  --muted: oklch(0.278 0.02 50);
-  --muted-foreground: oklch(0.74 0.02 70);
-  --accent: oklch(0.32 0.026 50);
-  --accent-foreground: oklch(0.985 0.003 80);
+  --primary-foreground: #0b0908;
+  --medal: #cd7f32;
+  --medal-light: #e39a62;
+  --medal-dark: #7a4426;
+  --theme-glow: 0.35;
+  --secondary: #221a14;
+  --secondary-foreground: #fdf8f4;
+  --muted: #221a14;
+  --muted-foreground: #c3aa97;
+  --accent: #2a1f17;
+  --accent-foreground: #fdf8f4;
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.365 0.038 55);
-  --input: oklch(0.365 0.038 55);
-  --ring: oklch(0.655 0.105 55);
+  --border: #3a2718;
+  --input: #3a2718;
+  --ring: #cd7f32;
   --chart-1: oklch(0.885 0.215 117);
-  --chart-2: oklch(0.655 0.105 55);
+  --chart-2: #cd7f32;
   --chart-3: oklch(0.75 0.17 60);
   --chart-4: oklch(0.65 0.2 300);
   --chart-5: oklch(0.68 0.2 20);
-  --sidebar: oklch(0.185 0.014 280);
-  --sidebar-foreground: oklch(0.985 0.003 80);
+  --sidebar: #100c0a;
+  --sidebar-foreground: #fdf8f4;
   --sidebar-primary: oklch(0.885 0.215 117);
-  --sidebar-primary-foreground: oklch(0.152 0.012 280);
-  --sidebar-accent: oklch(0.278 0.02 50);
-  --sidebar-accent-foreground: oklch(0.985 0.003 80);
-  --sidebar-border: oklch(0.365 0.038 55);
-  --sidebar-ring: oklch(0.655 0.105 55);
+  --sidebar-primary-foreground: #0b0908;
+  --sidebar-accent: #221a14;
+  --sidebar-accent-foreground: #fdf8f4;
+  --sidebar-border: #3a2718;
+  --sidebar-ring: #cd7f32;
 }
 
-/* 🥈 Argent — anthracite froid, cartes graphite plus claires, métal lumineux. */
+/* 🥈 Argent — graphite froid, métal lumineux, sophistication. */
 .theme-silver {
-  --background: oklch(0.175 0.009 250);
-  --foreground: oklch(0.99 0.002 250);
-  --card: oklch(0.248 0.01 250);
-  --card-foreground: oklch(0.99 0.002 250);
-  --surface: oklch(0.248 0.01 250);
-  --surface-2: oklch(0.3 0.012 250);
-  --popover: oklch(0.248 0.01 250);
-  --popover-foreground: oklch(0.99 0.002 250);
+  --background: #080d11;
+  --foreground: #f6fafc;
+  --card: #101820;
+  --card-foreground: #f6fafc;
+  --surface: #101820;
+  --surface-2: #18232b;
+  --popover: #101820;
+  --popover-foreground: #f6fafc;
   --primary: oklch(0.885 0.215 117);
-  --primary-foreground: oklch(0.175 0.009 250);
-  --medal: oklch(0.845 0.012 250);
-  --medal-light: oklch(0.935 0.006 250);
-  --secondary: oklch(0.315 0.012 250);
-  --secondary-foreground: oklch(0.99 0.002 250);
-  --muted: oklch(0.315 0.012 250);
-  --muted-foreground: oklch(0.775 0.01 250);
-  --accent: oklch(0.36 0.014 250);
-  --accent-foreground: oklch(0.99 0.002 250);
+  --primary-foreground: #080d11;
+  --medal: #c7ced4;
+  --medal-light: #edf2f5;
+  --medal-dark: #78848d;
+  --theme-glow: 0.55;
+  --secondary: #1c2831;
+  --secondary-foreground: #f6fafc;
+  --muted: #1c2831;
+  --muted-foreground: #a8b5bf;
+  --accent: #22303a;
+  --accent-foreground: #f6fafc;
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.455 0.014 250);
-  --input: oklch(0.455 0.014 250);
-  --ring: oklch(0.845 0.012 250);
+  --border: #33414c;
+  --input: #33414c;
+  --ring: #c7ced4;
   --chart-1: oklch(0.885 0.215 117);
-  --chart-2: oklch(0.845 0.012 250);
+  --chart-2: #c7ced4;
   --chart-3: oklch(0.75 0.17 60);
   --chart-4: oklch(0.65 0.2 300);
   --chart-5: oklch(0.68 0.2 20);
-  --sidebar: oklch(0.215 0.01 250);
-  --sidebar-foreground: oklch(0.99 0.002 250);
+  --sidebar: #0b1319;
+  --sidebar-foreground: #f6fafc;
   --sidebar-primary: oklch(0.885 0.215 117);
-  --sidebar-primary-foreground: oklch(0.175 0.009 250);
-  --sidebar-accent: oklch(0.315 0.012 250);
-  --sidebar-accent-foreground: oklch(0.99 0.002 250);
-  --sidebar-border: oklch(0.455 0.014 250);
-  --sidebar-ring: oklch(0.845 0.012 250);
+  --sidebar-primary-foreground: #080d11;
+  --sidebar-accent: #1c2831;
+  --sidebar-accent-foreground: #f6fafc;
+  --sidebar-border: #33414c;
+  --sidebar-ring: #c7ced4;
 }
 
-/* 🥇 Or Premium — le thème le plus sombre : noir profond + or + vert EPS. */
+/* 🥇 Or Premium — noir profond, or lumineux, prestige maximal. */
 .theme-gold {
-  --background: oklch(0.105 0.007 260);
-  --foreground: oklch(0.99 0.004 95);
-  --card: oklch(0.168 0.008 260);
-  --card-foreground: oklch(0.99 0.004 95);
-  --surface: oklch(0.168 0.008 260);
-  --surface-2: oklch(0.212 0.01 260);
-  --popover: oklch(0.168 0.008 260);
-  --popover-foreground: oklch(0.99 0.004 95);
+  --background: #050505;
+  --foreground: #fdfaf1;
+  --card: #0c0c0b;
+  --card-foreground: #fdfaf1;
+  --surface: #0c0c0b;
+  --surface-2: #12110d;
+  --popover: #0c0c0b;
+  --popover-foreground: #fdfaf1;
   --primary: oklch(0.885 0.215 117);
-  --primary-foreground: oklch(0.105 0.007 260);
-  --medal: oklch(0.755 0.125 87);
-  --medal-light: oklch(0.855 0.145 92);
-  --secondary: oklch(0.232 0.012 260);
-  --secondary-foreground: oklch(0.99 0.004 95);
-  --muted: oklch(0.232 0.012 260);
-  --muted-foreground: oklch(0.765 0.014 90);
-  --accent: oklch(0.27 0.016 260);
-  --accent-foreground: oklch(0.99 0.004 95);
+  --primary-foreground: #050505;
+  --medal: #d4af37;
+  --medal-light: #ffd54a;
+  --medal-dark: #806515;
+  --theme-glow: 1;
+  --secondary: #17150f;
+  --secondary-foreground: #fdfaf1;
+  --muted: #17150f;
+  --muted-foreground: #bcb49a;
+  --accent: #1d1a12;
+  --accent-foreground: #fdfaf1;
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.395 0.05 88);
-  --input: oklch(0.395 0.05 88);
-  --ring: oklch(0.755 0.125 87);
+  --border: #2e2718;
+  --input: #2e2718;
+  --ring: #d4af37;
   --chart-1: oklch(0.885 0.215 117);
-  --chart-2: oklch(0.755 0.125 87);
+  --chart-2: #d4af37;
   --chart-3: oklch(0.75 0.17 60);
   --chart-4: oklch(0.65 0.2 300);
   --chart-5: oklch(0.68 0.2 20);
-  --sidebar: oklch(0.128 0.008 260);
-  --sidebar-foreground: oklch(0.99 0.004 95);
+  --sidebar: #070706;
+  --sidebar-foreground: #fdfaf1;
   --sidebar-primary: oklch(0.885 0.215 117);
-  --sidebar-primary-foreground: oklch(0.105 0.007 260);
-  --sidebar-accent: oklch(0.232 0.012 260);
-  --sidebar-accent-foreground: oklch(0.99 0.004 95);
-  --sidebar-border: oklch(0.395 0.05 88);
-  --sidebar-ring: oklch(0.755 0.125 87);
+  --sidebar-primary-foreground: #050505;
+  --sidebar-accent: #17150f;
+  --sidebar-accent-foreground: #fdfaf1;
+  --sidebar-border: #2e2718;
+  --sidebar-ring: #d4af37;
+}
+
+/*
+ * Ambiances de fond : gradients radiaux très subtils, fixés, sans animation.
+ * Trois niveaux de profondeur : fond → surface → carte importante.
+ */
+.theme-bronze body {
+  background-image:
+    radial-gradient(120% 70% at 50% -10%, color-mix(in oklab, #cd7f32 12%, transparent), transparent 60%),
+    radial-gradient(80% 50% at 100% 100%, color-mix(in oklab, #7a4426 14%, transparent), transparent 65%);
+  background-attachment: fixed;
+}
+
+.theme-silver body {
+  background-image:
+    radial-gradient(120% 70% at 50% -10%, color-mix(in oklab, #c7ced4 10%, transparent), transparent 60%),
+    radial-gradient(90% 55% at 0% 100%, color-mix(in oklab, #78848d 14%, transparent), transparent 65%);
+  background-attachment: fixed;
+}
+
+.theme-gold body {
+  background-image:
+    radial-gradient(90% 55% at 50% -8%, color-mix(in oklab, #ffd54a 14%, transparent), transparent 62%),
+    radial-gradient(70% 45% at 100% 0%, color-mix(in oklab, #d4af37 10%, transparent), transparent 60%),
+    radial-gradient(80% 50% at 0% 100%, color-mix(in oklab, #806515 16%, transparent), transparent 65%);
+  background-attachment: fixed;
+}
+
+/*
+ * Surfaces : léger reflet métallique en haut de chaque carte, hiérarchie de
+ * bordures (grande section > carte > petit composant).
+ */
+.theme-bronze .bg-surface,
+.theme-bronze .bg-surface-2,
+.theme-silver .bg-surface,
+.theme-silver .bg-surface-2,
+.theme-gold .bg-surface,
+.theme-gold .bg-surface-2 {
+  background-image: linear-gradient(
+    170deg,
+    color-mix(in oklab, var(--medal-light) 7%, transparent),
+    transparent 45%
+  );
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--medal-light) 14%, transparent);
+}
+
+.theme-bronze .rounded-2xl,
+.theme-silver .rounded-2xl,
+.theme-gold .rounded-2xl {
+  border-color: color-mix(in oklab, var(--medal) 26%, var(--border));
+}
+
+.theme-bronze .rounded-3xl,
+.theme-silver .rounded-3xl,
+.theme-gold .rounded-3xl {
+  border-color: color-mix(in oklab, var(--medal) 42%, var(--border));
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--medal-light) 18%, transparent),
+    0 18px 45px -30px color-mix(in oklab, var(--medal) calc(45% * var(--theme-glow)), transparent);
+}
+
+.theme-bronze .rounded-xl,
+.theme-silver .rounded-xl,
+.theme-gold .rounded-xl {
+  border-color: color-mix(in oklab, var(--medal) 12%, var(--border));
+}
+
+/* Mise en valeur de la médaille et des badges de statut. */
+.theme-bronze img[alt^="Médaille"],
+.theme-silver img[alt^="Médaille"],
+.theme-gold img[alt^="Médaille"] {
+  filter: drop-shadow(
+    0 0 calc(14px * var(--theme-glow)) color-mix(in oklab, var(--medal-light) 55%, transparent)
+  );
 }
 
 /* Contour de récompense autour de l'avatar (discret, sans animation permanente). */
@@ -396,24 +476,47 @@
     0 0 10px color-mix(in oklab, var(--color-medal) 28%, transparent);
 }
 
-/* Bronze : contour net, sans halo (premier palier, volontairement sobre). */
+/* Bronze : anneau cuivre net, glow chaud très léger. */
 .theme-bronze .reward-ring {
-  box-shadow: 0 0 0 2px var(--color-medal);
-}
-
-/* Argent : double liseré métallique très subtil. */
-.theme-silver .reward-ring {
   box-shadow:
-    0 0 0 1.5px var(--color-medal-light),
-    0 0 0 4px color-mix(in oklab, var(--color-medal) 22%, transparent);
+    0 0 0 2px var(--medal),
+    0 0 12px color-mix(in oklab, var(--medal) 30%, transparent);
 }
 
-/* Or Premium : halo doré maîtrisé, sans animation. */
+/* Argent : anneau métallique dégradé + halo froid très léger. */
+.theme-silver .reward-ring {
+  position: relative;
+  box-shadow:
+    0 0 0 1.5px var(--medal-light),
+    0 0 0 4px color-mix(in oklab, var(--medal-dark) 55%, transparent),
+    0 0 16px color-mix(in oklab, var(--medal-light) 22%, transparent);
+}
+
+/* Or Premium : double anneau doré + halo lumineux localisé. */
 .theme-gold .reward-ring {
   box-shadow:
-    0 0 0 2px var(--color-medal),
-    0 0 0 5px color-mix(in oklab, var(--color-medal) 16%, transparent),
-    0 0 20px color-mix(in oklab, var(--color-medal-light) 32%, transparent);
+    0 0 0 2px var(--medal-light),
+    0 0 0 5px color-mix(in oklab, var(--medal-dark) 70%, transparent),
+    0 0 0 6.5px color-mix(in oklab, var(--medal) 45%, transparent),
+    0 0 28px color-mix(in oklab, var(--medal-light) 42%, transparent),
+    0 0 60px color-mix(in oklab, var(--medal) 22%, transparent);
+}
+
+/* Mobile : halos réduits, contours et médailles conservés. */
+@media (max-width: 640px) {
+  .theme-bronze,
+  .theme-silver {
+    --theme-glow: 0.25;
+  }
+  .theme-gold {
+    --theme-glow: 0.5;
+  }
+  .theme-gold .reward-ring {
+    box-shadow:
+      0 0 0 2px var(--medal-light),
+      0 0 0 4px color-mix(in oklab, var(--medal-dark) 70%, transparent),
+      0 0 16px color-mix(in oklab, var(--medal-light) 30%, transparent);
+  }
 }
 
 /* Petit aperçu de couleur dans les sélecteurs d'apparence. */

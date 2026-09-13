@@ -75,6 +75,8 @@ function StudentProfile() {
   const myGoal = useMyGoal();
   const myMedal = useMyMedal();
   const myAs = useMyAsMember();
+  const rewards = useMyRewards();
+  const titleLabel = profileTitleLabel(rewards.data?.title);
 
   const info = session.data;
   const activities = profile.data ?? [];

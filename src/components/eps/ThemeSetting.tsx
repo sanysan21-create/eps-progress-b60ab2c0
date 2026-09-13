@@ -2,14 +2,26 @@ import { THEME_OPTIONS, themeSwatch, useTheme } from "@/lib/theme";
 
 const MEDAL_THEMES = ["bronze", "silver", "gold"];
 
-/** Sélecteur d'apparence (sombre / clair / automatique), appliqué instantanément. */
-export function ThemeSetting({ className = "" }: { className?: string }) {
+/**
+ * Sélecteur d'apparence (sombre / clair / automatique), appliqué instantanément.
+ * `hideMedalThemes` exclut les thèmes de récompense, gérés à part côté élève.
+ */
+export function ThemeSetting({
+  className = "",
+  hideMedalThemes = false,
+}: {
+  className?: string;
+  hideMedalThemes?: boolean;
+}) {
   const { theme, setTheme } = useTheme();
+  const options = hideMedalThemes
+    ? THEME_OPTIONS.filter((option) => !MEDAL_THEMES.includes(option.value))
+    : THEME_OPTIONS;
 
   return (
     <div className={className}>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {THEME_OPTIONS.map((option) => {
+        {options.map((option) => {
           const active = theme === option.value;
           const medal = MEDAL_THEMES.includes(option.value);
           return (

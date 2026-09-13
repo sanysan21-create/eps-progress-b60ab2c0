@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { activityEmoji } from "@/lib/activity-emoji";
 
 import { LevelDots } from "@/components/eps/LevelDots";
+import { LevelProgressIcon } from "@/components/eps/LevelProgressIcon";
 import { StrengthPicker } from "@/components/eps/StrengthPicker";
 import { GoalPicker } from "@/components/eps/GoalPicker";
 import { computeProgression } from "@/lib/progression";
@@ -196,9 +197,9 @@ function StudentProfile() {
                     <li key={competency.id} className="space-y-1.5">
                       <p className="text-sm font-medium leading-snug">{competency.label}</p>
                       <div className="flex items-center gap-3">
-                        <LevelDots
-                          level={competency.level_position}
-                          max={competency.level_max}
+                        <LevelProgressIcon
+                          currentLevel={competency.level_position}
+                          totalLevels={competency.level_max}
                           label={`${competency.label} : niveau ${competency.level_position} sur ${competency.level_max}`}
                         />
                         <span className="text-xs text-muted-foreground">

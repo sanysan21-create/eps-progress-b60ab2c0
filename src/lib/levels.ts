@@ -12,3 +12,15 @@ export const DEFAULT_LEVEL_OPTIONS: LevelOption[] = DEFAULT_LEVELS.map((label, i
   label,
   position: i + 1,
 }));
+
+/**
+ * Source de vérité unique du remplissage de la jauge de niveau (0-100).
+ * Niveau 1 = meilleur niveau (100 %), dernier niveau = début de progression (0 %).
+ * S'adapte au nombre réel de niveaux configurés pour chaque compétence.
+ */
+export function getLevelProgress(currentLevel: number, totalLevels: number): number {
+  const total = Math.max(totalLevels, currentLevel, 1);
+  if (total <= 1) return 100;
+  const level = Math.min(Math.max(currentLevel, 1), total);
+  return ((total - level) / (total - 1)) * 100;
+}

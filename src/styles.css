@@ -431,26 +431,26 @@
   inset: 0;
   pointer-events: none;
   background-image:
-    /* Bande de reflet large, haut gauche → bas droite. */
-    linear-gradient(
-      148deg,
-      transparent 12%,
-      color-mix(in oklab, #edf2f5 calc(4% * var(--sheen)), transparent) 30%,
-      color-mix(in oklab, #edf2f5 calc(9% * var(--sheen)), transparent) 41%,
-      color-mix(in oklab, #c7ced4 calc(5% * var(--sheen)), transparent) 52%,
+    /* Reflet principal : lumière froide diffuse, haut gauche → centre. */
+    radial-gradient(
+      95% 70% at 8% -6%,
+      color-mix(in oklab, #e8edf0 calc(10% * var(--sheen)), transparent),
+      color-mix(in oklab, #bfc7cd calc(4% * var(--sheen)), transparent) 42%,
       transparent 72%
     ),
-    /* Zone lumineuse froide, coin opposé. */
-    radial-gradient(60% 45% at 96% 92%, color-mix(in oklab, #c7ced4 calc(10% * var(--sheen)), transparent), transparent 68%),
-    radial-gradient(110% 60% at 12% -8%, color-mix(in oklab, #edf2f5 calc(8% * var(--sheen)), transparent), transparent 62%),
-    /* Texture graphite : lignes presque invisibles. */
-    repeating-linear-gradient(
-      118deg,
-      color-mix(in oklab, #edf2f5 2%, transparent) 0px 1px,
-      transparent 1px 7px
+    /* Reflet secondaire très discret sur le côté droit. */
+    radial-gradient(
+      55% 60% at 104% 46%,
+      color-mix(in oklab, #bfc7cd calc(6% * var(--sheen)), transparent),
+      transparent 70%
+    ),
+    /* Profondeur graphite en bas, sans texture. */
+    radial-gradient(
+      80% 45% at 60% 108%,
+      color-mix(in oklab, #66727c calc(7% * var(--sheen)), transparent),
+      transparent 70%
     );
-  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
-  opacity: 0.95;
+  background-repeat: no-repeat;
 }
 
 @media (max-width: 640px) {

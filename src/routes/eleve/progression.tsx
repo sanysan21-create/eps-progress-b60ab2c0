@@ -4,6 +4,7 @@ import { Flame } from "lucide-react";
 
 import { ActivityEmoji } from "@/components/eps/ActivityEmoji";
 import { RankJourney } from "@/components/eps/RankJourney";
+import { LevelProgressIcon } from "@/components/eps/LevelProgressIcon";
 import { computeProgression } from "@/lib/progression";
 import { goal as goalByCode } from "@/lib/engagement";
 import { AFL_HINTS, AFL_LABELS, groupByAfl } from "@/lib/afl";

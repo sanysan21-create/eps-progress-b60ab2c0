@@ -223,18 +223,15 @@ function StudentProgress() {
                                   {percent}%
                                 </span>
                               </div>
-                              <p className="text-xs text-muted-foreground">
-                                Niveau {c.level_position}/{c.level_max} — {c.level_label}
-                              </p>
-                              <div className="flex gap-1">
-                                {Array.from({ length: c.level_max }).map((_, index) => (
-                                  <span
-                                    key={index}
-                                    className={`h-2 flex-1 rounded-full ${
-                                      index < c.level_position ? "bg-primary" : "bg-surface-2"
-                                    }`}
-                                  />
-                                ))}
+                              <div className="flex items-center gap-2">
+                                <LevelProgressIcon
+                                  currentLevel={c.level_position}
+                                  totalLevels={c.level_max}
+                                  label={`${c.label} : niveau ${c.level_position} sur ${c.level_max}`}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Niveau {c.level_position}/{c.level_max} — {c.level_label}
+                                </p>
                               </div>
                             </article>
                           );
@@ -314,14 +311,15 @@ function StudentProgress() {
                                       {percent}%
                                     </span>
                                   </div>
-                                  <p className="text-xs text-muted-foreground">
-                                    Niveau {c.level_position}/{c.level_max} — {c.level_label}
-                                  </p>
-                                  <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
-                                    <div
-                                      className="h-full rounded-full bg-primary"
-                                      style={{ width: `${percent}%` }}
+                                  <div className="flex items-center gap-2">
+                                    <LevelProgressIcon
+                                      currentLevel={c.level_position}
+                                      totalLevels={c.level_max}
+                                      label={`${c.label} : niveau ${c.level_position} sur ${c.level_max}`}
                                     />
+                                    <p className="text-xs text-muted-foreground">
+                                      Niveau {c.level_position}/{c.level_max} — {c.level_label}
+                                    </p>
                                   </div>
 
                                   {mastered ? (

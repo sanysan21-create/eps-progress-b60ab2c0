@@ -2,7 +2,7 @@
  * Catégories AFL (Attendus de Fin de Lycée) servant à classer les compétences.
  * Référence unique côté enseignant comme côté élève.
  */
-export const AFL_CODES = ["AFL1", "AFL2", "AFL3"] as const;
+export const AFL_CODES = ["AFL1", "AFL2", "AFL3", "NR"] as const;
 
 export type AflCode = (typeof AFL_CODES)[number];
 
@@ -10,6 +10,15 @@ export const AFL_HINTS: Record<AflCode, string> = {
   AFL1: "S'engager pour produire une performance",
   AFL2: "S'entraîner, se préparer, réguler",
   AFL3: "Coopérer, assumer des rôles",
+  NR: "Compétence hors AFL (non répertoriée)",
+};
+
+/** Libellé court affiché comme titre de section. */
+export const AFL_LABELS: Record<AflCode, string> = {
+  AFL1: "AFL1",
+  AFL2: "AFL2",
+  AFL3: "AFL3",
+  NR: "Non répertoriée",
 };
 
 /** Normalise une valeur venue de la base (compétences créées avant les AFL). */

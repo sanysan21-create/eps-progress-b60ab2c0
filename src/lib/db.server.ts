@@ -423,6 +423,19 @@ alter table achievements drop constraint if exists achievements_medal_type_check
 alter table achievements add constraint achievements_medal_type_check
   check (medal_type is null or medal_type in ('bronze', 'silver', 'gold'));
 create index if not exists idx_achievements_medal on achievements(teacher_id, medal_type);
+
+-- Récompenses cosmétiques liées aux médailles : thème et titre choisis par l'élève.
+-- Ces choix sont conservés même si une médaille est recalculée (jamais supprimés).
+create table if not exists student_rewards (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  theme text,
+  profile_title text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (student_id)
+);
 `;
 
 /** Génère un code élève unique (ELV-XXXXXX). */

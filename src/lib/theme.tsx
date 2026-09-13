@@ -40,6 +40,10 @@ export const THEME_OPTIONS: { value: ThemeChoice; label: string; emoji: string; 
   { value: "dark", label: "Thème sombre", emoji: "🌙", hint: "Bleu nuit et volt" },
   { value: "light", label: "Thème clair", emoji: "☀️", hint: "Fond clair, mêmes couleurs" },
   { value: "system", label: "Automatique", emoji: "🌗", hint: "Suit les réglages de l'appareil" },
+  /* Thèmes de récompense : libres pour l'enseignant, débloqués par médaille chez l'élève. */
+  { value: "bronze", label: "Bronze", emoji: "🥉", hint: "Accents bronze discrets" },
+  { value: "silver", label: "Argent", emoji: "🥈", hint: "Détails métalliques argentés" },
+  { value: "gold", label: "Or Premium", emoji: "🥇", hint: "Accents dorés, sensation Premium" },
 ];
 
 /** Script inline : applique le thème avant le premier rendu pour éviter tout flash. */

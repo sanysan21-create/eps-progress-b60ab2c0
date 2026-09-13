@@ -534,22 +534,25 @@ function TeacherAchievements() {
                         <span aria-hidden>{group.emoji}</span> {group.label}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {group.rows.map((achievement) => (
-                          <button
-                            key={achievement.id}
-                            onClick={() => setAchievementId(achievement.id)}
-                            aria-pressed={achievementId === achievement.id}
-                            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
-                              achievementId === achievement.id
-                                ? "border-primary bg-primary/10 text-foreground"
-                                : "border-border bg-background text-muted-foreground hover:bg-accent"
-                            }`}
-                          >
-                            <span aria-hidden>{achievement.icon}</span>
-                            {achievement.name}
-                            {achievement.is_required && <span aria-hidden>⭐</span>}
-                          </button>
-                        ))}
+                        {group.rows.map((achievement) => {
+                          const picked = achievementIds.includes(achievement.id);
+                          return (
+                            <button
+                              key={achievement.id}
+                              onClick={() => toggleAchievement(achievement.id)}
+                              aria-pressed={picked}
+                              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
+                                picked
+                                  ? "border-primary bg-primary/10 text-foreground"
+                                  : "border-border bg-background text-muted-foreground hover:bg-accent"
+                              }`}
+                            >
+                              <span aria-hidden>{picked ? "✓" : achievement.icon}</span>
+                              {achievement.name}
+                              {achievement.is_required && <span aria-hidden>⭐</span>}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}

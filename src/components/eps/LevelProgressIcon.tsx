@@ -2,7 +2,8 @@ import { getLevelProgress } from "@/lib/levels";
 
 /**
  * Jauge circulaire compacte : le numéro du niveau au centre, l'anneau se
- * remplit à mesure que l'élève approche du niveau 1 (meilleur niveau).
+ * remplit à mesure que l'élève monte vers le dernier niveau (meilleur niveau).
+ * Le niveau 1 est le niveau le plus bas.
  * Le pourcentage est calculé à partir du nombre réel de niveaux configurés
  * pour LA compétence concernée (source unique : getLevelProgress).
  */
@@ -19,7 +20,7 @@ export function LevelProgressIcon({
 }) {
   const percent = getLevelProgress(currentLevel, totalLevels);
   const rounded = Math.round(percent);
-  const isBest = currentLevel <= 1;
+  const isBest = percent >= 100;
   const stroke = Math.max(3, Math.round(size * 0.1));
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;

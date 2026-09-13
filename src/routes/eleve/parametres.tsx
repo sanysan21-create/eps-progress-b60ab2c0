@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 
 import { RewardThemeSetting } from "@/components/eps/RewardThemeSetting";
+import { ThemeSetting } from "@/components/eps/ThemeSetting";
 import { ProfileTitlePicker } from "@/components/eps/ProfileTitlePicker";
 
 export const Route = createFileRoute("/eleve/parametres")({
@@ -35,7 +36,14 @@ function StudentSettings() {
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-          🎨 Apparence débloquée
+          🎨 Apparence de l'application
+        </h2>
+        <ThemeSetting hideMedalThemes />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+          🏅 Apparences de récompense
         </h2>
         <RewardThemeSetting />
       </section>

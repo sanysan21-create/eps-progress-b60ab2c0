@@ -54,6 +54,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
   /* Couleur de récompense (médaille) : vert EPS Progress par défaut. */
   --color-medal: var(--medal);
+  --color-medal-light: var(--medal-light);
 
   --font-display: "Anton", sans-serif;
   --font-body: "Inter", sans-serif;

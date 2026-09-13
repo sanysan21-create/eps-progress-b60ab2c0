@@ -132,7 +132,7 @@ function TeacherAchievements() {
   const unclassified = list.filter((row) => !row.medal_type);
   const byMedal = (code: MedalCode) => list.filter((row) => row.medal_type === code);
 
-  const chosenAchievement = list.find((row) => row.id === achievementId);
+  const chosenAchievements = list.filter((row) => achievementIds.includes(row.id));
   const selectedStudents = (students.data ?? []).filter((student) =>
     selected.includes(student.id),
   );

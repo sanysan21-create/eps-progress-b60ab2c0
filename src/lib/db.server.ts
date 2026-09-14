@@ -407,6 +407,18 @@ create table if not exists student_climbing_grades (
   unique (student_id, activity_id)
 );
 
+-- Poule de l'élève (uniquement pour l'activité Badminton).
+create table if not exists student_badminton_pools (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  activity_id uuid not null references activities(id) on delete cascade,
+  pool text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (student_id, activity_id)
+);
+
 
 create index if not exists idx_students_teacher on students(teacher_id);
 

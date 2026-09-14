@@ -339,6 +339,59 @@ export const searchStudents = createServerFn({ method: "GET" })
     );
   });
 
+export type LoginHistoryRow = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  student_code: string;
+  last_login_at: string | null;
+  classes: string[];
+};
+
+/** Historique des dernières connexions des élèves de l'enseignant. */
+export const listStudentLogins = createServerFn({ method: "GET" })
+  .middleware([requireTeacher])
+  .handler(async ({ context }): Promise<LoginHistoryRow[]> => {
+    const rows = await context.sql<
+      {
+        id: string;
+        first_name: string;
+        last_name: string;
+        student_code: string;
+        last_login_at: Date | null;
+        class_name: string | null;
+      }[]
+    >`
+      select s.id, s.first_name, s.last_name, s.student_code, s.last_login_at, c.name as class_name
+      from students s
+      left join class_students cs on cs.student_id = s.id
+      left join classes c on c.id = cs.class_id
+      where s.teacher_id = ${context.userId}
+      order by s.last_login_at desc nulls last, s.last_name, s.first_name
+    `;
+
+    const byStudent = new Map<string, LoginHistoryRow>();
+    for (const row of rows) {
+      const existing = byStudent.get(row.id);
+      if (existing) {
+        if (row.class_name && !existing.classes.includes(row.class_name)) {
+          existing.classes.push(row.class_name);
+        }
+        continue;
+      }
+      byStudent.set(row.id, {
+        id: row.id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        student_code: row.student_code,
+        last_login_at: toIso(row.last_login_at),
+        classes: row.class_name ? [row.class_name] : [],
+      });
+    }
+
+    return [...byStudent.values()];
+  });
+
 /** Inscription de l'élève à l'Association Sportive (AS) — badge visible côté élève. */
 export const setStudentAsMember = createServerFn({ method: "POST" })
   .middleware([requireTeacher])

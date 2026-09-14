@@ -7,6 +7,7 @@ import {
   ClipboardList,
   CalendarDays,
   Medal,
+  History,
   Info,
   LogOut,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const nav = [
   { to: "/prof/notes", label: "Résultats", icon: ClipboardList, exact: false },
   { to: "/prof/reussites", label: "Réussites", icon: Medal, exact: false },
   { to: "/prof/programme", label: "Programme", icon: CalendarDays, exact: false },
+  { to: "/prof/historique", label: "Historique", icon: History, exact: false },
   { to: "/prof/profil", label: "Profil de l'enseignant", icon: UserRound, exact: false },
   { to: "/prof/info", label: "Info", icon: Info, exact: false },
 ] as const;

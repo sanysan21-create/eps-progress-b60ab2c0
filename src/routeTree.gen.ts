@@ -26,6 +26,7 @@ import { Route as EleveReussitesRouteImport } from './routes/eleve/reussites'
 import { Route as AuthenticatedProfIndexRouteImport } from './routes/_authenticated/prof/index'
 import { Route as AuthenticatedProfActivitesRouteImport } from './routes/_authenticated/prof/activites'
 import { Route as AuthenticatedProfCompetencesRouteImport } from './routes/_authenticated/prof/competences'
+import { Route as AuthenticatedProfHistoriqueRouteImport } from './routes/_authenticated/prof/historique'
 import { Route as AuthenticatedProfInfoRouteImport } from './routes/_authenticated/prof/info'
 import { Route as AuthenticatedProfNotesRouteImport } from './routes/_authenticated/prof/notes'
 import { Route as AuthenticatedProfProfilRouteImport } from './routes/_authenticated/prof/profil'
@@ -120,6 +121,12 @@ const AuthenticatedProfCompetencesRoute =
     path: '/competences',
     getParentRoute: () => AuthenticatedProfRoute,
   } as any)
+const AuthenticatedProfHistoriqueRoute =
+  AuthenticatedProfHistoriqueRouteImport.update({
+    id: '/historique',
+    path: '/historique',
+    getParentRoute: () => AuthenticatedProfRoute,
+  } as any)
 const AuthenticatedProfInfoRoute = AuthenticatedProfInfoRouteImport.update({
   id: '/info',
   path: '/info',
@@ -175,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/eleve/': typeof EleveIndexRoute
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/competences': typeof AuthenticatedProfCompetencesRoute
+  '/prof/historique': typeof AuthenticatedProfHistoriqueRoute
   '/prof/info': typeof AuthenticatedProfInfoRoute
   '/prof/notes': typeof AuthenticatedProfNotesRoute
   '/prof/profil': typeof AuthenticatedProfProfilRoute
@@ -198,6 +206,7 @@ export interface FileRoutesByTo {
   '/eleve': typeof EleveIndexRoute
   '/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/prof/competences': typeof AuthenticatedProfCompetencesRoute
+  '/prof/historique': typeof AuthenticatedProfHistoriqueRoute
   '/prof/info': typeof AuthenticatedProfInfoRoute
   '/prof/notes': typeof AuthenticatedProfNotesRoute
   '/prof/profil': typeof AuthenticatedProfProfilRoute
@@ -225,6 +234,7 @@ export interface FileRoutesById {
   '/eleve/': typeof EleveIndexRoute
   '/_authenticated/prof/activites': typeof AuthenticatedProfActivitesRoute
   '/_authenticated/prof/competences': typeof AuthenticatedProfCompetencesRoute
+  '/_authenticated/prof/historique': typeof AuthenticatedProfHistoriqueRoute
   '/_authenticated/prof/info': typeof AuthenticatedProfInfoRoute
   '/_authenticated/prof/notes': typeof AuthenticatedProfNotesRoute
   '/_authenticated/prof/profil': typeof AuthenticatedProfProfilRoute
@@ -252,6 +262,7 @@ export interface FileRouteTypes {
     | '/eleve/'
     | '/prof/activites'
     | '/prof/competences'
+    | '/prof/historique'
     | '/prof/info'
     | '/prof/notes'
     | '/prof/profil'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/eleve'
     | '/prof/activites'
     | '/prof/competences'
+    | '/prof/historique'
     | '/prof/info'
     | '/prof/notes'
     | '/prof/profil'
@@ -301,6 +313,7 @@ export interface FileRouteTypes {
     | '/eleve/'
     | '/_authenticated/prof/activites'
     | '/_authenticated/prof/competences'
+    | '/_authenticated/prof/historique'
     | '/_authenticated/prof/info'
     | '/_authenticated/prof/notes'
     | '/_authenticated/prof/profil'
@@ -442,6 +455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfCompetencesRouteImport
       parentRoute: typeof AuthenticatedProfRoute
     }
+    '/_authenticated/prof/historique': {
+      id: '/_authenticated/prof/historique'
+      path: '/historique'
+      fullPath: '/prof/historique'
+      preLoaderRoute: typeof AuthenticatedProfHistoriqueRouteImport
+      parentRoute: typeof AuthenticatedProfRoute
+    }
     '/_authenticated/prof/info': {
       id: '/_authenticated/prof/info'
       path: '/info'
@@ -497,6 +517,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedProfRouteChildren {
   AuthenticatedProfActivitesRoute: typeof AuthenticatedProfActivitesRoute
   AuthenticatedProfCompetencesRoute: typeof AuthenticatedProfCompetencesRoute
+  AuthenticatedProfHistoriqueRoute: typeof AuthenticatedProfHistoriqueRoute
   AuthenticatedProfInfoRoute: typeof AuthenticatedProfInfoRoute
   AuthenticatedProfNotesRoute: typeof AuthenticatedProfNotesRoute
   AuthenticatedProfProfilRoute: typeof AuthenticatedProfProfilRoute
@@ -509,6 +530,7 @@ interface AuthenticatedProfRouteChildren {
 const AuthenticatedProfRouteChildren: AuthenticatedProfRouteChildren = {
   AuthenticatedProfActivitesRoute: AuthenticatedProfActivitesRoute,
   AuthenticatedProfCompetencesRoute: AuthenticatedProfCompetencesRoute,
+  AuthenticatedProfHistoriqueRoute: AuthenticatedProfHistoriqueRoute,
   AuthenticatedProfInfoRoute: AuthenticatedProfInfoRoute,
   AuthenticatedProfNotesRoute: AuthenticatedProfNotesRoute,
   AuthenticatedProfProfilRoute: AuthenticatedProfProfilRoute,

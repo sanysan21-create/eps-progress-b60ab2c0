@@ -207,32 +207,6 @@ function StudentProgress() {
 
                 {subTab === "competences" && (
                   <div className="space-y-5">
-                    {selected.badminton_pool && (
-                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4">
-                        <div>
-                          <p className="mono-label text-primary">🏸 Ma poule</p>
-                          <p className="text-xs text-muted-foreground">
-                            La poule dans laquelle tu joues.
-                          </p>
-                        </div>
-                        <span className="display-title text-3xl text-primary">
-                          {selected.badminton_pool}
-                        </span>
-                      </div>
-                    )}
-                    {selected.climbing_grade && (
-                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4">
-                        <div>
-                          <p className="mono-label text-primary">🧗 Ma cotation max réussie</p>
-                          <p className="text-xs text-muted-foreground">
-                            La plus haute voie que tu as réussie.
-                          </p>
-                        </div>
-                        <span className="display-title text-3xl text-primary">
-                          {selected.climbing_grade}
-                        </span>
-                      </div>
-                    )}
                     <p className="mono-label text-primary">Mes compétences travaillées</p>
 
                     {groupByAfl(selected.competencies, (c) => c.afl).map((group) => (

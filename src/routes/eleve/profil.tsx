@@ -194,6 +194,17 @@ function StudentProfile() {
                     <span aria-hidden className="text-2xl leading-none">{activityEmoji(activity.activity_name)}</span>
                     {activity.activity_name}
                   </h3>
+                  {activity.badminton_pool && (
+                    <span
+                      className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-center"
+                      title="Ma poule"
+                    >
+                      <span className="mono-label block text-[0.6rem] text-primary">🏸 Poule</span>
+                      <span className="display-title block text-xl leading-none text-primary">
+                        {activity.badminton_pool}
+                      </span>
+                    </span>
+                  )}
                   {activity.climbing_grade && (
                     <span
                       className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-center"

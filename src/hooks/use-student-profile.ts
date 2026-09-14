@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getStudentSessionInfo, getMyAsMember } from "@/lib/student-access.functions";
 import { getMyEngagement, getMyGoal, getMyStrengths } from "@/lib/engagement.functions";
 import { getMyAchievements } from "@/lib/achievements.functions";
+import { toAfl } from "@/lib/afl";
 import { getMyMedal } from "@/lib/medals.functions";
 import {
   getMyProfileCompetencies,
@@ -94,8 +95,17 @@ export function flattenActivities(activities: StudentProfileActivity[]): Student
 }
 
 
-/** Moyenne de progression (0-100) sur l'ensemble des compétences évaluées. */
-export function averageProgress(marks: StudentMarkFlat[]): number | null {
+/**
+ * Une compétence « non répertoriée » (NR) est un élément isolé purement
+ * informatif : elle n'entre jamais dans le calcul de la progression.
+ */
+export function countsForProgress(mark: StudentMarkFlat): boolean {
+  return toAfl(mark.afl) !== "NR";
+}
+
+/** Moyenne de progression (0-100) sur les compétences AFL évaluées (hors NR). */
+export function averageProgress(all: StudentMarkFlat[]): number | null {
+  const marks = all.filter(countsForProgress);
   if (marks.length === 0) return null;
   const total = marks.reduce(
     (sum, mark) => sum + (mark.levelMax > 0 ? (mark.levelPosition / mark.levelMax) * 100 : 0),

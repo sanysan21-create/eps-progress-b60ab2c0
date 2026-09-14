@@ -8,7 +8,7 @@
  * du rang) mais ne sont pas présentés à l'élève comme une note.
  */
 
-import type { StudentMarkFlat } from "@/hooks/use-student-profile";
+import { countsForProgress, type StudentMarkFlat } from "@/hooks/use-student-profile";
 
 export type Rank = {
   code: string;
@@ -85,7 +85,9 @@ function engagementLevel(engagement: EngagementMark[], code: string) {
 
 /** Avancement du parcours : compétences travaillées + implication en cours. */
 export function computeProgression(input: ProgressionInput): ProgressionState {
-  const { marks, engagement } = input;
+  const { engagement } = input;
+  // Les compétences non répertoriées (NR) informent l'élève mais ne comptent pas.
+  const marks = input.marks.filter(countsForProgress);
 
   const competencyScore =
     marks.length === 0

@@ -85,7 +85,9 @@ function engagementLevel(engagement: EngagementMark[], code: string) {
 
 /** Avancement du parcours : compétences travaillées + implication en cours. */
 export function computeProgression(input: ProgressionInput): ProgressionState {
-  const { marks, engagement } = input;
+  const { engagement } = input;
+  // Les compétences non répertoriées (NR) informent l'élève mais ne comptent pas.
+  const marks = input.marks.filter(countsForProgress);
 
   const competencyScore =
     marks.length === 0

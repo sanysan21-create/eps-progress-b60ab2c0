@@ -14,8 +14,12 @@ import {
   getStudentClimbingGrade,
   setStudentClimbingGrade,
   clearStudentClimbingGrade,
+  getStudentBadmintonPool,
+  setStudentBadmintonPool,
+  clearStudentBadmintonPool,
 } from "@/lib/competencies.functions";
 import { CLIMBING_GRADES, isClimbingActivity } from "@/lib/climbing";
+import { BADMINTON_POOLS, isBadmintonActivity } from "@/lib/badminton";
 import { AFL_HINTS, AFL_LABELS, groupByAfl } from "@/lib/afl";
 
 import {
@@ -152,6 +156,7 @@ function QuickCompetencies() {
   }, [activities.data, programmedIds]);
   const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;
   const isClimbing = isClimbingActivity(activity?.name);
+  const isBadminton = isBadmintonActivity(activity?.name);
 
   const fetchClimbingGrade = useServerFn(getStudentClimbingGrade);
   const saveClimbingGrade = useServerFn(setStudentClimbingGrade);
@@ -180,6 +185,38 @@ function QuickCompetencies() {
         toast.success("Cotation retirée");
       }
       await queryClient.invalidateQueries({ queryKey: ["student-climbing-grade"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
+    }
+  }
+
+  const fetchBadmintonPool = useServerFn(getStudentBadmintonPool);
+  const saveBadmintonPool = useServerFn(setStudentBadmintonPool);
+  const removeBadmintonPool = useServerFn(clearStudentBadmintonPool);
+
+  const badmintonPool = useQuery({
+    queryKey: ["student-badminton-pool", soloId, activity?.id],
+    queryFn: () =>
+      fetchBadmintonPool({ data: { studentId: soloId!, activityId: activity!.id } }),
+    enabled: Boolean(soloId && activity?.id && isBadminton),
+  });
+
+  async function handleBadmintonChange(value: string) {
+    if (!selected.length || !activity) {
+      toast.error("Sélectionne au moins un élève");
+      return;
+    }
+    try {
+      if (value) {
+        await saveBadmintonPool({
+          data: { studentIds: selected, activityId: activity.id, pool: value as never },
+        });
+        toast.success(`Poule ${value} enregistrée`);
+      } else {
+        await removeBadmintonPool({ data: { studentIds: selected, activityId: activity.id } });
+        toast.success("Poule retirée");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["student-badminton-pool"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
     }
@@ -484,6 +521,40 @@ function QuickCompetencies() {
             )}
 
 
+
+            {isBadminton && activity && (
+              <article className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-4">
+                <div className="min-w-[200px] flex-1">
+                  <p className="text-sm font-bold">🏸 Poule de l'élève</p>
+                  <p className="text-xs text-muted-foreground">
+                    Spécifique au badminton : la poule dans laquelle joue l'élève.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={soloId ? (badmintonPool.data ?? "") : ""}
+                    onChange={(e) => void handleBadmintonChange(e.target.value)}
+                    className="min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+                  >
+                    <option value="">Non renseignée</option>
+                    {BADMINTON_POOLS.map((pool) => (
+                      <option key={pool} value={pool}>
+                        Poule {pool}
+                      </option>
+                    ))}
+                  </select>
+                  {soloId && badmintonPool.data && (
+                    <button
+                      onClick={() => void handleBadmintonChange("")}
+                      aria-label="Retirer la poule"
+                      className="rounded-xl border border-border p-2 text-muted-foreground hover:text-primary"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
+                </div>
+              </article>
+            )}
 
             {activity && activity.competencies.length === 0 && (
               <p className="text-sm text-muted-foreground">

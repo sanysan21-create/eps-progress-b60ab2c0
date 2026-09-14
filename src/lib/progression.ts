@@ -8,7 +8,7 @@
  * du rang) mais ne sont pas présentés à l'élève comme une note.
  */
 
-import type { StudentMarkFlat } from "@/hooks/use-student-profile";
+import { countsForProgress, type StudentMarkFlat } from "@/hooks/use-student-profile";
 
 export type Rank = {
   code: string;

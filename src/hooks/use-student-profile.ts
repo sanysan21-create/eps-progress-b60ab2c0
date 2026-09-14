@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getStudentSessionInfo, getMyAsMember } from "@/lib/student-access.functions";
 import { getMyEngagement, getMyGoal, getMyStrengths } from "@/lib/engagement.functions";
 import { getMyAchievements } from "@/lib/achievements.functions";
+import { toAfl } from "@/lib/afl";
 import { getMyMedal } from "@/lib/medals.functions";
 import {
   getMyProfileCompetencies,

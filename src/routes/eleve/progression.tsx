@@ -146,15 +146,39 @@ function StudentProgress() {
 
             {selected && (
               <div className="space-y-4 rounded-3xl border border-border bg-surface p-5">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <ActivityEmoji name={selected.activity_name} className="text-4xl" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-lg font-bold">{selected.activity_name}</p>
                     <p className="mono-label text-muted-foreground">
                       Progression {selectedProgress}% · {selectedMarks.length} compétence
                       {selectedMarks.length > 1 ? "s" : ""}
                     </p>
                   </div>
+                  {selected.badminton_pool && (
+                    <span
+                      className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-center"
+                      title="Ma poule"
+                    >
+                      <span className="mono-label block text-[0.6rem] text-primary">🏸 Poule</span>
+                      <span className="display-title block text-xl leading-none text-primary">
+                        {selected.badminton_pool}
+                      </span>
+                    </span>
+                  )}
+                  {selected.climbing_grade && (
+                    <span
+                      className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-center"
+                      title="Ma cotation max réussie"
+                    >
+                      <span className="mono-label block text-[0.6rem] text-primary">
+                        🧗 Cotation
+                      </span>
+                      <span className="display-title block text-xl leading-none text-primary">
+                        {selected.climbing_grade}
+                      </span>
+                    </span>
+                  )}
                 </div>
 
                 {/* Sous-onglets simples */}
@@ -183,32 +207,6 @@ function StudentProgress() {
 
                 {subTab === "competences" && (
                   <div className="space-y-5">
-                    {selected.badminton_pool && (
-                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4">
-                        <div>
-                          <p className="mono-label text-primary">🏸 Ma poule</p>
-                          <p className="text-xs text-muted-foreground">
-                            La poule dans laquelle tu joues.
-                          </p>
-                        </div>
-                        <span className="display-title text-3xl text-primary">
-                          {selected.badminton_pool}
-                        </span>
-                      </div>
-                    )}
-                    {selected.climbing_grade && (
-                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4">
-                        <div>
-                          <p className="mono-label text-primary">🧗 Ma cotation max réussie</p>
-                          <p className="text-xs text-muted-foreground">
-                            La plus haute voie que tu as réussie.
-                          </p>
-                        </div>
-                        <span className="display-title text-3xl text-primary">
-                          {selected.climbing_grade}
-                        </span>
-                      </div>
-                    )}
                     <p className="mono-label text-primary">Mes compétences travaillées</p>
 
                     {groupByAfl(selected.competencies, (c) => c.afl).map((group) => (

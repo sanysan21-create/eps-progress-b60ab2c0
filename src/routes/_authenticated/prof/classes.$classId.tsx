@@ -825,6 +825,20 @@ function ClassDetailPage() {
               Badge AS visible sur le profil de l'élève
             </span>
           </label>
+          <label className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 p-4">
+            <Checkbox
+              checked={Boolean(profileTarget?.mood_enabled)}
+              disabled={moodEnabledMutation.isPending || !profileTarget}
+              onCheckedChange={(checked) =>
+                profileTarget &&
+                moodEnabledMutation.mutate({ id: profileTarget.id, enabled: checked === true })
+              }
+            />
+            <span className="text-sm font-semibold">😊 Indicateur d'état</span>
+            <span className="ml-auto text-xs text-muted-foreground">
+              L'élève peut indiquer comment il se sent sur son profil
+            </span>
+          </label>
           <p className="rounded-xl border border-border bg-surface-2 p-4 text-xs text-muted-foreground">
             L'historique d'évaluations de cet élève s'affichera ici dès que des évaluations auront
             été enregistrées.

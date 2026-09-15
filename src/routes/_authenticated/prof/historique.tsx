@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { History, Loader2, Search } from "lucide-react";
+import { ChevronRight, History, Loader2, Search } from "lucide-react";
+import { toast } from "sonner";
 
 import { listStudentLogins } from "@/lib/classes.functions";
+import { viewStudentAsTeacher } from "@/lib/student-access.functions";
 
 export const Route = createFileRoute("/_authenticated/prof/historique")({
   head: () => ({

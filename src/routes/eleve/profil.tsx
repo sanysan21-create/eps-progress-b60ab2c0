@@ -22,7 +22,9 @@ import {
   useStudentSession,
   useMyMedal,
   useMyAsMember,
+  useMyMood,
 } from "@/hooks/use-student-profile";
+import { MoodPicker } from "@/components/eps/MoodPicker";
 import { MedalBadge } from "@/components/eps/MedalBadge";
 import { MedalTierBadge } from "@/components/eps/MedalTierBadge";
 import { AsBadge } from "@/components/eps/AsBadge";
@@ -76,6 +78,7 @@ function StudentProfile() {
   const myGoal = useMyGoal();
   const myMedal = useMyMedal();
   const myAs = useMyAsMember();
+  const myMood = useMyMood();
   const rewards = useMyRewards();
   const titleLabel = profileTitleLabel(rewards.data?.title);
 
@@ -154,6 +157,13 @@ function StudentProfile() {
           ? "Ton parcours se construit étape par étape : tu progresses par rapport à toi-même."
           : "Ton parcours se construira au fil des séances. Chaque étape compte."}
       </p>
+
+      {/* État du moment : uniquement si l'enseignant a activé l'option pour cet élève */}
+      {myMood.data?.enabled && (
+        <Section title="😊 Mon état">
+          <MoodPicker current={myMood.data.code} at={myMood.data.at} />
+        </Section>
+      )}
 
       {/* Progression synthétique — le détail est dans l'onglet Progrès */}
 

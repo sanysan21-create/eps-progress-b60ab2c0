@@ -19,6 +19,7 @@ export type StudentRow = {
   created_at: string;
   last_login_at: string | null;
   as_member: boolean;
+  mood_enabled: boolean;
 };
 
 const nameSchema = z.string().trim().min(1, "Champ requis").max(80);
@@ -37,6 +38,7 @@ function toStudentRow(row: {
   created_at: Date | string;
   last_login_at: Date | string | null;
   as_member: boolean;
+  mood_enabled?: boolean;
 }): StudentRow {
   return {
     id: row.id,
@@ -47,6 +49,7 @@ function toStudentRow(row: {
     created_at: toIso(row.created_at) as string,
     last_login_at: toIso(row.last_login_at),
     as_member: row.as_member,
+    mood_enabled: Boolean(row.mood_enabled),
   };
 }
 
@@ -129,9 +132,10 @@ export const getClassDetail = createServerFn({ method: "GET" })
           created_at: Date;
           last_login_at: Date | null;
           as_member: boolean;
+          mood_enabled: boolean;
         }[]
       >`
-        select s.id, s.first_name, s.last_name, s.student_code, s.qr_token, s.created_at, s.last_login_at, s.as_member
+        select s.id, s.first_name, s.last_name, s.student_code, s.qr_token, s.created_at, s.last_login_at, s.as_member, s.mood_enabled
         from class_students cs
         join students s on s.id = cs.student_id
         where cs.class_id = ${data.id} and cs.teacher_id = ${context.userId}
@@ -308,11 +312,12 @@ export const searchStudents = createServerFn({ method: "GET" })
         created_at: Date;
         last_login_at: Date | null;
         as_member: boolean;
+        mood_enabled: boolean;
         class_id: string | null;
         class_name: string | null;
       }[]
     >`
-      select s.id, s.first_name, s.last_name, s.student_code, s.qr_token, s.created_at, s.last_login_at, s.as_member,
+      select s.id, s.first_name, s.last_name, s.student_code, s.qr_token, s.created_at, s.last_login_at, s.as_member, s.mood_enabled,
              c.id as class_id, c.name as class_name
       from students s
       left join class_students cs on cs.student_id = s.id
@@ -401,6 +406,23 @@ export const setStudentAsMember = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await context.sql`
       update students set as_member = ${data.asMember}, updated_at = now()
+      where id = ${data.id} and teacher_id = ${context.userId}
+    `;
+    return { ok: true };
+  });
+
+/**
+ * Autorise (ou non) l'élève à renseigner son indicateur d'état sur son profil.
+ * Seul l'enseignant décide, élève par élève.
+ */
+export const setStudentMoodEnabled = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { id: string; enabled: boolean }) =>
+    z.object({ id: z.string().uuid(), enabled: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await context.sql`
+      update students set mood_enabled = ${data.enabled}, updated_at = now()
       where id = ${data.id} and teacher_id = ${context.userId}
     `;
     return { ok: true };

@@ -460,6 +460,12 @@ create table if not exists student_rewards (
   updated_at timestamptz not null default now(),
   unique (student_id)
 );
+
+-- Indicateur d'état de l'élève ("Comment te sens-tu en ce moment ?").
+-- mood_enabled est décidé par l'enseignant, mood_code est choisi par l'élève.
+alter table students add column if not exists mood_enabled boolean not null default false;
+alter table students add column if not exists mood_code text;
+alter table students add column if not exists mood_at timestamptz;
 `;
 
 /** Génère un code élève unique (ELV-XXXXXX). */

@@ -25,6 +25,7 @@ import {
   removeFromClass,
   deleteStudent,
   setStudentAsMember,
+  setStudentMoodEnabled,
   type StudentRow,
 } from "@/lib/classes.functions";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -169,6 +170,7 @@ function ClassDetailPage() {
   const fetchQrStatuses = useServerFn(listQrStatuses);
   const generateMissing = useServerFn(generateMissingQrForClass);
   const saveAsMember = useServerFn(setStudentAsMember);
+  const saveMoodEnabled = useServerFn(setStudentMoodEnabled);
   const fetchQrBatch = useServerFn(getStudentQrBatch);
 
   const detail = useQuery({
@@ -313,6 +315,22 @@ function ClassDetailPage() {
       toast.success(vars.asMember ? "Élève inscrit à l'AS" : "Inscription à l'AS retirée");
       setProfileTarget((prev) =>
         prev && prev.id === vars.id ? { ...prev, as_member: vars.asMember } : prev,
+      );
+      refresh();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const moodEnabledMutation = useMutation({
+    mutationFn: (vars: { id: string; enabled: boolean }) => saveMoodEnabled({ data: vars }),
+    onSuccess: (_r, vars) => {
+      toast.success(
+        vars.enabled
+          ? "L'élève peut renseigner son état"
+          : "Indicateur d'état désactivé pour cet élève",
+      );
+      setProfileTarget((prev) =>
+        prev && prev.id === vars.id ? { ...prev, mood_enabled: vars.enabled } : prev,
       );
       refresh();
     },

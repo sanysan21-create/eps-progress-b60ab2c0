@@ -83,6 +83,29 @@ export async function loadProgramSessions(
   return mapProgramRows(rows);
 }
 
+/**
+ * Activités réellement programmées (séquences du Programme) pour ces classes.
+ * Les séquences sans classe s'appliquent à toutes les classes.
+ */
+export async function loadProgrammedActivityIds(
+  sql: Db,
+  teacherId: string,
+  classIds: string[],
+): Promise<Set<string>> {
+  const rows = await sql<{ activity_id: string }[]>`
+    select distinct s.activity_id
+    from program_sequences s
+    where s.teacher_id = ${teacherId}
+      and s.activity_id is not null
+      ${
+        classIds.length > 0
+          ? sql`and (s.class_id is null or s.class_id = any(${classIds}::uuid[]))`
+          : sql`and s.class_id is null`
+      }
+  `;
+  return new Set(rows.map((row) => row.activity_id));
+}
+
 /** Enseignant et classes d'un élève (pour les lectures côté élève). */
 export async function loadStudentScope(
   sql: Db,

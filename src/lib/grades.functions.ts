@@ -123,5 +123,16 @@ export const getMyGrades = createServerFn({ method: "GET" })
     if (!studentId) return [];
 
     const { loadStudentGrades } = await import("./grades.server");
-    return loadStudentGrades(context.sql, studentId);
+    const rows = await loadStudentGrades(context.sql, studentId);
+
+    // Une activité sans séquence programmée pour la classe n'apparaît nulle part.
+    const { loadStudentScope, loadProgrammedActivityIds } = await import("./program.server");
+    const scope = await loadStudentScope(context.sql, studentId);
+    if (!scope) return [];
+    const programmedIds = await loadProgrammedActivityIds(
+      context.sql,
+      scope.teacherId,
+      scope.classIds,
+    );
+    return rows.filter((row) => programmedIds.has(row.activity_id));
   });

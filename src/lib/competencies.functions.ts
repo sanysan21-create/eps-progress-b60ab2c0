@@ -497,8 +497,19 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
     `;
     const teamByActivity = new Map(teams.map((row) => [row.activity_id, row.team]));
 
+    // Une activité sans séquence programmée pour la classe n'apparaît nulle part.
+    const { loadStudentScope, loadProgrammedActivityIds } = await import("./program.server");
+    const scope = await loadStudentScope(context.sql, studentId);
+    if (!scope) return [];
+    const programmedIds = await loadProgrammedActivityIds(
+      context.sql,
+      scope.teacherId,
+      scope.classIds,
+    );
+
     const grouped = new Map<string, StudentProfileActivity>();
     for (const row of rows) {
+      if (!programmedIds.has(row.activity_id)) continue;
       const entry: StudentProfileActivity = grouped.get(row.activity_id) ?? {
         activity_id: row.activity_id,
         activity_name: row.activity_name,

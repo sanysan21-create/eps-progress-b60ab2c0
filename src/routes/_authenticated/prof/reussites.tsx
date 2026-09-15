@@ -535,9 +535,26 @@ function TeacherAchievements() {
           {classId && (
             <>
               <div className="space-y-4">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Réussites à attribuer (plusieurs possibles)
-                </label>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Réussites à attribuer (plusieurs possibles)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAchievementIds((prev) =>
+                        prev.length === list.length && list.length > 0
+                          ? []
+                          : list.map((row) => row.id),
+                      )
+                    }
+                    className="rounded-full border border-border px-3 py-1 text-[11px] font-bold uppercase text-muted-foreground hover:bg-accent hover:text-foreground"
+                  >
+                    {achievementIds.length === list.length && list.length > 0
+                      ? "Tout désélectionner"
+                      : "Tout sélectionner"}
+                  </button>
+                </div>
                 {[...MEDALS.map((item) => ({ ...item, rows: byMedal(item.code) })),
                   { code: "", label: "À classer", emoji: "•", rows: unclassified },
                 ]
@@ -578,6 +595,21 @@ function TeacherAchievements() {
                     {(students.data ?? []).length} élève
                     {(students.data ?? []).length > 1 ? "s" : ""} dans cette classe
                   </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelected((prev) =>
+                        prev.length === visibleStudents.length && visibleStudents.length > 0
+                          ? []
+                          : visibleStudents.map((student) => student.id),
+                      )
+                    }
+                    className="rounded-full border border-border px-3 py-1 text-[11px] font-bold uppercase text-muted-foreground hover:bg-accent hover:text-foreground"
+                  >
+                    {selected.length === visibleStudents.length && visibleStudents.length > 0
+                      ? "Tout désélectionner"
+                      : "Tout sélectionner"}
+                  </button>
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <input

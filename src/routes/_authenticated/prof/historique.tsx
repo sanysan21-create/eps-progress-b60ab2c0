@@ -72,6 +72,25 @@ function LoginHistoryPage() {
 
   const connected = (data ?? []).filter((r) => r.last_login_at).length;
 
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const openStudentSpace = useServerFn(viewStudentAsTeacher);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  /** Ouvre l'espace de l'élève sans enregistrer de connexion dans l'historique. */
+  async function openStudent(studentId: string) {
+    setOpeningId(studentId);
+    try {
+      await openStudentSpace({ data: { studentId } });
+      queryClient.clear();
+      void navigate({ to: "/eleve" });
+    } catch {
+      toast.error("Impossible d'ouvrir l'espace de cet élève.");
+    } finally {
+      setOpeningId(null);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <header>

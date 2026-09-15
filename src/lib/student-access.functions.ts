@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { requireTeacher } from "./auth-middleware";
+
 export type RedeemResult =
   | { ok: true }
   | { ok: false; reason: "invalid" | "revoked" | "unknown" };
@@ -173,7 +175,7 @@ export const signOutStudent = createServerFn({ method: "POST" }).handler(async (
  * n'est enregistrée dans l'historique).
  */
 export const viewStudentAsTeacher = createServerFn({ method: "POST" })
-  .middleware([(await import("./auth-middleware")).requireTeacher])
+  .middleware([requireTeacher])
   .inputValidator((input: { studentId: string }) =>
     z.object({ studentId: z.string().uuid() }).parse(input),
   )

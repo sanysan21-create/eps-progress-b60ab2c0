@@ -151,9 +151,12 @@ function LoginHistoryPage() {
       ) : (
         <ul className="space-y-3">
           {rows.map((row) => (
-            <li
-              key={row.id}
-              className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-5 sm:flex-row sm:items-center sm:justify-between"
+            <li key={row.id}>
+            <button
+              type="button"
+              onClick={() => void openStudent(row.id)}
+              disabled={openingId !== null}
+              className="flex w-full flex-col gap-2 rounded-2xl border border-border bg-surface p-5 text-left transition-colors hover:border-primary disabled:opacity-60 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold uppercase tracking-tight">

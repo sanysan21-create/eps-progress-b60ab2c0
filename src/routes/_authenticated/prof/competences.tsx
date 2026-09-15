@@ -17,9 +17,14 @@ import {
   getStudentBadmintonPool,
   setStudentBadmintonPool,
   clearStudentBadmintonPool,
+  getStudentUltimateTeam,
+  setStudentUltimateTeam,
+  clearStudentUltimateTeam,
+  listUltimateTeams,
 } from "@/lib/competencies.functions";
 import { CLIMBING_GRADES, isClimbingActivity } from "@/lib/climbing";
 import { BADMINTON_POOLS, isBadmintonActivity } from "@/lib/badminton";
+import { ULTIMATE_TEAMS, isUltimateActivity, ultimateTeam } from "@/lib/ultimate";
 import { AFL_HINTS, AFL_LABELS, groupByAfl } from "@/lib/afl";
 
 import {
@@ -157,6 +162,7 @@ function QuickCompetencies() {
   const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;
   const isClimbing = isClimbingActivity(activity?.name);
   const isBadminton = isBadmintonActivity(activity?.name);
+  const isUltimate = isUltimateActivity(activity?.name);
 
   const fetchClimbingGrade = useServerFn(getStudentClimbingGrade);
   const saveClimbingGrade = useServerFn(setStudentClimbingGrade);
@@ -217,6 +223,45 @@ function QuickCompetencies() {
         toast.success("Poule retirée");
       }
       await queryClient.invalidateQueries({ queryKey: ["student-badminton-pool"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
+    }
+  }
+
+  const fetchUltimateTeam = useServerFn(getStudentUltimateTeam);
+  const saveUltimateTeam = useServerFn(setStudentUltimateTeam);
+  const removeUltimateTeam = useServerFn(clearStudentUltimateTeam);
+  const fetchUltimateTeams = useServerFn(listUltimateTeams);
+
+  const ultimateTeamValue = useQuery({
+    queryKey: ["student-ultimate-team", soloId, activity?.id],
+    queryFn: () => fetchUltimateTeam({ data: { studentId: soloId!, activityId: activity!.id } }),
+    enabled: Boolean(soloId && activity?.id && isUltimate),
+  });
+
+  const ultimateTeams = useQuery({
+    queryKey: ["ultimate-teams", activity?.id],
+    queryFn: () => fetchUltimateTeams({ data: { activityId: activity!.id } }),
+    enabled: Boolean(activity?.id && isUltimate),
+  });
+
+  async function handleUltimateChange(value: string) {
+    if (!selected.length || !activity) {
+      toast.error("Sélectionne au moins un élève");
+      return;
+    }
+    try {
+      if (value) {
+        await saveUltimateTeam({
+          data: { studentIds: selected, activityId: activity.id, team: value },
+        });
+        toast.success(`Équipe ${ultimateTeam(value)?.label ?? value} enregistrée`);
+      } else {
+        await removeUltimateTeam({ data: { studentIds: selected, activityId: activity.id } });
+        toast.success("Équipe retirée");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["student-ultimate-team"] });
+      await queryClient.invalidateQueries({ queryKey: ["ultimate-teams"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
     }
@@ -552,6 +597,71 @@ function QuickCompetencies() {
                       <X className="size-4" />
                     </button>
                   )}
+                </div>
+              </article>
+            )}
+
+            {isUltimate && activity && (
+              <article className="space-y-4 rounded-2xl border border-primary/40 bg-primary/5 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-[200px] flex-1">
+                    <p className="text-sm font-bold">🥏 Équipe de couleur</p>
+                    <p className="text-xs text-muted-foreground">
+                      Spécifique à l'ultimate : sélectionne des élèves puis choisis leur couleur
+                      d'équipe. Les élèves d'une même couleur forment une équipe.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={soloId ? (ultimateTeamValue.data ?? "") : ""}
+                      onChange={(e) => void handleUltimateChange(e.target.value)}
+                      className="min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+                    >
+                      <option value="">Sans équipe</option>
+                      {ULTIMATE_TEAMS.map((team) => (
+                        <option key={team.code} value={team.code}>
+                          {team.emoji} Équipe {team.label}
+                        </option>
+                      ))}
+                    </select>
+                    {soloId && ultimateTeamValue.data && (
+                      <button
+                        onClick={() => void handleUltimateChange("")}
+                        aria-label="Retirer l'équipe"
+                        className="rounded-xl border border-border p-2 text-muted-foreground hover:text-primary"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {ULTIMATE_TEAMS.map((team) => {
+                    const members = filtered.filter((student) =>
+                      (ultimateTeams.data ?? []).some(
+                        (row) => row.student_id === student.id && row.team === team.code,
+                      ),
+                    );
+                    if (members.length === 0) return null;
+                    return (
+                      <div
+                        key={team.code}
+                        className="rounded-xl border border-border bg-surface p-3"
+                      >
+                        <p className="text-sm font-bold">
+                          {team.emoji} Équipe {team.label}{" "}
+                          <span className="text-xs font-normal text-muted-foreground">
+                            ({members.length})
+                          </span>
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {members
+                            .map((student) => `${student.first_name} ${student.last_name}`)
+                            .join(", ")}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </article>
             )}

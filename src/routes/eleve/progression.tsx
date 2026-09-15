@@ -9,8 +9,8 @@ import { computeProgression } from "@/lib/progression";
 import { goal as goalByCode } from "@/lib/engagement";
 import { AFL_HINTS, AFL_LABELS, groupByAfl } from "@/lib/afl";
 
-import {
 import { ultimateTeamLabel } from "@/lib/ultimate";
+import {
   averageProgress,
   flattenActivities,
   useMyGoal,

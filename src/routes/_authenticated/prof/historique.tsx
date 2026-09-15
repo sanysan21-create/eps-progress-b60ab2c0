@@ -167,20 +167,28 @@ function LoginHistoryPage() {
                   {row.classes.length > 0 ? ` · ${row.classes.join(", ")}` : ""}
                 </p>
               </div>
-              <div className="sm:text-right">
-                {row.last_login_at ? (
-                  <>
-                    <p className="text-sm font-medium text-primary">
-                      {relativeLabel(row.last_login_at)}
-                    </p>
-                    <p className="mono-label text-muted-foreground">
-                      {dateFormatter.format(new Date(row.last_login_at))}
-                    </p>
-                  </>
+              <div className="flex items-center gap-3 sm:text-right">
+                <div className="flex-1">
+                  {row.last_login_at ? (
+                    <>
+                      <p className="text-sm font-medium text-primary">
+                        {relativeLabel(row.last_login_at)}
+                      </p>
+                      <p className="mono-label text-muted-foreground">
+                        {dateFormatter.format(new Date(row.last_login_at))}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mono-label text-muted-foreground">Jamais connecté</p>
+                  )}
+                </div>
+                {openingId === row.id ? (
+                  <Loader2 className="size-4 animate-spin text-primary" />
                 ) : (
-                  <p className="mono-label text-muted-foreground">Jamais connecté</p>
+                  <ChevronRight className="size-4 text-muted-foreground" />
                 )}
               </div>
+            </button>
             </li>
           ))}
         </ul>

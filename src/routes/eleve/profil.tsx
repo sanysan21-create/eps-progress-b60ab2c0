@@ -28,6 +28,7 @@ import { MedalTierBadge } from "@/components/eps/MedalTierBadge";
 import { AsBadge } from "@/components/eps/AsBadge";
 import { useMyRewards } from "@/hooks/use-rewards";
 import { profileTitleLabel } from "@/lib/rewards";
+import { ultimateTeamLabel } from "@/lib/ultimate";
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({
@@ -194,6 +195,17 @@ function StudentProfile() {
                     <span aria-hidden className="text-2xl leading-none">{activityEmoji(activity.activity_name)}</span>
                     {activity.activity_name}
                   </h3>
+                  {activity.ultimate_team && (
+                    <span
+                      className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-center"
+                      title="Mon équipe"
+                    >
+                      <span className="mono-label block text-[0.6rem] text-primary">🥏 Équipe</span>
+                      <span className="display-title block text-xl leading-none text-primary">
+                        {ultimateTeamLabel(activity.ultimate_team)}
+                      </span>
+                    </span>
+                  )}
                   {activity.badminton_pool && (
                     <span
                       className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-center"

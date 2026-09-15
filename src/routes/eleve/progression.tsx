@@ -10,6 +10,7 @@ import { goal as goalByCode } from "@/lib/engagement";
 import { AFL_HINTS, AFL_LABELS, groupByAfl } from "@/lib/afl";
 
 import {
+import { ultimateTeamLabel } from "@/lib/ultimate";
   averageProgress,
   flattenActivities,
   useMyGoal,
@@ -155,6 +156,17 @@ function StudentProgress() {
                       {selectedMarks.length > 1 ? "s" : ""}
                     </p>
                   </div>
+                  {selected.ultimate_team && (
+                    <span
+                      className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-center"
+                      title="Mon équipe"
+                    >
+                      <span className="mono-label block text-[0.6rem] text-primary">🥏 Équipe</span>
+                      <span className="display-title block text-xl leading-none text-primary">
+                        {ultimateTeamLabel(selected.ultimate_team)}
+                      </span>
+                    </span>
+                  )}
                   {selected.badminton_pool && (
                     <span
                       className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-center"

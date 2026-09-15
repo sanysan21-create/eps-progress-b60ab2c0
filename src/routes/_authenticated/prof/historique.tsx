@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { History, Loader2, Search } from "lucide-react";
+import { ChevronRight, History, Loader2, Search } from "lucide-react";
+import { toast } from "sonner";
 
 import { listStudentLogins } from "@/lib/classes.functions";
+import { viewStudentAsTeacher } from "@/lib/student-access.functions";
 
 export const Route = createFileRoute("/_authenticated/prof/historique")({
   head: () => ({
@@ -70,6 +72,25 @@ function LoginHistoryPage() {
 
   const connected = (data ?? []).filter((r) => r.last_login_at).length;
 
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const openStudentSpace = useServerFn(viewStudentAsTeacher);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  /** Ouvre l'espace de l'élève sans enregistrer de connexion dans l'historique. */
+  async function openStudent(studentId: string) {
+    setOpeningId(studentId);
+    try {
+      await openStudentSpace({ data: { studentId } });
+      queryClient.clear();
+      void navigate({ to: "/eleve" });
+    } catch {
+      toast.error("Impossible d'ouvrir l'espace de cet élève.");
+    } finally {
+      setOpeningId(null);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <header>
@@ -130,9 +151,12 @@ function LoginHistoryPage() {
       ) : (
         <ul className="space-y-3">
           {rows.map((row) => (
-            <li
-              key={row.id}
-              className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-5 sm:flex-row sm:items-center sm:justify-between"
+            <li key={row.id}>
+            <button
+              type="button"
+              onClick={() => void openStudent(row.id)}
+              disabled={openingId !== null}
+              className="flex w-full flex-col gap-2 rounded-2xl border border-border bg-surface p-5 text-left transition-colors hover:border-primary disabled:opacity-60 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold uppercase tracking-tight">
@@ -143,20 +167,28 @@ function LoginHistoryPage() {
                   {row.classes.length > 0 ? ` · ${row.classes.join(", ")}` : ""}
                 </p>
               </div>
-              <div className="sm:text-right">
-                {row.last_login_at ? (
-                  <>
-                    <p className="text-sm font-medium text-primary">
-                      {relativeLabel(row.last_login_at)}
-                    </p>
-                    <p className="mono-label text-muted-foreground">
-                      {dateFormatter.format(new Date(row.last_login_at))}
-                    </p>
-                  </>
+              <div className="flex items-center gap-3 sm:text-right">
+                <div className="flex-1">
+                  {row.last_login_at ? (
+                    <>
+                      <p className="text-sm font-medium text-primary">
+                        {relativeLabel(row.last_login_at)}
+                      </p>
+                      <p className="mono-label text-muted-foreground">
+                        {dateFormatter.format(new Date(row.last_login_at))}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mono-label text-muted-foreground">Jamais connecté</p>
+                  )}
+                </div>
+                {openingId === row.id ? (
+                  <Loader2 className="size-4 animate-spin text-primary" />
                 ) : (
-                  <p className="mono-label text-muted-foreground">Jamais connecté</p>
+                  <ChevronRight className="size-4 text-muted-foreground" />
                 )}
               </div>
+            </button>
             </li>
           ))}
         </ul>

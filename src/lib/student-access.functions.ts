@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { requireTeacher } from "./auth-middleware";
+
 export type RedeemResult =
   | { ok: true }
   | { ok: false; reason: "invalid" | "revoked" | "unknown" };
@@ -166,3 +168,25 @@ export const signOutStudent = createServerFn({ method: "POST" }).handler(async (
   await session.clear();
   return { ok: true };
 });
+
+/**
+ * Consultation par l'enseignant de l'espace d'un de ses élèves : ouvre une
+ * session élève sans jamais toucher à `last_login_at` (aucune connexion
+ * n'est enregistrée dans l'historique).
+ */
+export const viewStudentAsTeacher = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentId: string }) =>
+    z.object({ studentId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: boolean }> => {
+    const [row] = await context.sql<{ id: string }[]>`
+      select id from students where id = ${data.studentId} and teacher_id = ${context.userId} limit 1
+    `;
+    if (!row) throw new Error("Élève introuvable");
+
+    const { getStudentSession } = await import("./student-qr.server");
+    const session = await getStudentSession();
+    await session.update({ studentId: row.id });
+    return { ok: true };
+  });

@@ -76,6 +76,65 @@ export const getMyAsMember = createServerFn({ method: "GET" }).handler(
   },
 );
 
+export type MyMood = { enabled: boolean; code: string | null; at: string | null };
+
+/** Indicateur d'état de l'élève connecté : autorisation (enseignant) + choix (élève). */
+export const getMyMood = createServerFn({ method: "GET" }).handler(async (): Promise<MyMood> => {
+  const { getStudentSession } = await import("./student-qr.server");
+  const session = await getStudentSession();
+  const studentId = session.data.studentId;
+  if (!studentId) return { enabled: false, code: null, at: null };
+
+  const { db } = await import("./db.server");
+  const sql = await db();
+  const [row] = await sql<
+    { mood_enabled: boolean; mood_code: string | null; mood_at: Date | string | null }[]
+  >`
+    select mood_enabled, mood_code, mood_at from students where id = ${studentId} limit 1
+  `;
+  return {
+    enabled: Boolean(row?.mood_enabled),
+    code: row?.mood_code ?? null,
+    at: row?.mood_at ? new Date(row.mood_at).toISOString() : null,
+  };
+});
+
+/**
+ * L'élève renseigne lui-même son état. Il est identifié uniquement par son
+ * cookie de session, et l'écriture est refusée si l'enseignant ne l'a pas autorisé.
+ */
+export const setMyMood = createServerFn({ method: "POST" })
+  .inputValidator((input: { moodCode: string }) =>
+    z.object({ moodCode: z.string().trim().min(1).max(60) }).parse(input),
+  )
+  .handler(async ({ data }): Promise<MyMood> => {
+    const { MOODS } = await import("./mood");
+    if (!MOODS.some((m) => m.code === data.moodCode)) throw new Error("État inconnu");
+
+    const { getStudentSession } = await import("./student-qr.server");
+    const session = await getStudentSession();
+    const studentId = session.data.studentId;
+    if (!studentId) throw new Error("Session élève absente");
+
+    const { db } = await import("./db.server");
+    const sql = await db();
+    const [row] = await sql<{ mood_enabled: boolean }[]>`
+      select mood_enabled from students where id = ${studentId} limit 1
+    `;
+    if (!row?.mood_enabled) throw new Error("Cette option n'est pas activée par ton enseignant");
+
+    const [updated] = await sql<{ mood_code: string; mood_at: Date | string }[]>`
+      update students set mood_code = ${data.moodCode}, mood_at = now(), updated_at = now()
+      where id = ${studentId}
+      returning mood_code, mood_at
+    `;
+    return {
+      enabled: true,
+      code: updated?.mood_code ?? data.moodCode,
+      at: updated?.mood_at ? new Date(updated.mood_at).toISOString() : null,
+    };
+  });
+
 
 /** Identité de l'élève déduite uniquement du cookie de session signé côté serveur. */
 export const getStudentSessionInfo = createServerFn({ method: "GET" }).handler(

@@ -6,6 +6,7 @@ import { DEFAULT_LEVELS } from "@/lib/levels";
 import { AFL_CODES, type AflCode, toAfl } from "@/lib/afl";
 import { CLIMBING_GRADES } from "@/lib/climbing";
 import { BADMINTON_POOLS } from "@/lib/badminton";
+import { ULTIMATE_TEAM_CODES } from "@/lib/ultimate";
 
 export type CompetencyLevel = {
   id: string;
@@ -46,6 +47,8 @@ export type StudentProfileActivity = {
   climbing_grade: string | null;
   /** Poule de l'élève (uniquement activité Badminton). */
   badminton_pool: string | null;
+  /** Équipe par couleur (uniquement activité Ultimate). */
+  ultimate_team: string | null;
   competencies: {
     id: string;
     label: string;
@@ -488,6 +491,12 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
     `;
     const poolByActivity = new Map(pools.map((row) => [row.activity_id, row.pool]));
 
+    const teams = await context.sql<{ activity_id: string; team: string }[]>`
+      select activity_id, team from student_ultimate_teams
+      where student_id = ${studentId}
+    `;
+    const teamByActivity = new Map(teams.map((row) => [row.activity_id, row.team]));
+
     const grouped = new Map<string, StudentProfileActivity>();
     for (const row of rows) {
       const entry: StudentProfileActivity = grouped.get(row.activity_id) ?? {
@@ -495,6 +504,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
         activity_name: row.activity_name,
         climbing_grade: gradeByActivity.get(row.activity_id) ?? null,
         badminton_pool: poolByActivity.get(row.activity_id) ?? null,
+        ultimate_team: teamByActivity.get(row.activity_id) ?? null,
         competencies: [],
       };
       entry.competencies.push({
@@ -634,6 +644,82 @@ export const clearStudentBadmintonPool = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await context.sql`
       delete from student_badminton_pools
+      where teacher_id = ${context.userId}
+        and activity_id = ${data.activityId}
+        and student_id = any(${data.studentIds}::uuid[])
+    `;
+    return { ok: true };
+  });
+
+/** Équipe (couleur) d'un élève pour une activité d'ultimate. */
+export const getStudentUltimateTeam = createServerFn({ method: "GET" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentId: string; activityId: string }) =>
+    z.object({ studentId: z.string().uuid(), activityId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<string | null> => {
+    const rows = await context.sql<{ team: string }[]>`
+      select team from student_ultimate_teams
+      where teacher_id = ${context.userId}
+        and student_id = ${data.studentId}
+        and activity_id = ${data.activityId}
+      limit 1
+    `;
+    return rows[0]?.team ?? null;
+  });
+
+/** Composition des équipes pour une activité (tous les élèves de l'enseignant). */
+export const listUltimateTeams = createServerFn({ method: "GET" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { activityId: string }) =>
+    z.object({ activityId: z.string().uuid() }).parse(input),
+  )
+  .handler(
+    async ({ data, context }): Promise<{ student_id: string; team: string }[]> =>
+      await context.sql<{ student_id: string; team: string }[]>`
+        select student_id, team from student_ultimate_teams
+        where teacher_id = ${context.userId} and activity_id = ${data.activityId}
+      `,
+  );
+
+/** Affecte une équipe (couleur) à un ou plusieurs élèves. */
+export const setStudentUltimateTeam = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentIds: string[]; activityId: string; team: string }) =>
+    z
+      .object({
+        studentIds: z.array(z.string().uuid()).min(1).max(200),
+        activityId: z.string().uuid(),
+        team: z.enum(ULTIMATE_TEAM_CODES),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await context.sql`
+      insert into student_ultimate_teams (teacher_id, student_id, activity_id, team)
+      select ${context.userId}, s.id, ${data.activityId}, ${data.team}
+      from students s
+      where s.teacher_id = ${context.userId} and s.id = any(${data.studentIds}::uuid[])
+      on conflict (student_id, activity_id)
+      do update set team = excluded.team, updated_at = now()
+    `;
+    return { saved: data.studentIds.length };
+  });
+
+/** Retire l'équipe enregistrée. */
+export const clearStudentUltimateTeam = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentIds: string[]; activityId: string }) =>
+    z
+      .object({
+        studentIds: z.array(z.string().uuid()).min(1).max(200),
+        activityId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await context.sql`
+      delete from student_ultimate_teams
       where teacher_id = ${context.userId}
         and activity_id = ${data.activityId}
         and student_id = any(${data.studentIds}::uuid[])

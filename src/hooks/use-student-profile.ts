@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
-import { getStudentSessionInfo, getMyAsMember } from "@/lib/student-access.functions";
+import { getStudentSessionInfo, getMyAsMember, getMyMood } from "@/lib/student-access.functions";
 import { getMyEngagement, getMyGoal, getMyStrengths } from "@/lib/engagement.functions";
 import { getMyAchievements } from "@/lib/achievements.functions";
 import { toAfl } from "@/lib/afl";
@@ -59,6 +59,12 @@ export function useMyMedal() {
 export function useMyAsMember() {
   const fetchAs = useServerFn(getMyAsMember);
   return useQuery({ queryKey: ["my-as-member"], queryFn: () => fetchAs() });
+}
+
+/** Indicateur d'état : autorisé par l'enseignant, choisi par l'élève. */
+export function useMyMood() {
+  const fetchMood = useServerFn(getMyMood);
+  return useQuery({ queryKey: ["my-mood"], queryFn: () => fetchMood() });
 }
 
 export type StudentMarkFlat = {

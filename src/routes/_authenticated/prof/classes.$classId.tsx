@@ -701,6 +701,10 @@ function ClassDetailPage() {
                       {student.first_name} {student.last_name}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => void openStudent(student.id)}>
+                      Voir son espace élève
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setProfileTarget(student)}>
                       Consulter le profil
                     </DropdownMenuItem>

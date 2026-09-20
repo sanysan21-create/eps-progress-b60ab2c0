@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -12,8 +12,11 @@ import {
   QrCode,
   IdCard,
   Users,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+
+import { viewStudentAsTeacher } from "@/lib/student-access.functions";
 
 import {
   getClassDetail,
@@ -180,6 +183,24 @@ function ClassDetailPage() {
   const classesQuery = useQuery({ queryKey: ["classes"], queryFn: () => fetchClasses() });
   const qrStatuses = useQuery({ queryKey: ["qr-statuses"], queryFn: () => fetchQrStatuses() });
   const [qrTarget, setQrTarget] = useState<StudentRow | null>(null);
+
+  const navigate = useNavigate();
+  const openStudentSpace = useServerFn(viewStudentAsTeacher);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  /** Ouvre l'espace de l'élève sans enregistrer de connexion dans son historique. */
+  async function openStudent(studentId: string) {
+    setOpeningId(studentId);
+    try {
+      await openStudentSpace({ data: { studentId } });
+      queryClient.clear();
+      void navigate({ to: "/eleve" });
+    } catch {
+      toast.error("Impossible d'ouvrir l'espace de cet élève.");
+    } finally {
+      setOpeningId(null);
+    }
+  }
 
 
   const [term, setTerm] = useState("");
@@ -599,37 +620,50 @@ function ClassDetailPage() {
                     )
                   }
                 />
-                <div className="grid size-11 place-items-center rounded-xl bg-surface-2 ring-1 ring-border">
-                  <span className="display-title text-sm text-primary">
-                    {student.first_name[0]}
-                    {student.last_name[0]}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm font-bold">
-                    {sortBy === "last_name"
-                      ? `${student.last_name} ${student.first_name}`
-                      : `${student.first_name} ${student.last_name}`}
-                  </p>
-                  <p className="mono-label flex flex-wrap items-center gap-2 text-muted-foreground">
-                    {student.student_code}
-                    <span
-                      className={
-                        (qrStatusByStudent.get(student.id) ?? "none") === "active"
-                          ? "rounded bg-surface-2 px-1.5 py-0.5 text-primary"
-                          : (qrStatusByStudent.get(student.id) ?? "none") === "revoked"
-                            ? "rounded bg-surface-2 px-1.5 py-0.5 text-destructive"
-                            : "rounded bg-surface-2 px-1.5 py-0.5 text-muted-foreground"
-                      }
-                    >
-                      {(qrStatusByStudent.get(student.id) ?? "none") === "active"
-                        ? "QR actif"
-                        : (qrStatusByStudent.get(student.id) ?? "none") === "revoked"
-                          ? "QR révoqué"
-                          : "QR non généré"}
+                <button
+                  type="button"
+                  onClick={() => void openStudent(student.id)}
+                  disabled={openingId !== null}
+                  title={`Voir l'espace de ${student.first_name} ${student.last_name}`}
+                  className="group flex min-w-0 items-center gap-4 rounded-xl text-left disabled:opacity-60"
+                >
+                  <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-2 ring-1 ring-border transition-colors group-hover:ring-primary">
+                    <span className="display-title text-sm text-primary">
+                      {student.first_name[0]}
+                      {student.last_name[0]}
                     </span>
-                  </p>
-                </div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold transition-colors group-hover:text-primary">
+                      {sortBy === "last_name"
+                        ? `${student.last_name} ${student.first_name}`
+                        : `${student.first_name} ${student.last_name}`}
+                    </p>
+                    <p className="mono-label flex flex-wrap items-center gap-2 text-muted-foreground">
+                      {student.student_code}
+                      <span
+                        className={
+                          (qrStatusByStudent.get(student.id) ?? "none") === "active"
+                            ? "rounded bg-surface-2 px-1.5 py-0.5 text-primary"
+                            : (qrStatusByStudent.get(student.id) ?? "none") === "revoked"
+                              ? "rounded bg-surface-2 px-1.5 py-0.5 text-destructive"
+                              : "rounded bg-surface-2 px-1.5 py-0.5 text-muted-foreground"
+                        }
+                      >
+                        {(qrStatusByStudent.get(student.id) ?? "none") === "active"
+                          ? "QR actif"
+                          : (qrStatusByStudent.get(student.id) ?? "none") === "revoked"
+                            ? "QR révoqué"
+                            : "QR non généré"}
+                      </span>
+                    </p>
+                  </div>
+                  {openingId === student.id ? (
+                    <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
+                  ) : (
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                  )}
+                </button>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -666,6 +700,10 @@ function ClassDetailPage() {
                     <DropdownMenuLabel>
                       {student.first_name} {student.last_name}
                     </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => void openStudent(student.id)}>
+                      Voir son espace élève
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setProfileTarget(student)}>
                       Consulter le profil

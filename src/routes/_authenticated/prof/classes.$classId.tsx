@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -12,8 +12,11 @@ import {
   QrCode,
   IdCard,
   Users,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+
+import { viewStudentAsTeacher } from "@/lib/student-access.functions";
 
 import {
   getClassDetail,

@@ -184,6 +184,24 @@ function ClassDetailPage() {
   const qrStatuses = useQuery({ queryKey: ["qr-statuses"], queryFn: () => fetchQrStatuses() });
   const [qrTarget, setQrTarget] = useState<StudentRow | null>(null);
 
+  const navigate = useNavigate();
+  const openStudentSpace = useServerFn(viewStudentAsTeacher);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  /** Ouvre l'espace de l'élève sans enregistrer de connexion dans son historique. */
+  async function openStudent(studentId: string) {
+    setOpeningId(studentId);
+    try {
+      await openStudentSpace({ data: { studentId } });
+      queryClient.clear();
+      void navigate({ to: "/eleve" });
+    } catch {
+      toast.error("Impossible d'ouvrir l'espace de cet élève.");
+    } finally {
+      setOpeningId(null);
+    }
+  }
+
 
   const [term, setTerm] = useState("");
   const [sortBy, setSortBy] = useState<"last_name" | "first_name">("last_name");

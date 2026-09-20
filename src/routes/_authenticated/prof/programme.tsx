@@ -99,6 +99,8 @@ function TeacherProgram() {
   const saveScaleImage = useServerFn(saveSequenceScaleImage);
   const deleteScaleImage = useServerFn(deleteSequenceScaleImage);
   const removeLegacy = useServerFn(deleteProgramSession);
+  const fetchClassActivities = useServerFn(listClassActivityData);
+  const clearClassActivity = useServerFn(clearClassActivityData);
 
   const sequences = useQuery({ queryKey: ["sequence-details"], queryFn: () => fetchSequences() });
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });

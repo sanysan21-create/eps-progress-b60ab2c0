@@ -118,6 +118,13 @@ function TeacherProgram() {
 
   const [form, setForm] = useState({ name: "", activityId: "", startDate: "", endDate: "" });
 
+  /** Activités réellement attribuées aux élèves de la classe choisie. */
+  const classActivities = useQuery({
+    queryKey: ["class-activity-data", classId],
+    queryFn: () => fetchClassActivities({ data: { classId } }),
+    enabled: Boolean(classId),
+  });
+
   const list = sequences.data ?? [];
   const selectedClass = (classes.data ?? []).find((row) => row.id === classId) ?? null;
 

@@ -32,6 +32,7 @@ import {
 import { longDate, shortDate } from "@/lib/program-builder";
 import type { SequenceDetail } from "@/lib/program-builder";
 import { deleteProgramSession, listProgramSessions } from "@/lib/program.functions";
+import { clearClassActivityData, listClassActivityData } from "@/lib/class-activities.functions";
 import { sessionWhen } from "@/lib/program";
 import { ActivityIcon } from "@/components/eps/ActivityIcon";
 

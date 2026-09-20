@@ -32,6 +32,7 @@ import {
 import { longDate, shortDate } from "@/lib/program-builder";
 import type { SequenceDetail } from "@/lib/program-builder";
 import { deleteProgramSession, listProgramSessions } from "@/lib/program.functions";
+import { clearClassActivityData, listClassActivityData } from "@/lib/class-activities.functions";
 import { sessionWhen } from "@/lib/program";
 import { ActivityIcon } from "@/components/eps/ActivityIcon";
 
@@ -98,6 +99,8 @@ function TeacherProgram() {
   const saveScaleImage = useServerFn(saveSequenceScaleImage);
   const deleteScaleImage = useServerFn(deleteSequenceScaleImage);
   const removeLegacy = useServerFn(deleteProgramSession);
+  const fetchClassActivities = useServerFn(listClassActivityData);
+  const clearClassActivity = useServerFn(clearClassActivityData);
 
   const sequences = useQuery({ queryKey: ["sequence-details"], queryFn: () => fetchSequences() });
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
@@ -114,6 +117,13 @@ function TeacherProgram() {
   const [busy, setBusy] = useState(false);
 
   const [form, setForm] = useState({ name: "", activityId: "", startDate: "", endDate: "" });
+
+  /** Activités réellement attribuées aux élèves de la classe choisie. */
+  const classActivities = useQuery({
+    queryKey: ["class-activity-data", classId],
+    queryFn: () => fetchClassActivities({ data: { classId } }),
+    enabled: Boolean(classId),
+  });
 
   const list = sequences.data ?? [];
   const selectedClass = (classes.data ?? []).find((row) => row.id === classId) ?? null;
@@ -919,6 +929,74 @@ function TeacherProgram() {
             )}
           </section>
         </>
+      )}
+
+      {classId && !currentId && (classActivities.data ?? []).length > 0 && (
+        <section className={CARD}>
+          <h2 className="mono-label text-muted-foreground">
+            Activités attribuées à {selectedClass?.name}
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Ce qui a été renseigné aux élèves de cette classe. Sans séquence dans le programme,
+            l'activité reste invisible pour eux : vous pouvez la supprimer ici.
+          </p>
+          <ul className="grid gap-2 md:grid-cols-2">
+            {(classActivities.data ?? []).map((row) => (
+              <li
+                key={row.activity_id}
+                className="flex items-start justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm"
+              >
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 font-semibold">
+                    <ActivityIcon name={row.activity_name} className="size-5" />
+                    <span className="truncate">{row.activity_name}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {row.student_count} élève{row.student_count > 1 ? "s" : ""} ·{" "}
+                    {row.level_count} niveau{row.level_count > 1 ? "x" : ""} · {row.grade_count}{" "}
+                    résultat{row.grade_count > 1 ? "s" : ""}
+                    {row.extra_count > 0 ? ` · ${row.extra_count} info` : ""}
+                  </p>
+                  <p
+                    className={`mt-1 text-xs font-semibold ${
+                      row.has_sequence ? "text-primary" : "text-destructive"
+                    }`}
+                  >
+                    {row.has_sequence ? "Séquence programmée" : "Aucune séquence programmée"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    if (
+                      !window.confirm(
+                        `Supprimer tout ce qui a été attribué en ${row.activity_name} pour ${selectedClass?.name} ?`,
+                      )
+                    )
+                      return;
+                    setBusy(true);
+                    try {
+                      await clearClassActivity({
+                        data: { classId, activityId: row.activity_id },
+                      });
+                      await queryClient.invalidateQueries({ queryKey: ["class-activity-data"] });
+                      toast.success("Activité retirée de la classe");
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : "Suppression impossible");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                  className="shrink-0 text-muted-foreground hover:text-destructive"
+                  aria-label={`Supprimer ${row.activity_name} pour cette classe`}
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {orphanSessions.length > 0 && !currentId && classId && (

@@ -508,6 +508,27 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
     );
 
     const grouped = new Map<string, StudentProfileActivity>();
+
+    // Une poule, une cotation ou une équipe s'affiche même sans compétence évaluée.
+    const extraIds = [
+      ...new Set([...gradeByActivity.keys(), ...poolByActivity.keys(), ...teamByActivity.keys()]),
+    ].filter((id) => programmedIds.has(id));
+    if (extraIds.length > 0) {
+      const extraActivities = await context.sql<{ id: string; name: string }[]>`
+        select id, name from activities where id = any(${extraIds}::uuid[])
+      `;
+      for (const activity of extraActivities) {
+        grouped.set(activity.id, {
+          activity_id: activity.id,
+          activity_name: activity.name,
+          climbing_grade: gradeByActivity.get(activity.id) ?? null,
+          badminton_pool: poolByActivity.get(activity.id) ?? null,
+          ultimate_team: teamByActivity.get(activity.id) ?? null,
+          competencies: [],
+        });
+      }
+    }
+
     for (const row of rows) {
       if (!programmedIds.has(row.activity_id)) continue;
       const entry: StudentProfileActivity = grouped.get(row.activity_id) ?? {

@@ -948,7 +948,7 @@ function TeacherProgram() {
               >
                 <div className="min-w-0">
                   <p className="flex items-center gap-2 font-semibold">
-                    <ActivityIcon name={row.activity_name} size={20} />
+                    <ActivityIcon name={row.activity_name} className="size-5" />
                     <span className="truncate">{row.activity_name}</span>
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">

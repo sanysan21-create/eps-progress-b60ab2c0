@@ -859,6 +859,10 @@ function TeacherProgram() {
                   </label>
                 </div>
 
+                {isUltimateActivity(current.activity_name) && (
+                  <UltimateMatchScores sessionId={session.id} />
+                )}
+
                 <button
                   type="button"
                   onClick={() => void handleSaveSession()}

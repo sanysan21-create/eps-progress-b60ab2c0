@@ -769,6 +769,9 @@ function ClassDetailPage() {
         </ul>
         </>
       )}
+        </>
+      )}
+
 
       {/* Ajouter / modifier un élève */}
       <Dialog

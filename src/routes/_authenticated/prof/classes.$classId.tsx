@@ -39,6 +39,7 @@ import {
 } from "@/lib/student-qr.functions";
 import { downloadStudentCardsPdf } from "@/lib/student-card";
 import { StudentQrDialog } from "@/components/eps/StudentQrDialog";
+import { ClassChoiceStats } from "@/components/eps/ClassChoiceStats";
 import {
   Dialog,
   DialogContent,

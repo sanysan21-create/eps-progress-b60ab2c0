@@ -184,3 +184,66 @@ export const setMyGoal = createServerFn({ method: "POST" })
     `;
     return { goalCode: data.goalCode };
   });
+
+export type ChoiceCount = { code: string; count: number };
+export type ClassChoiceStats = {
+  studentCount: number;
+  withStrengths: number;
+  withGoal: number;
+  strengths: ChoiceCount[];
+  goals: ChoiceCount[];
+};
+
+/**
+ * Statistiques de classe (lecture seule) sur les choix faits par les élèves eux-mêmes :
+ * points forts et objectif. L'enseignant ne peut ni attribuer ni modifier ces choix.
+ */
+export const getClassChoiceStats = createServerFn({ method: "GET" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { classId: string }) =>
+    z.object({ classId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<ClassChoiceStats> => {
+    const [total] = await context.sql<{ n: number }[]>`
+      select count(*)::int as n
+      from class_students cs
+      join students s on s.id = cs.student_id
+      where cs.class_id = ${data.classId} and s.teacher_id = ${context.userId}
+    `;
+
+    const strengths = await context.sql<{ code: string; count: number }[]>`
+      select c.strength_code as code, count(*)::int as count
+      from student_strength_choices c
+      join class_students cs on cs.student_id = c.student_id
+      join students s on s.id = c.student_id
+      where cs.class_id = ${data.classId} and s.teacher_id = ${context.userId}
+      group by c.strength_code
+      order by count desc
+    `;
+
+    const goals = await context.sql<{ code: string; count: number }[]>`
+      select g.goal_code as code, count(*)::int as count
+      from student_goal_choices g
+      join class_students cs on cs.student_id = g.student_id
+      join students s on s.id = g.student_id
+      where cs.class_id = ${data.classId} and s.teacher_id = ${context.userId}
+      group by g.goal_code
+      order by count desc
+    `;
+
+    const [withStrengths] = await context.sql<{ n: number }[]>`
+      select count(distinct c.student_id)::int as n
+      from student_strength_choices c
+      join class_students cs on cs.student_id = c.student_id
+      join students s on s.id = c.student_id
+      where cs.class_id = ${data.classId} and s.teacher_id = ${context.userId}
+    `;
+
+    return {
+      studentCount: total?.n ?? 0,
+      withStrengths: withStrengths?.n ?? 0,
+      withGoal: goals.reduce((sum, row) => sum + row.count, 0),
+      strengths,
+      goals,
+    };
+  });

@@ -11,6 +11,7 @@ import {
   updateSessionMatch,
 } from "@/lib/ultimate-matches.functions";
 import { ULTIMATE_TEAMS, ultimateTeamLabel } from "@/lib/ultimate";
+import type { UltimateTeamCode } from "@/lib/ultimate";
 
 const FIELD =
   "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary";
@@ -25,9 +26,14 @@ export function UltimateMatchScores({ sessionId }: { sessionId: string }) {
   const remove = useServerFn(deleteSessionMatch);
 
   const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState({
-    teamA: ULTIMATE_TEAMS[0]?.code ?? "",
-    teamB: ULTIMATE_TEAMS[1]?.code ?? "",
+  const [draft, setDraft] = useState<{
+    teamA: UltimateTeamCode;
+    teamB: UltimateTeamCode;
+    scoreA: string;
+    scoreB: string;
+  }>({
+    teamA: ULTIMATE_TEAMS[0]!.code,
+    teamB: ULTIMATE_TEAMS[1]!.code,
     scoreA: "0",
     scoreB: "0",
   });
@@ -138,7 +144,7 @@ export function UltimateMatchScores({ sessionId }: { sessionId: string }) {
           <span className={LABEL}>Équipe A</span>
           <select
             value={draft.teamA}
-            onChange={(event) => setDraft({ ...draft, teamA: event.target.value })}
+            onChange={(event) => setDraft({ ...draft, teamA: event.target.value as UltimateTeamCode })}
             className={FIELD}
           >
             {ULTIMATE_TEAMS.map((team) => (
@@ -152,7 +158,7 @@ export function UltimateMatchScores({ sessionId }: { sessionId: string }) {
           <span className={LABEL}>Équipe B</span>
           <select
             value={draft.teamB}
-            onChange={(event) => setDraft({ ...draft, teamB: event.target.value })}
+            onChange={(event) => setDraft({ ...draft, teamB: event.target.value as UltimateTeamCode })}
             className={FIELD}
           >
             {ULTIMATE_TEAMS.map((team) => (

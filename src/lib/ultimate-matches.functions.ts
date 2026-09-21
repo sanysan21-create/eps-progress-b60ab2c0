@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireTeacher } from "./auth-middleware";
+import type { Db } from "./db.server";
 import { ULTIMATE_TEAM_CODES } from "./ultimate";
 
 export type SessionMatch = {
@@ -14,7 +15,7 @@ export type SessionMatch = {
 
 /** Vérifie que la séance appartient bien au professeur connecté. */
 async function assertOwnSession(
-  sql: { <T>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T> },
+  sql: Db,
   sessionId: string,
   teacherId: string,
 ) {

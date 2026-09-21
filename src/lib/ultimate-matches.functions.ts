@@ -1,9 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireTeacher } from "./auth-middleware";
+import { requireTeacher, withDb } from "./auth-middleware";
 import type { Db } from "./db.server";
 import { ULTIMATE_TEAM_CODES } from "./ultimate";
+
+export type UltimateMatchRow = {
+  id: string;
+  team_a: string;
+  team_b: string;
+  score_a: number;
+  score_b: number;
+  session_number: number | null;
+  session_date: string | null;
+  activity_name: string | null;
+};
 
 export type SessionMatch = {
   id: string;
@@ -110,3 +121,53 @@ export const deleteSessionMatch = createServerFn({ method: "POST" })
     `;
     return { ok: true };
   });
+
+/** Lecture seule : rencontres d'ultimate visibles par l'élève (toutes les séances). */
+export const getMyUltimateMatches = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(
+    async ({
+      context,
+    }): Promise<{ my_team: string | null; matches: UltimateMatchRow[] }> => {
+      const { getStudentSession } = await import("./student-qr.server");
+      const { loadStudentScope } = await import("./program.server");
+      const session = await getStudentSession();
+      const studentId = session.data.studentId;
+      if (!studentId) return { my_team: null, matches: [] };
+
+      const scope = await loadStudentScope(context.sql, studentId);
+      if (!scope) return { my_team: null, matches: [] };
+
+      const matches = await context.sql<UltimateMatchRow[]>`
+        select m.id, m.team_a, m.team_b, m.score_a, m.score_b,
+               p.session_number, p.session_date::text as session_date, a.name as activity_name
+        from program_session_matches m
+        join program_sessions p on p.id = m.session_id
+        join program_sequences q on q.id = p.sequence_id
+        left join activities a on a.id = q.activity_id
+        where m.teacher_id = ${scope.teacherId}
+          ${
+            scope.classIds.length > 0
+              ? context.sql`and (q.class_id is null or q.class_id = any(${scope.classIds}::uuid[]))`
+              : context.sql`and q.class_id is null`
+          }
+        order by p.session_date asc nulls last, m.created_at asc
+      `;
+
+      const teams = await context.sql<{ team: string }[]>`
+        select t.team from student_ultimate_teams t
+        where t.student_id = ${studentId}
+        order by t.updated_at desc limit 1
+      `;
+
+      return {
+        my_team: teams[0]?.team ?? null,
+        matches: matches.map((row) => ({
+          ...row,
+          score_a: Number(row.score_a),
+          score_b: Number(row.score_b),
+          session_number: row.session_number === null ? null : Number(row.session_number),
+        })),
+      };
+    },
+  );

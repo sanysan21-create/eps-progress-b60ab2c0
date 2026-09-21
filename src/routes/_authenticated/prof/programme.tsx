@@ -35,6 +35,8 @@ import { deleteProgramSession, listProgramSessions } from "@/lib/program.functio
 import { clearClassActivityData, listClassActivityData } from "@/lib/class-activities.functions";
 import { sessionWhen } from "@/lib/program";
 import { ActivityIcon } from "@/components/eps/ActivityIcon";
+import { UltimateMatchScores } from "@/components/eps/UltimateMatchScores";
+import { isUltimateActivity } from "@/lib/ultimate";
 
 export const Route = createFileRoute("/_authenticated/prof/programme")({
   head: () => ({
@@ -858,6 +860,10 @@ function TeacherProgram() {
                     />
                   </label>
                 </div>
+
+                {isUltimateActivity(current.activity_name) && (
+                  <UltimateMatchScores sessionId={session.id} />
+                )}
 
                 <button
                   type="button"

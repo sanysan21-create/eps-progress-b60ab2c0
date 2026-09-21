@@ -39,3 +39,79 @@ export function isUltimateActivity(name: string | null | undefined): boolean {
   if (!name) return false;
   return /ultimate|frisbee/i.test(name);
 }
+
+export type UltimateMatch = {
+  id: string;
+  team_a: string;
+  team_b: string;
+  score_a: number;
+  score_b: number;
+  session_number: number | null;
+  session_date: string | null;
+  activity_name: string | null;
+};
+
+export type UltimateStanding = {
+  team: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  scored: number;
+  conceded: number;
+  diff: number;
+};
+
+/** Classement cumulé de toutes les rencontres (victoire 3 pts, nul 1 pt). */
+export function computeUltimateStandings(matches: UltimateMatch[]): UltimateStanding[] {
+  const table = new Map<string, UltimateStanding>();
+  const get = (team: string) => {
+    const row = table.get(team) ?? {
+      team,
+      played: 0,
+      won: 0,
+      drawn: 0,
+      lost: 0,
+      scored: 0,
+      conceded: 0,
+      diff: 0,
+    };
+    table.set(team, row);
+    return row;
+  };
+
+  for (const match of matches) {
+    const a = get(match.team_a);
+    const b = get(match.team_b);
+    a.played += 1;
+    b.played += 1;
+    a.scored += match.score_a;
+    a.conceded += match.score_b;
+    b.scored += match.score_b;
+    b.conceded += match.score_a;
+    if (match.score_a > match.score_b) {
+      a.won += 1;
+      b.lost += 1;
+    } else if (match.score_a < match.score_b) {
+      b.won += 1;
+      a.lost += 1;
+    } else {
+      a.drawn += 1;
+      b.drawn += 1;
+    }
+  }
+
+  return [...table.values()]
+    .map((row) => ({ ...row, diff: row.scored - row.conceded }))
+    .sort((x, y) => {
+      const points = y.won * 3 + y.drawn - (x.won * 3 + x.drawn);
+      if (points !== 0) return points;
+      if (y.diff !== x.diff) return y.diff - x.diff;
+      return y.scored - x.scored;
+    });
+}
+
+/** Points de classement d'une équipe (victoire 3, nul 1). */
+export function ultimatePoints(row: UltimateStanding): number {
+  return row.won * 3 + row.drawn;
+}

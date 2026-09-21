@@ -431,6 +431,21 @@ create table if not exists student_badminton_pools (
   unique (student_id, activity_id)
 );
 
+-- Scores des rencontres entre équipes d'une séance (activité Ultimate).
+create table if not exists program_session_matches (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  session_id uuid not null references program_sessions(id) on delete cascade,
+  team_a text not null,
+  team_b text not null,
+  score_a smallint not null default 0,
+  score_b smallint not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_session_matches_session on program_session_matches(session_id);
+
 
 create index if not exists idx_students_teacher on students(teacher_id);
 

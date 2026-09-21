@@ -31,6 +31,7 @@ import { AsBadge } from "@/components/eps/AsBadge";
 import { useMyRewards } from "@/hooks/use-rewards";
 import { profileTitleLabel } from "@/lib/rewards";
 import { ultimateTeamLabel } from "@/lib/ultimate";
+import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches";
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({
@@ -274,6 +275,9 @@ function StudentProfile() {
           </div>
         )}
       </Section>
+
+      {/* Rencontres ultimate : résultats de son équipe et classement cumulé */}
+      {activities.some((activity) => activity.ultimate_team) && <UltimateStudentMatches />}
 
       {/* Implication */}
       <Section title="💪 Mon implication en EPS">

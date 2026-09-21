@@ -8,6 +8,7 @@ import { nextSession, sessionWhen, upcomingSessions } from "@/lib/program";
 import { getMyProgramSequences } from "@/lib/program-sequences.functions";
 import { sequenceRange } from "@/lib/program-sequences";
 import { activityEmoji } from "@/lib/activity-emoji";
+import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches";
 
 export const Route = createFileRoute("/eleve/programme")({
   head: () => ({
@@ -67,6 +68,8 @@ function StudentProgram() {
           Programmation renseignée par ton enseignant, en lecture seule.
         </p>
       </header>
+
+      <UltimateStudentMatches />
 
       {sequences.length > 0 && (
         <section className="space-y-3">

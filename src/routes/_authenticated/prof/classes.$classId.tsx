@@ -509,6 +509,38 @@ function ClassDetailPage() {
         </div>
       </header>
 
+      <div
+        role="tablist"
+        aria-label="Vues de la classe"
+        className="flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface p-1"
+      >
+        {(
+          [
+            { value: "students", label: "Élèves" },
+            { value: "choices", label: "Points forts & objectifs" },
+          ] as const
+        ).map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="tab"
+            aria-selected={tab === option.value}
+            onClick={() => setTab(option.value)}
+            className={`rounded-lg px-4 py-2 text-xs font-bold uppercase transition-colors ${
+              tab === option.value
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "choices" ? (
+        <ClassChoiceStats classId={classId} />
+      ) : (
+        <>
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[16rem] flex-1 max-w-xl">
           <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

@@ -203,6 +203,7 @@ function ClassDetailPage() {
   }
 
 
+  const [tab, setTab] = useState<"students" | "choices">("students");
   const [term, setTerm] = useState("");
   const [sortBy, setSortBy] = useState<"last_name" | "first_name">("last_name");
   const [addOpen, setAddOpen] = useState(false);

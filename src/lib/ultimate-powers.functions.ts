@@ -282,10 +282,26 @@ export const saveTeamPowers = createServerFn({ method: "POST" })
 export type MyTeamPowers = {
   team: string;
   rank: number | null;
+  budget: number;
+  /** Pouvoirs sélectionnés pour l'équipe. */
   powers: UltimatePower[];
+  /** Tous les pouvoirs actifs disponibles au choix. */
+  available: UltimatePower[];
 } | null;
 
-/** Lecture seule, réservée au capitaine : pouvoirs attribués à son équipe. */
+async function loadCaptainSetting(sql: Db, studentId: string) {
+  const settings = await sql<{ id: string; team: string; rank: number | null; teacher_id: string }[]>`
+    select ts.id, ts.team, ts.rank, ts.teacher_id from ultimate_team_settings ts
+    join student_ultimate_teams t on t.student_id = ts.captain_student_id
+      and t.activity_id = ts.activity_id and t.team = ts.team
+    join class_students cs on cs.student_id = ts.captain_student_id and cs.class_id = ts.class_id
+    where ts.captain_student_id = ${studentId}
+    order by ts.updated_at desc limit 1
+  `;
+  return settings[0] ?? null;
+}
+
+/** Réservé au capitaine : pouvoirs de son équipe et pouvoirs disponibles. */
 export const getMyTeamPowers = createServerFn({ method: "GET" })
   .middleware([withDb])
   .handler(async ({ context }): Promise<MyTeamPowers> => {
@@ -294,29 +310,61 @@ export const getMyTeamPowers = createServerFn({ method: "GET" })
     const studentId = session.data.studentId;
     if (!studentId) return null;
     const sql = context.sql;
-
-    // Capitaine actuel ET toujours membre de l'équipe dans la classe.
-    const settings = await sql<{ id: string; team: string; rank: number | null }[]>`
-      select ts.id, ts.team, ts.rank from ultimate_team_settings ts
-      join student_ultimate_teams t on t.student_id = ts.captain_student_id
-        and t.activity_id = ts.activity_id and t.team = ts.team
-      join class_students cs on cs.student_id = ts.captain_student_id and cs.class_id = ts.class_id
-      where ts.captain_student_id = ${studentId}
-      order by ts.updated_at desc limit 1
-    `;
-    const setting = settings[0];
+    const setting = await loadCaptainSetting(sql, studentId);
     if (!setting) return null;
-    const powers = (
+    const available = (
       await sql<UltimatePower[]>`
-        select p.id, p.name, p.icon, p.description, p.rule, p.cost, p.active
-        from ultimate_team_powers tp join ultimate_powers p on p.id = tp.power_id
-        where tp.team_setting_id = ${setting.id} and p.active
-        order by p.cost asc, p.name asc
+        select ${sql.unsafe(POWER_COLS)} from ultimate_powers
+        where teacher_id = ${setting.teacher_id} and active
+        order by cost asc, name asc
       `
     ).map(normPower);
+    const selected = await sql<{ power_id: string }[]>`
+      select power_id from ultimate_team_powers where team_setting_id = ${setting.id}
+    `;
+    const ids = new Set(selected.map((r) => r.power_id));
+    const rank = setting.rank === null ? null : Number(setting.rank);
+    const budgets = await loadBudgets(sql, setting.teacher_id);
     return {
       team: setting.team,
-      rank: setting.rank === null ? null : Number(setting.rank),
-      powers,
+      rank,
+      budget: budgetFor(budgets, rank),
+      powers: available.filter((p) => ids.has(p.id)),
+      available,
     };
+  });
+
+/** Le capitaine choisit les pouvoirs de son équipe, dans la limite du budget. */
+export const saveMyTeamPowers = createServerFn({ method: "POST" })
+  .middleware([withDb])
+  .inputValidator((input: { powerIds: string[] }) =>
+    z.object({ powerIds: z.array(z.string().uuid()).max(50) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { getStudentSession } = await import("./student-qr.server");
+    const session = await getStudentSession();
+    const studentId = session.data.studentId;
+    if (!studentId) throw new Error("Session expirée.");
+    const sql = context.sql;
+    const setting = await loadCaptainSetting(sql, studentId);
+    if (!setting) throw new Error("Seul le capitaine peut choisir les pouvoirs.");
+    const ids = [...new Set(data.powerIds)];
+    const powers = ids.length
+      ? await sql<{ id: string; cost: number }[]>`
+          select id, cost from ultimate_powers
+          where teacher_id = ${setting.teacher_id} and active and id = any(${ids}::uuid[])
+        `
+      : [];
+    if (powers.length !== ids.length) throw new Error("Pouvoir indisponible.");
+    const rank = setting.rank === null ? null : Number(setting.rank);
+    const budget = budgetFor(await loadBudgets(sql, setting.teacher_id), rank);
+    const used = powers.reduce((sum, p) => sum + Number(p.cost), 0);
+    if (used > budget) throw new Error(`Budget dépassé : ${used} / ${budget} points.`);
+    await sql.begin(async (tx) => {
+      await tx`delete from ultimate_team_powers where team_setting_id = ${setting.id}`;
+      for (const id of ids) {
+        await tx`insert into ultimate_team_powers (team_setting_id, power_id) values (${setting.id}, ${id})`;
+      }
+    });
+    return { ok: true };
   });

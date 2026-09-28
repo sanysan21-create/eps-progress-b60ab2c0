@@ -9,6 +9,7 @@ import { getMyProgramSequences } from "@/lib/program-sequences.functions";
 import { sequenceRange } from "@/lib/program-sequences";
 import { activityEmoji } from "@/lib/activity-emoji";
 import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches";
+import { CaptainPowers } from "@/components/eps/CaptainPowers";
 
 export const Route = createFileRoute("/eleve/programme")({
   head: () => ({
@@ -70,6 +71,7 @@ function StudentProgram() {
       </header>
 
       <UltimateStudentMatches />
+      <CaptainPowers />
 
       {sequences.length > 0 && (
         <section className="space-y-3">

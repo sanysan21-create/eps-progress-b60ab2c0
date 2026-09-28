@@ -72,7 +72,8 @@ export const getPowersBoard = createServerFn({ method: "GET" })
     const powers = (
       await sql<UltimatePower[]>`
         select ${sql.unsafe(POWER_COLS)} from ultimate_powers
-        where teacher_id = ${context.userId} order by created_at asc
+        where teacher_id = ${context.userId}
+        order by cost asc, name asc
       `
     ).map(normPower);
     const budgets = await loadBudgets(sql, context.userId);

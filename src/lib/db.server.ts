@@ -481,6 +481,49 @@ create table if not exists student_rewards (
 alter table students add column if not exists mood_enabled boolean not null default false;
 alter table students add column if not exists mood_code text;
 alter table students add column if not exists mood_at timestamptz;
+
+-- Pouvoirs Ultimate : créés, attribués et gérés uniquement par l'enseignant.
+create table if not exists ultimate_powers (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  name text not null,
+  icon text,
+  description text not null default '',
+  rule text not null default '',
+  cost smallint not null default 1,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Correspondance classement → budget de points (configurable par l'enseignant).
+create table if not exists ultimate_rank_budgets (
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  rank smallint not null,
+  points smallint not null default 0,
+  primary key (teacher_id, rank)
+);
+
+-- Réglages d'une équipe (couleur) pour une classe et une activité.
+create table if not exists ultimate_team_settings (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  class_id uuid not null references classes(id) on delete cascade,
+  activity_id uuid not null references activities(id) on delete cascade,
+  team text not null,
+  captain_student_id uuid references students(id) on delete set null,
+  rank smallint,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (class_id, activity_id, team)
+);
+
+create table if not exists ultimate_team_powers (
+  team_setting_id uuid not null references ultimate_team_settings(id) on delete cascade,
+  power_id uuid not null references ultimate_powers(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (team_setting_id, power_id)
+);
 `;
 
 /** Génère un code élève unique (ELV-XXXXXX). */

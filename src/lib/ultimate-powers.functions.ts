@@ -60,23 +60,6 @@ async function assertOwn(sql: Db, teacherId: string, classId: string, activityId
   if (!rows[0]) throw new Error("Classe ou activité introuvable");
 }
 
-async function ensureSetting(
-  sql: Db,
-  teacherId: string,
-  classId: string,
-  activityId: string,
-  team: string,
-): Promise<{ id: string; rank: number | null }> {
-  const rows = await sql<{ id: string; rank: number | null }[]>`
-    insert into ultimate_team_settings (teacher_id, class_id, activity_id, team)
-    values (${teacherId}, ${classId}, ${activityId}, ${team})
-    on conflict (class_id, activity_id, team) do update set team = excluded.team
-    returning id, rank
-  `;
-  const row = rows[0]!;
-  return { id: row.id, rank: row.rank === null ? null : Number(row.rank) };
-}
-
 const scopeSchema = z.object({ classId: z.string().uuid(), activityId: z.string().uuid() });
 
 /** Tableau complet des pouvoirs pour une classe et une activité ultimate. */
@@ -336,6 +319,3 @@ export const getMyTeamPowers = createServerFn({ method: "GET" })
       powers,
     };
   });
-
-// Garde l'import utilisé pour d'éventuels appels internes.
-void ensureSetting;

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PowerIcon } from "@/components/eps/PowerIcon";
 import { getMyTeamPowers, type UltimatePower } from "@/lib/ultimate-powers.functions";
 import { ultimateTeamLabel } from "@/lib/ultimate";
 
@@ -35,7 +36,10 @@ export function CaptainPowers() {
             <li key={p.id}>
               <button type="button" onClick={() => setOpen(p)}
                 className="w-full space-y-1 rounded-2xl border border-border bg-surface p-4 text-left transition hover:border-primary active:scale-[0.99]">
-                <p className="display-title text-lg leading-tight">{p.icon ?? "⚡"} {p.name}</p>
+                <div className="flex items-center gap-2">
+                  <PowerIcon value={p.icon} />
+                  <p className="display-title text-lg leading-tight">{p.name}</p>
+                </div>
                 {(p.description || p.rule) && (
                   <p className="text-sm text-muted-foreground">{p.description || p.rule}</p>
                 )}
@@ -51,7 +55,9 @@ export function CaptainPowers() {
           {open && (
             <>
               <DialogHeader>
-                <DialogTitle className="display-title text-2xl">{open.icon ?? "⚡"} {open.name}</DialogTitle>
+                <DialogTitle className="flex items-center gap-3 display-title text-2xl">
+                  <PowerIcon value={open.icon} size="lg" /> {open.name}
+                </DialogTitle>
               </DialogHeader>
               {open.description && <p className="text-sm text-muted-foreground">{open.description}</p>}
               <div className="space-y-1">

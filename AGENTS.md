@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Power icons use the shared `PowerIcon` visual mapping while persisting compact emoji keys, preserving existing database values and all current server contracts.

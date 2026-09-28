@@ -72,7 +72,8 @@ export const getPowersBoard = createServerFn({ method: "GET" })
     const powers = (
       await sql<UltimatePower[]>`
         select ${sql.unsafe(POWER_COLS)} from ultimate_powers
-        where teacher_id = ${context.userId} order by created_at asc
+        where teacher_id = ${context.userId}
+        order by cost asc, name asc
       `
     ).map(normPower);
     const budgets = await loadBudgets(sql, context.userId);
@@ -310,7 +311,7 @@ export const getMyTeamPowers = createServerFn({ method: "GET" })
         select p.id, p.name, p.icon, p.description, p.rule, p.cost, p.active
         from ultimate_team_powers tp join ultimate_powers p on p.id = tp.power_id
         where tp.team_setting_id = ${setting.id} and p.active
-        order by p.name
+        order by p.cost asc, p.name asc
       `
     ).map(normPower);
     return {

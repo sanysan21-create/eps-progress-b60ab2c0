@@ -36,6 +36,7 @@ import { clearClassActivityData, listClassActivityData } from "@/lib/class-activ
 import { sessionWhen } from "@/lib/program";
 import { ActivityIcon } from "@/components/eps/ActivityIcon";
 import { UltimateMatchScores } from "@/components/eps/UltimateMatchScores";
+import { UltimatePowers } from "@/components/eps/UltimatePowers";
 import { isUltimateActivity } from "@/lib/ultimate";
 
 export const Route = createFileRoute("/_authenticated/prof/programme")({
@@ -876,6 +877,10 @@ function TeacherProgram() {
               </div>
             )}
           </section>
+
+          {isUltimateActivity(current.activity_name) && current.class_id && current.activity_id && (
+            <UltimatePowers classId={current.class_id} activityId={current.activity_id} />
+          )}
 
           {/* Barème de la séquence : une seule image */}
           <section className={CARD}>

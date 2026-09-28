@@ -298,7 +298,18 @@ async function loadCaptainSetting(sql: Db, studentId: string) {
     where ts.captain_student_id = ${studentId}
     order by ts.updated_at desc limit 1
   `;
-  return settings[0] ?? null;
+  if (settings[0]) return settings[0];
+  // Sans capitaine désigné, tout membre de l'équipe peut choisir les pouvoirs.
+  const memberSettings = await sql<{ id: string; team: string; rank: number | null; teacher_id: string }[]>`
+    select ts.id, ts.team, ts.rank, ts.teacher_id from ultimate_team_settings ts
+    join student_ultimate_teams t on t.student_id = ${studentId}
+      and t.activity_id = ts.activity_id and t.team = ts.team
+      and t.teacher_id = ts.teacher_id
+    join class_students cs on cs.student_id = ${studentId} and cs.class_id = ts.class_id
+    where ts.captain_student_id is null
+    order by ts.updated_at desc limit 1
+  `;
+  return memberSettings[0] ?? null;
 }
 
 /** Réservé au capitaine : pouvoirs de son équipe et pouvoirs disponibles. */

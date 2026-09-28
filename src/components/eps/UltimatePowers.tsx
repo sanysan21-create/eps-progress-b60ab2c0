@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { Copy, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import { POWER_ICON_OPTIONS, PowerIcon, powerIconLabel } from "@/components/eps/PowerIcon";
 import {
   deletePower,
   duplicatePower,
@@ -76,9 +78,34 @@ export function UltimatePowers({ classId, activityId }: { classId: string; activ
 
       {draft && (
         <div className="space-y-2 rounded-2xl border border-primary/40 bg-background/60 p-4">
-          <div className="grid gap-2 sm:grid-cols-[5rem_1fr_6rem]">
-            <input className={FIELD} placeholder="⚡" value={draft.icon ?? ""} maxLength={8}
-              onChange={(e) => setDraft({ ...draft, icon: e.target.value })} aria-label="Icône" />
+          <fieldset className="space-y-2">
+            <legend className="mono-label text-xs text-muted-foreground">Icône du pouvoir</legend>
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+              {POWER_ICON_OPTIONS.map((option) => {
+                const selected = draft.icon === option.value;
+                return (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant="outline"
+                    aria-label={option.label}
+                    aria-pressed={selected}
+                    title={option.label}
+                    onClick={() => setDraft({ ...draft, icon: option.value })}
+                    className={`h-14 px-0 ${selected ? "border-primary bg-primary/10 ring-1 ring-primary" : "bg-background"}`}
+                  >
+                    <PowerIcon value={option.value} />
+                  </Button>
+                );
+              })}
+            </div>
+            {draft.icon && !POWER_ICON_OPTIONS.some((option) => option.value === draft.icon) && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <PowerIcon value={draft.icon} size="sm" /> Icône actuelle conservée
+              </div>
+            )}
+          </fieldset>
+          <div className="grid gap-2 sm:grid-cols-[1fr_6rem]">
             <input className={FIELD} placeholder="Nom du pouvoir" value={draft.name}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })} aria-label="Nom" />
             <input className={FIELD} type="number" min={0} max={99} value={draft.cost}
@@ -117,7 +144,10 @@ export function UltimatePowers({ classId, activityId }: { classId: string; activ
           {powers.map((p) => (
             <li key={p.id} className={`space-y-2 rounded-2xl border border-border bg-background/60 p-3 ${p.active ? "" : "opacity-50"}`}>
               <div className="flex items-start justify-between gap-2">
-                <p className="font-semibold">{p.icon ?? "⚡"} {p.name}</p>
+                <div className="flex min-w-0 items-center gap-2">
+                  <PowerIcon value={p.icon} size="sm" />
+                  <p className="font-semibold">{p.name}</p>
+                </div>
                 <span className="mono-label shrink-0 text-xs text-primary">{p.cost} pts</span>
               </div>
               {p.description && <p className="text-xs text-muted-foreground">{p.description}</p>}
@@ -259,7 +289,9 @@ function TeamCard({
             <label key={p.id} className={`flex items-center gap-2 text-sm ${disabled ? "opacity-40" : ""}`}>
               <input type="checkbox" checked={checked} disabled={disabled}
                 onChange={() => setSelected(checked ? selected.filter((x) => x !== p.id) : [...selected, p.id])} />
-              {p.icon ?? "⚡"} {p.name} — {p.cost} pts
+              <PowerIcon value={p.icon} size="sm" />
+              <span>{p.name} — {p.cost} pts</span>
+              <span className="sr-only">{powerIconLabel(p.icon)}</span>
             </label>
           );
         })}

@@ -36,6 +36,7 @@ type QuizRow = {
   questions: QuizQuestion[];
   started_at: Date | null;
   ends_at: Date | null;
+  scheduled_at?: Date | null;
 };
 
 const iso = (d: Date | string | null) => (d ? new Date(d).toISOString() : null);
@@ -51,7 +52,7 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }): Promise<TeacherQuiz | null> => {
     const [quiz] = await context.sql<QuizRow[]>`
-      select id, title, duration_minutes, questions, started_at, ends_at
+      select id, title, duration_minutes, questions, started_at, ends_at, scheduled_at
       from session_quizzes where session_id = ${data.sessionId} and teacher_id = ${context.userId}
     `;
     if (!quiz) return null;

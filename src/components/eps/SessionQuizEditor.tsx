@@ -73,6 +73,8 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
 
   const data = quiz.data;
   const started = !!data?.started_at;
+  const startsAt = data?.started_at ? new Date(data.started_at).getTime() : null;
+  const scheduled = started && startsAt !== null && startsAt > now;
   const endsAt = data?.ends_at ? new Date(data.ends_at).getTime() : null;
   const finished = endsAt !== null && endsAt <= now;
 
@@ -92,7 +94,11 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-bold ${finished ? "bg-muted text-muted-foreground" : "bg-primary/15 text-primary"}`}
           >
-            {finished ? "Terminé — corrigé visible" : `En cours · ${formatLeft(endsAt! - now)}`}
+            {finished
+              ? "Terminé — corrigé visible"
+              : scheduled
+                ? `Programmé · ouvre le ${new Date(startsAt!).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`
+                : `En cours · ${formatLeft(endsAt! - now)}`}
           </span>
         )}
       </div>

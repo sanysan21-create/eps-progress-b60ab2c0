@@ -160,7 +160,9 @@ export const scheduleSessionQuiz = createServerFn({ method: "POST" })
     if (opensAt.getTime() <= Date.now()) throw new Error("Choisis une date dans le futur.");
     const rows = await context.sql`
       update session_quizzes set scheduled_at = ${opensAt.toISOString()}::timestamptz,
-        started_at = null, ends_at = null, updated_at = now()
+        started_at = ${opensAt.toISOString()}::timestamptz,
+        ends_at = ${opensAt.toISOString()}::timestamptz + make_interval(mins => duration_minutes),
+        updated_at = now()
       where session_id = ${data.sessionId} and teacher_id = ${context.userId}
         and jsonb_array_length(questions) > 0
       returning id
@@ -177,7 +179,7 @@ export const resetSessionQuiz = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const [quiz] = await context.sql<{ id: string }[]>`
-      update session_quizzes set started_at = null, ends_at = null, updated_at = now()
+      update session_quizzes set started_at = null, ends_at = null, scheduled_at = null, updated_at = now()
       where session_id = ${data.sessionId} and teacher_id = ${context.userId} returning id
     `;
     if (quiz) await context.sql`delete from session_quiz_answers where quiz_id = ${quiz.id}`;
@@ -221,7 +223,7 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
       join program_sessions p on p.id = z.session_id
       left join activities a on a.id = p.activity_id
       left join session_quiz_answers ans on ans.quiz_id = z.id and ans.student_id = ${studentId}
-      where z.teacher_id = ${scope.teacherId} and z.started_at is not null
+      where z.teacher_id = ${scope.teacherId} and z.started_at is not null and z.started_at <= now()
         ${
           scope.classIds.length > 0
             ? context.sql`and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))`
@@ -272,7 +274,7 @@ export const submitMyQuiz = createServerFn({ method: "POST" })
       select z.id from session_quizzes z
       join program_sessions p on p.id = z.session_id
       where z.id = ${data.quizId} and z.teacher_id = ${scope.teacherId}
-        and z.started_at is not null and z.ends_at > now()
+        and z.started_at is not null and z.started_at <= now() and z.ends_at > now()
         and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))
     `;
     if (!quiz) throw new Error("Ce QCM est terminé.");

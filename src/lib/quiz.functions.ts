@@ -72,6 +72,7 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
       questions: quiz.questions ?? [],
       started_at: iso(quiz.started_at),
       ends_at: iso(quiz.ends_at),
+      scheduled_at: iso(quiz.scheduled_at ?? null),
       answered: answers.length,
       results: finished
         ? answers.map((a) => ({
@@ -135,8 +136,31 @@ export const startSessionQuiz = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const rows = await context.sql`
-      update session_quizzes set started_at = now(),
+      update session_quizzes set started_at = now(), scheduled_at = null,
         ends_at = now() + make_interval(mins => duration_minutes), updated_at = now()
+      where session_id = ${data.sessionId} and teacher_id = ${context.userId}
+        and jsonb_array_length(questions) > 0
+      returning id
+    `;
+    if (rows.length === 0) throw new Error("Enregistre d'abord le QCM avec au moins une question.");
+    return { ok: true };
+  });
+
+/** Programme l'ouverture du QCM à une date/heure précise (fuseau du navigateur). */
+export const scheduleSessionQuiz = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { sessionId: string; opensAt: string }) =>
+    z
+      .object({ sessionId: z.string().uuid(), opensAt: z.string().min(1, "Choisis une date et une heure") })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const opensAt = new Date(data.opensAt);
+    if (Number.isNaN(opensAt.getTime())) throw new Error("Date invalide");
+    if (opensAt.getTime() <= Date.now()) throw new Error("Choisis une date dans le futur.");
+    const rows = await context.sql`
+      update session_quizzes set scheduled_at = ${opensAt.toISOString()}::timestamptz,
+        started_at = null, ends_at = null, updated_at = now()
       where session_id = ${data.sessionId} and teacher_id = ${context.userId}
         and jsonb_array_length(questions) > 0
       returning id

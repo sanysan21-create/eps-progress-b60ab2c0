@@ -36,6 +36,7 @@ import { clearClassActivityData, listClassActivityData } from "@/lib/class-activ
 import { sessionWhen } from "@/lib/program";
 import { ActivityIcon } from "@/components/eps/ActivityIcon";
 import { UltimateMatchScores } from "@/components/eps/UltimateMatchScores";
+import { SessionQuizEditor } from "@/components/eps/SessionQuizEditor";
 import { UltimatePowers } from "@/components/eps/UltimatePowers";
 import { isUltimateActivity } from "@/lib/ultimate";
 
@@ -865,6 +866,8 @@ function TeacherProgram() {
                 {isUltimateActivity(current.activity_name) && (
                   <UltimateMatchScores sessionId={session.id} />
                 )}
+
+                <SessionQuizEditor sessionId={session.id} />
 
                 <button
                   type="button"

@@ -10,6 +10,7 @@ import { sequenceRange } from "@/lib/program-sequences";
 import { activityEmoji } from "@/lib/activity-emoji";
 import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches";
 import { CaptainPowers } from "@/components/eps/CaptainPowers";
+import { StudentQuizzes } from "@/components/eps/StudentQuizzes";
 
 export const Route = createFileRoute("/eleve/programme")({
   head: () => ({
@@ -70,6 +71,7 @@ function StudentProgram() {
         </p>
       </header>
 
+      <StudentQuizzes />
       <UltimateStudentMatches />
       <CaptainPowers />
 

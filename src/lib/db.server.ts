@@ -446,6 +446,30 @@ create table if not exists program_session_matches (
 
 create index if not exists idx_session_matches_session on program_session_matches(session_id);
 
+-- QCM d'une séance : questions (jsonb), minuteur, réponses des élèves.
+create table if not exists session_quizzes (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  session_id uuid not null unique references program_sessions(id) on delete cascade,
+  title text not null default 'QCM',
+  duration_minutes smallint not null default 10,
+  questions jsonb not null default '[]'::jsonb,
+  started_at timestamptz,
+  ends_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists session_quiz_answers (
+  id uuid primary key default gen_random_uuid(),
+  quiz_id uuid not null references session_quizzes(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  answers jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (quiz_id, student_id)
+);
+
 
 create index if not exists idx_students_teacher on students(teacher_id);
 

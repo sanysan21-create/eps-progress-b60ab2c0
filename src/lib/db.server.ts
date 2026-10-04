@@ -460,6 +460,8 @@ create table if not exists session_quizzes (
   updated_at timestamptz not null default now()
 );
 
+alter table session_quizzes add column if not exists scheduled_at timestamptz;
+
 create table if not exists session_quiz_answers (
   id uuid primary key default gen_random_uuid(),
   quiz_id uuid not null references session_quizzes(id) on delete cascade,

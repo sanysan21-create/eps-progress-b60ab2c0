@@ -12,6 +12,7 @@ export type TeacherQuiz = {
   questions: QuizQuestion[];
   started_at: string | null;
   ends_at: string | null;
+  scheduled_at: string | null;
   results: { student_id: string; name: string; score: number; total: number }[];
   answered: number;
 };

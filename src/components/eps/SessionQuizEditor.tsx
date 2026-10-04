@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Play, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { CalendarClock, Check, Play, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -9,6 +9,7 @@ import {
   getSessionQuiz,
   resetSessionQuiz,
   saveSessionQuiz,
+  scheduleSessionQuiz,
   startSessionQuiz,
   type QuizQuestion,
 } from "@/lib/quiz.functions";
@@ -27,6 +28,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const fetchQuiz = useServerFn(getSessionQuiz);
   const save = useServerFn(saveSessionQuiz);
   const start = useServerFn(startSessionQuiz);
+  const schedule = useServerFn(scheduleSessionQuiz);
   const reset = useServerFn(resetSessionQuiz);
   const remove = useServerFn(deleteSessionQuiz);
   const key = ["session-quiz", sessionId];
@@ -41,6 +43,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const [title, setTitle] = useState("QCM");
   const [duration, setDuration] = useState("10");
   const [questions, setQuestions] = useState<QuizQuestion[]>([blank()]);
+  const [opensAt, setOpensAt] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -70,6 +73,8 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
 
   const data = quiz.data;
   const started = !!data?.started_at;
+  const startsAt = data?.started_at ? new Date(data.started_at).getTime() : null;
+  const scheduled = started && startsAt !== null && startsAt > now;
   const endsAt = data?.ends_at ? new Date(data.ends_at).getTime() : null;
   const finished = endsAt !== null && endsAt <= now;
 
@@ -89,7 +94,11 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-bold ${finished ? "bg-muted text-muted-foreground" : "bg-primary/15 text-primary"}`}
           >
-            {finished ? "Terminé — corrigé visible" : `En cours · ${formatLeft(endsAt! - now)}`}
+            {finished
+              ? "Terminé — corrigé visible"
+              : scheduled
+                ? `Programmé · ouvre le ${new Date(startsAt!).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`
+                : `En cours · ${formatLeft(endsAt! - now)}`}
           </span>
         )}
       </div>
@@ -205,6 +214,36 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
               >
                 <Play className="size-3.5" /> Lancer
               </button>
+            )}
+            {data && (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="datetime-local"
+                  aria-label="Date et heure d'ouverture"
+                  className={FIELD + " w-auto"}
+                  value={opensAt}
+                  min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
+                  onChange={(e) => setOpensAt(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className={BTN}
+                  disabled={busy || !opensAt}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Programmer l'ouverture du QCM le ${new Date(opensAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} pour ${data.duration_minutes} min ? Il ne sera plus modifiable.`,
+                      )
+                    )
+                      void run(
+                        () => schedule({ data: { sessionId, opensAt: new Date(opensAt).toISOString() } }),
+                        "QCM programmé",
+                      );
+                  }}
+                >
+                  <CalendarClock className="size-3.5" /> Programmer
+                </button>
+              </div>
             )}
             {data && (
               <button

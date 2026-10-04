@@ -12,6 +12,7 @@ export type TeacherQuiz = {
   questions: QuizQuestion[];
   started_at: string | null;
   ends_at: string | null;
+  scheduled_at: string | null;
   results: { student_id: string; name: string; score: number; total: number }[];
   answered: number;
 };
@@ -35,6 +36,7 @@ type QuizRow = {
   questions: QuizQuestion[];
   started_at: Date | null;
   ends_at: Date | null;
+  scheduled_at?: Date | null;
 };
 
 const iso = (d: Date | string | null) => (d ? new Date(d).toISOString() : null);
@@ -50,7 +52,7 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }): Promise<TeacherQuiz | null> => {
     const [quiz] = await context.sql<QuizRow[]>`
-      select id, title, duration_minutes, questions, started_at, ends_at
+      select id, title, duration_minutes, questions, started_at, ends_at, scheduled_at
       from session_quizzes where session_id = ${data.sessionId} and teacher_id = ${context.userId}
     `;
     if (!quiz) return null;
@@ -70,6 +72,7 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
       questions: quiz.questions ?? [],
       started_at: iso(quiz.started_at),
       ends_at: iso(quiz.ends_at),
+      scheduled_at: iso(quiz.scheduled_at ?? null),
       answered: answers.length,
       results: finished
         ? answers.map((a) => ({
@@ -133,8 +136,33 @@ export const startSessionQuiz = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const rows = await context.sql`
-      update session_quizzes set started_at = now(),
+      update session_quizzes set started_at = now(), scheduled_at = null,
         ends_at = now() + make_interval(mins => duration_minutes), updated_at = now()
+      where session_id = ${data.sessionId} and teacher_id = ${context.userId}
+        and jsonb_array_length(questions) > 0
+      returning id
+    `;
+    if (rows.length === 0) throw new Error("Enregistre d'abord le QCM avec au moins une question.");
+    return { ok: true };
+  });
+
+/** Programme l'ouverture du QCM à une date/heure précise (fuseau du navigateur). */
+export const scheduleSessionQuiz = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { sessionId: string; opensAt: string }) =>
+    z
+      .object({ sessionId: z.string().uuid(), opensAt: z.string().min(1, "Choisis une date et une heure") })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const opensAt = new Date(data.opensAt);
+    if (Number.isNaN(opensAt.getTime())) throw new Error("Date invalide");
+    if (opensAt.getTime() <= Date.now()) throw new Error("Choisis une date dans le futur.");
+    const rows = await context.sql`
+      update session_quizzes set scheduled_at = ${opensAt.toISOString()}::timestamptz,
+        started_at = ${opensAt.toISOString()}::timestamptz,
+        ends_at = ${opensAt.toISOString()}::timestamptz + make_interval(mins => duration_minutes),
+        updated_at = now()
       where session_id = ${data.sessionId} and teacher_id = ${context.userId}
         and jsonb_array_length(questions) > 0
       returning id
@@ -151,7 +179,7 @@ export const resetSessionQuiz = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const [quiz] = await context.sql<{ id: string }[]>`
-      update session_quizzes set started_at = null, ends_at = null, updated_at = now()
+      update session_quizzes set started_at = null, ends_at = null, scheduled_at = null, updated_at = now()
       where session_id = ${data.sessionId} and teacher_id = ${context.userId} returning id
     `;
     if (quiz) await context.sql`delete from session_quiz_answers where quiz_id = ${quiz.id}`;
@@ -195,7 +223,7 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
       join program_sessions p on p.id = z.session_id
       left join activities a on a.id = p.activity_id
       left join session_quiz_answers ans on ans.quiz_id = z.id and ans.student_id = ${studentId}
-      where z.teacher_id = ${scope.teacherId} and z.started_at is not null
+      where z.teacher_id = ${scope.teacherId} and z.started_at is not null and z.started_at <= now()
         ${
           scope.classIds.length > 0
             ? context.sql`and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))`
@@ -246,7 +274,7 @@ export const submitMyQuiz = createServerFn({ method: "POST" })
       select z.id from session_quizzes z
       join program_sessions p on p.id = z.session_id
       where z.id = ${data.quizId} and z.teacher_id = ${scope.teacherId}
-        and z.started_at is not null and z.ends_at > now()
+        and z.started_at is not null and z.started_at <= now() and z.ends_at > now()
         and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))
     `;
     if (!quiz) throw new Error("Ce QCM est terminé.");

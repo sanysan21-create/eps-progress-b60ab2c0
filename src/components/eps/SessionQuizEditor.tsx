@@ -216,6 +216,36 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
               </button>
             )}
             {data && (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="datetime-local"
+                  aria-label="Date et heure d'ouverture"
+                  className={FIELD + " w-auto"}
+                  value={opensAt}
+                  min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
+                  onChange={(e) => setOpensAt(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className={BTN}
+                  disabled={busy || !opensAt}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Programmer l'ouverture du QCM le ${new Date(opensAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} pour ${data.duration_minutes} min ? Il ne sera plus modifiable.`,
+                      )
+                    )
+                      void run(
+                        () => schedule({ data: { sessionId, opensAt: new Date(opensAt).toISOString() } }),
+                        "QCM programmé",
+                      );
+                  }}
+                >
+                  <CalendarClock className="size-3.5" /> Programmer
+                </button>
+              </div>
+            )}
+            {data && (
               <button
                 type="button"
                 className={BTN}

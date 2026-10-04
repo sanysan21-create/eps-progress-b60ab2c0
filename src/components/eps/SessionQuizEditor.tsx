@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Play, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { CalendarClock, Check, Play, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -9,6 +9,7 @@ import {
   getSessionQuiz,
   resetSessionQuiz,
   saveSessionQuiz,
+  scheduleSessionQuiz,
   startSessionQuiz,
   type QuizQuestion,
 } from "@/lib/quiz.functions";
@@ -27,6 +28,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const fetchQuiz = useServerFn(getSessionQuiz);
   const save = useServerFn(saveSessionQuiz);
   const start = useServerFn(startSessionQuiz);
+  const schedule = useServerFn(scheduleSessionQuiz);
   const reset = useServerFn(resetSessionQuiz);
   const remove = useServerFn(deleteSessionQuiz);
   const key = ["session-quiz", sessionId];
@@ -41,6 +43,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const [title, setTitle] = useState("QCM");
   const [duration, setDuration] = useState("10");
   const [questions, setQuestions] = useState<QuizQuestion[]>([blank()]);
+  const [opensAt, setOpensAt] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {

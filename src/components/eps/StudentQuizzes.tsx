@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
-import { beginMyQuiz, getMyQuizzes, submitMyQuiz, type StudentQuiz } from "@/lib/quiz.functions";
+import { beginMyQuiz, finishMyQuiz, getMyQuizzes, submitMyQuiz, type StudentQuiz } from "@/lib/quiz.functions";
 import { formatLeft, useNow } from "./quiz-time";
 
 /** QCM lancés par l'enseignant : réponse pendant le minuteur, corrigé + score après. */
@@ -29,6 +29,7 @@ export function StudentQuizzes() {
 function QuizCard({ quiz }: { quiz: StudentQuiz }) {
   const qc = useQueryClient();
   const submit = useServerFn(submitMyQuiz);
+  const finish = useServerFn(finishMyQuiz);
   const begin = useServerFn(beginMyQuiz);
   const now = useNow();
   const closeLeft = new Date(quiz.ends_at).getTime() - now;

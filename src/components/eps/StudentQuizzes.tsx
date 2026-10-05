@@ -71,11 +71,22 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
     }
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(finish = false) {
+    if (
+      finish &&
+      !window.confirm(
+        "Terminer le QCM ? Tes réponses seront enregistrées et tu ne pourras plus les modifier.",
+      )
+    )
+      return;
     setBusy(true);
     try {
       await submit({ data: { quizId: quiz.id, answers } });
-      toast.success("Réponses envoyées. Le corrigé s'affichera à la fin du temps.");
+      toast.success(
+        finish
+          ? "QCM terminé. Le corrigé s'affichera à la clôture du QCM."
+          : "Réponses envoyées. Le corrigé s'affichera à la fin du temps.",
+      );
       await qc.invalidateQueries({ queryKey: ["my-quizzes"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Envoi impossible");

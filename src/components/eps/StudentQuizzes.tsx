@@ -31,11 +31,18 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
   const submit = useServerFn(submitMyQuiz);
   const now = useNow();
   const left = new Date(quiz.ends_at).getTime() - now;
-  const finished = quiz.finished || left <= 0;
+  const notStarted = quiz.not_started || (quiz.starts_at ? new Date(quiz.starts_at).getTime() > now : false);
+  const finished = !notStarted && (quiz.finished || left <= 0);
   const [answers, setAnswers] = useState<(number | null)[]>(
     quiz.my_answers ?? quiz.questions.map(() => null),
   );
   const [busy, setBusy] = useState(false);
+
+  // Le QCM programmé vient de s'ouvrir : recharger pour afficher les questions.
+  useEffect(() => {
+    if (notStarted && quiz.starts_at && new Date(quiz.starts_at).getTime() - now <= 0)
+      void qc.invalidateQueries({ queryKey: ["my-quizzes"] });
+  }, [notStarted, quiz.starts_at, now]);
 
   useEffect(() => {
     if (!quiz.finished && left <= 0) void qc.invalidateQueries({ queryKey: ["my-quizzes"] });
@@ -64,7 +71,11 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
             {quiz.session_number ? ` · S${quiz.session_number}` : ""}
           </span>
         </p>
-        {quiz.finished ? (
+        {notStarted ? (
+          <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-bold text-muted-foreground">
+            🕐 {quiz.starts_at ? new Date(quiz.starts_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : ""}
+          </span>
+        ) : quiz.finished ? (
           <span className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 font-mono text-sm font-bold text-primary">
             {quiz.score ?? 0}/{quiz.questions.length}
           </span>
@@ -74,6 +85,26 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
           </span>
         )}
       </div>
+      {notStarted && (
+        <div className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+          <p>
+            Ce QCM ouvre{" "}
+            {quiz.starts_at
+              ? new Date(quiz.starts_at).toLocaleString("fr-FR", {
+                  day: "numeric",
+                  month: "long",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "bientôt"}
+            .
+          </p>
+          <p className="mt-1 text-xs">
+            Tu auras <strong className="text-foreground">{quiz.duration_minutes} min</strong> pour
+            répondre — le temps restant s'affichera ici dès l'ouverture.
+          </p>
+        </div>
+      )}
       {quiz.finished && !quiz.my_answers && (
         <p className="text-xs text-muted-foreground">Tu n'as pas répondu à ce QCM.</p>
       )}

@@ -44,6 +44,8 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const [duration, setDuration] = useState("10");
   const [questions, setQuestions] = useState<QuizQuestion[]>([blank()]);
   const [opensAt, setOpensAt] = useState("");
+  const [available, setAvailable] = useState("60");
+  const availableMinutes = Math.max(1, Math.round(Number(available) || 60));
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -105,7 +107,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
               ? "Terminé — corrigé visible"
               : scheduled
                 ? `Programmé · ouvre le ${new Date(startsAt!).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`
-                : `En cours · ${formatLeft(endsAt! - now)}`}
+                : `Disponible · ferme dans ${formatLeft(endsAt! - now)}`}
           </span>
         )}
       </div>
@@ -123,7 +125,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
               />
-              min
+              min / élève
             </label>
           </div>
           {questions.map((q, i) => (
@@ -210,16 +212,35 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
               <Check className="size-3.5" /> Enregistrer
             </button>
             {data && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                Disponible pendant
+                <input
+                  type="number"
+                  min={1}
+                  max={43200}
+                  aria-label="Durée de disponibilité en minutes"
+                  className={FIELD + " w-20"}
+                  value={available}
+                  onChange={(e) => setAvailable(e.target.value)}
+                />
+                min
+              </label>
+            )}
+            {data && (
               <button
                 type="button"
                 className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold uppercase text-primary-foreground disabled:opacity-50"
                 disabled={busy}
                 onClick={() => {
-                  if (window.confirm(`Lancer le QCM pour ${data.duration_minutes} min ? Il ne sera plus modifiable.`))
-                    void run(() => start({ data: { sessionId } }), "QCM lancé");
+                  if (
+                    window.confirm(
+                      `Ouvrir le QCM maintenant, disponible ${availableMinutes} min (${data.duration_minutes} min par élève après « Commencer ») ? Il ne sera plus modifiable.`,
+                    )
+                  )
+                    void run(() => start({ data: { sessionId, availableMinutes } }), "QCM ouvert");
                 }}
               >
-                <Play className="size-3.5" /> Lancer
+                <Play className="size-3.5" /> Ouvrir maintenant
               </button>
             )}
             {data && (
@@ -239,11 +260,11 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                   onClick={() => {
                     if (
                       window.confirm(
-                        `Programmer l'ouverture du QCM le ${new Date(opensAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} pour ${data.duration_minutes} min ? Il ne sera plus modifiable.`,
+                        `Programmer l'ouverture du QCM le ${new Date(opensAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} disponible ${availableMinutes} min (${data.duration_minutes} min par élève) ? Il ne sera plus modifiable.`,
                       )
                     )
                       void run(
-                        () => schedule({ data: { sessionId, opensAt: new Date(opensAt).toISOString() } }),
+                        () => schedule({ data: { sessionId, opensAt: new Date(opensAt).toISOString(), availableMinutes } }),
                         "QCM programmé",
                       );
                   }}

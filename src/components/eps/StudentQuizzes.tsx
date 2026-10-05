@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
-import { getMyQuizzes, submitMyQuiz, type StudentQuiz } from "@/lib/quiz.functions";
+import { beginMyQuiz, getMyQuizzes, submitMyQuiz, type StudentQuiz } from "@/lib/quiz.functions";
 import { formatLeft, useNow } from "./quiz-time";
 
 /** QCM lancés par l'enseignant : réponse pendant le minuteur, corrigé + score après. */
@@ -29,10 +29,14 @@ export function StudentQuizzes() {
 function QuizCard({ quiz }: { quiz: StudentQuiz }) {
   const qc = useQueryClient();
   const submit = useServerFn(submitMyQuiz);
+  const begin = useServerFn(beginMyQuiz);
   const now = useNow();
-  const left = new Date(quiz.ends_at).getTime() - now;
+  const closeLeft = new Date(quiz.ends_at).getTime() - now;
+  const left = quiz.my_deadline ? new Date(quiz.my_deadline).getTime() - now : closeLeft;
   const notStarted = quiz.not_started || (quiz.starts_at ? new Date(quiz.starts_at).getTime() > now : false);
-  const finished = !notStarted && (quiz.finished || left <= 0);
+  const windowClosed = quiz.finished || closeLeft <= 0;
+  const waitingStart = !notStarted && !windowClosed && !quiz.begun;
+  const finished = !notStarted && (windowClosed || (quiz.begun && left <= 0));
   const [answers, setAnswers] = useState<(number | null)[]>(
     quiz.my_answers ?? quiz.questions.map(() => null),
   );
@@ -45,8 +49,27 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
   }, [notStarted, quiz.starts_at, now]);
 
   useEffect(() => {
-    if (!quiz.finished && left <= 0) void qc.invalidateQueries({ queryKey: ["my-quizzes"] });
-  }, [left <= 0, quiz.finished]);
+    if (!quiz.finished && closeLeft <= 0) void qc.invalidateQueries({ queryKey: ["my-quizzes"] });
+  }, [closeLeft <= 0, quiz.finished]);
+
+  useEffect(() => {
+    if (quiz.my_answers) setAnswers(quiz.my_answers.length ? quiz.my_answers : quiz.questions.map(() => null));
+    else if (quiz.questions.length && answers.length !== quiz.questions.length)
+      setAnswers(quiz.questions.map(() => null));
+  }, [quiz.begun, quiz.questions.length]);
+
+  async function handleBegin() {
+    if (!window.confirm(`Commencer le QCM ? Tu auras ${quiz.duration_minutes} min.`)) return;
+    setBusy(true);
+    try {
+      await begin({ data: { quizId: quiz.id } });
+      await qc.invalidateQueries({ queryKey: ["my-quizzes"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Impossible de commencer");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleSubmit() {
     setBusy(true);
@@ -81,7 +104,11 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
           </span>
         ) : (
           <span className="rounded-full bg-primary/15 px-2.5 py-1 text-xs font-bold text-primary">
-            {finished ? "Terminé" : `⏱️ ${formatLeft(left)}`}
+            {waitingStart
+              ? `Disponible encore ${formatLeft(closeLeft)}`
+              : finished
+                ? "Temps écoulé"
+                : `⏱️ ${formatLeft(left)}`}
           </span>
         )}
       </div>
@@ -101,11 +128,31 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
           </p>
           <p className="mt-1 text-xs">
             Tu auras <strong className="text-foreground">{quiz.duration_minutes} min</strong> pour
-            répondre — le temps restant s'affichera ici dès l'ouverture.
+            répondre à partir du moment où tu appuies sur « Commencer ».
           </p>
         </div>
       )}
-      {quiz.finished && !quiz.my_answers && (
+      {waitingStart && (
+        <div className="space-y-3 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+          <p>
+            Tu auras <strong className="text-foreground">{quiz.duration_minutes} min</strong> pour répondre dès
+            que tu appuies sur « Commencer ». QCM disponible jusqu'à{" "}
+            {new Date(quiz.ends_at).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleBegin()}
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
+          >
+            ▶ Commencer
+          </button>
+        </div>
+      )}
+      {quiz.begun && finished && !quiz.finished && (
+        <p className="text-xs text-muted-foreground">Le corrigé s'affichera à la fermeture du QCM.</p>
+      )}
+      {quiz.finished && (!quiz.my_answers || quiz.my_answers.length === 0) && (
         <p className="text-xs text-muted-foreground">Tu n'as pas répondu à ce QCM.</p>
       )}
       <ol className="space-y-3">
@@ -141,7 +188,7 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
           </li>
         ))}
       </ol>
-      {!finished && (
+      {!finished && quiz.begun && (
         <button
           type="button"
           disabled={busy}

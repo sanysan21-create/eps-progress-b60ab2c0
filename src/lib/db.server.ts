@@ -472,6 +472,8 @@ create table if not exists session_quiz_answers (
   unique (quiz_id, student_id)
 );
 
+alter table session_quiz_answers add column if not exists begun_at timestamptz;
+
 
 create index if not exists idx_students_teacher on students(teacher_id);
 

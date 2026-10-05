@@ -22,7 +22,10 @@ export type StudentQuiz = {
   title: string;
   activity_name: string | null;
   session_number: number | null;
+  duration_minutes: number;
+  starts_at: string | null;
   ends_at: string;
+  not_started: boolean;
   finished: boolean;
   questions: { text: string; options: string[]; correct: number | null }[];
   my_answers: (number | null)[] | null;
@@ -223,7 +226,8 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
       join program_sessions p on p.id = z.session_id
       left join activities a on a.id = p.activity_id
       left join session_quiz_answers ans on ans.quiz_id = z.id and ans.student_id = ${studentId}
-      where z.teacher_id = ${scope.teacherId} and z.started_at is not null and z.started_at <= now()
+      where z.teacher_id = ${scope.teacherId} and z.started_at is not null
+        and (z.started_at <= now() or z.scheduled_at is not null)
         ${
           scope.classIds.length > 0
             ? context.sql`and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))`

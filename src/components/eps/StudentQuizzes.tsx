@@ -31,11 +31,18 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
   const submit = useServerFn(submitMyQuiz);
   const now = useNow();
   const left = new Date(quiz.ends_at).getTime() - now;
-  const finished = quiz.finished || left <= 0;
+  const notStarted = quiz.not_started || (quiz.starts_at ? new Date(quiz.starts_at).getTime() > now : false);
+  const finished = !notStarted && (quiz.finished || left <= 0);
   const [answers, setAnswers] = useState<(number | null)[]>(
     quiz.my_answers ?? quiz.questions.map(() => null),
   );
   const [busy, setBusy] = useState(false);
+
+  // Le QCM programmé vient de s'ouvrir : recharger pour afficher les questions.
+  useEffect(() => {
+    if (notStarted && quiz.starts_at && new Date(quiz.starts_at).getTime() - now <= 0)
+      void qc.invalidateQueries({ queryKey: ["my-quizzes"] });
+  }, [notStarted, quiz.starts_at, now]);
 
   useEffect(() => {
     if (!quiz.finished && left <= 0) void qc.invalidateQueries({ queryKey: ["my-quizzes"] });

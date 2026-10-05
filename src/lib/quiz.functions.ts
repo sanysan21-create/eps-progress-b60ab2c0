@@ -105,7 +105,7 @@ export const saveSessionQuiz = createServerFn({ method: "POST" })
                 .refine((q) => q.correct < q.options.length, "Bonne réponse invalide"),
             )
             .min(1, "Ajoute au moins une question")
-            .max(40),
+            .max(100, "100 questions maximum"),
         })
         .parse(input),
   )
@@ -260,7 +260,7 @@ export const submitMyQuiz = createServerFn({ method: "POST" })
     z
       .object({
         quizId: z.string().uuid(),
-        answers: z.array(z.number().int().min(0).max(10).nullable()).max(40),
+        answers: z.array(z.number().int().min(0).max(10).nullable()).max(100, "100 questions maximum"),
       })
       .parse(input),
   )

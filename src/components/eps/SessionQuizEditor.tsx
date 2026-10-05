@@ -62,7 +62,14 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
       toast.success(ok);
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
+      let msg = e instanceof Error ? e.message : "Erreur";
+      try {
+        const parsed = JSON.parse(msg);
+        if (Array.isArray(parsed) && parsed[0]?.message) msg = parsed[0].message;
+      } catch {
+        /* message déjà lisible */
+      }
+      toast.error(msg);
     } finally {
       setBusy(false);
     }

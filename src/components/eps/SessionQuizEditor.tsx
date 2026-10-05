@@ -297,19 +297,89 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
             <strong>{data!.title}</strong> · {data!.questions.length} questions · {data!.answered} élève(s) ont répondu
           </p>
           {finished && (
-            <ul className="divide-y divide-border rounded-xl border border-border">
-              {data!.results.length === 0 && (
-                <li className="px-3 py-2 text-sm text-muted-foreground">Aucune réponse.</li>
+            <div className="space-y-3">
+              {data!.stats ? (
+                <>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[
+                      { label: "Participation", value: `${data!.answered}/${data!.class_size || "?"}` },
+                      { label: "Moyenne", value: `${data!.stats.average}/${data!.stats.total}` },
+                      { label: "Médiane", value: `${data!.stats.median}/${data!.stats.total}` },
+                      { label: "Min – Max", value: `${data!.stats.min} – ${data!.stats.max}` },
+                    ].map((s) => (
+                      <div key={s.label} className="rounded-xl border border-border bg-surface p-2.5 text-center">
+                        <p className="text-xs text-muted-foreground">{s.label}</p>
+                        <p className="font-mono text-sm font-bold text-primary">{s.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      Analyse par question
+                    </p>
+                    {data!.questions.map((q, qi) => {
+                      const pq = data!.stats!.per_question[qi];
+                      if (!pq) return null;
+                      const pct = data!.answered > 0 ? Math.round((pq.correct / data!.answered) * 100) : 0;
+                      return (
+                        <div key={qi} className="space-y-1.5 rounded-xl border border-border bg-surface p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-semibold">
+                              {qi + 1}. {q.text}
+                            </p>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${pct >= 70 ? "bg-primary/15 text-primary" : pct >= 40 ? "bg-amber-500/15 text-amber-500" : "bg-red-500/15 text-red-500"}`}
+                            >
+                              {pct}% réussite
+                            </span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                          </div>
+                          <ul className="space-y-0.5 pt-1">
+                            {q.options.map((opt, oi) => (
+                              <li key={oi} className="flex items-center gap-2 text-xs">
+                                <span
+                                  className={`grid size-4 shrink-0 place-items-center rounded-full text-[10px] font-bold ${oi === q.correct ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                                >
+                                  {String.fromCharCode(65 + oi)}
+                                </span>
+                                <span className={oi === q.correct ? "font-semibold text-primary" : "text-muted-foreground"}>
+                                  {opt}
+                                </span>
+                                <span className="ml-auto font-mono text-muted-foreground">
+                                  {pq.choices[oi] ?? 0}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Aucune réponse.</p>
               )}
-              {data!.results.map((r) => (
-                <li key={r.student_id} className="flex justify-between px-3 py-2 text-sm">
-                  <span>{r.name}</span>
-                  <span className="font-mono font-bold text-primary">
-                    {r.score}/{r.total}
-                  </span>
-                </li>
-              ))}
-            </ul>
+              <div className="space-y-1.5">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Résultats par élève
+                </p>
+                <ul className="divide-y divide-border rounded-xl border border-border">
+                  {data!.results.length === 0 && (
+                    <li className="px-3 py-2 text-sm text-muted-foreground">Aucune réponse.</li>
+                  )}
+                  {data!.results.map((r) => (
+                    <li key={r.student_id} className="flex justify-between px-3 py-2 text-sm">
+                      <span>{r.name}</span>
+                      <span className="font-mono font-bold text-primary">
+                        {r.score}/{r.total}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           )}
           <button
             type="button"

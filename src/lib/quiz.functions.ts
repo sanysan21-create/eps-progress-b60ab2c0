@@ -15,6 +15,17 @@ export type TeacherQuiz = {
   scheduled_at: string | null;
   results: { student_id: string; name: string; score: number; total: number }[];
   answered: number;
+  /** Nombre d'élèves de la classe concernée (participation). */
+  class_size: number;
+  /** Stats globales + par question, remplies une fois le QCM terminé. */
+  stats: {
+    average: number;
+    min: number;
+    max: number;
+    median: number;
+    total: number;
+    per_question: { correct: number; choices: number[] }[];
+  } | null;
 };
 
 export type StudentQuiz = {
@@ -73,23 +84,51 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
       order by s.last_name, s.first_name
     `;
     const finished = !!quiz.ends_at && new Date(quiz.ends_at) <= new Date();
+    const questions = quiz.questions ?? [];
+    const results = answers.map((a) => ({
+      student_id: a.student_id,
+      name: `${a.last_name} ${a.first_name}`,
+      score: scoreOf(questions, a.answers ?? []),
+      total: questions.length,
+    }));
+    const sizeRows = await context.sql<{ size: number }[]>`
+      select count(distinct cs.student_id)::int as size
+      from program_sessions p
+      left join class_students cs on cs.class_id = p.class_id
+      where p.id = ${data.sessionId}
+    `;
+    const size = sizeRows[0]?.size ?? 0;
+    let stats: TeacherQuiz["stats"] = null;
+    if (finished && results.length > 0) {
+      const scores = results.map((r) => r.score).sort((a, b) => a - b);
+      const mid = Math.floor(scores.length / 2);
+      stats = {
+        total: questions.length,
+        average: Math.round((scores.reduce((s, v) => s + v, 0) / scores.length) * 10) / 10,
+        min: scores[0] ?? 0,
+        max: scores[scores.length - 1] ?? 0,
+        median:
+          scores.length % 2
+            ? (scores[mid] ?? 0)
+            : Math.round((((scores[mid - 1] ?? 0) + (scores[mid] ?? 0)) / 2) * 10) / 10,
+        per_question: questions.map((q, qi) => ({
+          correct: answers.filter((a) => (a.answers ?? [])[qi] === q.correct).length,
+          choices: q.options.map((_, oi) => answers.filter((a) => (a.answers ?? [])[qi] === oi).length),
+        })),
+      };
+    }
     return {
       id: quiz.id,
       title: quiz.title,
       duration_minutes: Number(quiz.duration_minutes),
-      questions: quiz.questions ?? [],
+      questions,
       started_at: iso(quiz.started_at),
       ends_at: iso(quiz.ends_at),
       scheduled_at: iso(quiz.scheduled_at ?? null),
       answered: answers.length,
-      results: finished
-        ? answers.map((a) => ({
-            student_id: a.student_id,
-            name: `${a.last_name} ${a.first_name}`,
-            score: scoreOf(quiz.questions ?? [], a.answers ?? []),
-            total: (quiz.questions ?? []).length,
-          }))
-        : [],
+      class_size: Number(size) || 0,
+      results: finished ? results : [],
+      stats,
     };
   });
 

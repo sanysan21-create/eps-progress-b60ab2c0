@@ -91,12 +91,13 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
       score: scoreOf(questions, a.answers ?? []),
       total: questions.length,
     }));
-    const [{ size }] = await context.sql<{ size: number }[]>`
+    const sizeRows = await context.sql<{ size: number }[]>`
       select count(distinct cs.student_id)::int as size
       from program_sessions p
       left join class_students cs on cs.class_id = p.class_id
       where p.id = ${data.sessionId}
     `;
+    const size = sizeRows[0]?.size ?? 0;
     let stats: TeacherQuiz["stats"] = null;
     if (finished && results.length > 0) {
       const scores = results.map((r) => r.score).sort((a, b) => a - b);
@@ -104,9 +105,12 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
       stats = {
         total: questions.length,
         average: Math.round((scores.reduce((s, v) => s + v, 0) / scores.length) * 10) / 10,
-        min: scores[0],
-        max: scores[scores.length - 1],
-        median: scores.length % 2 ? scores[mid] : Math.round(((scores[mid - 1] + scores[mid]) / 2) * 10) / 10,
+        min: scores[0] ?? 0,
+        max: scores[scores.length - 1] ?? 0,
+        median:
+          scores.length % 2
+            ? (scores[mid] ?? 0)
+            : Math.round((((scores[mid - 1] ?? 0) + (scores[mid] ?? 0)) / 2) * 10) / 10,
         per_question: questions.map((q, qi) => ({
           correct: answers.filter((a) => (a.answers ?? [])[qi] === q.correct).length,
           choices: q.options.map((_, oi) => answers.filter((a) => (a.answers ?? [])[qi] === oi).length),

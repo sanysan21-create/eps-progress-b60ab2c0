@@ -319,6 +319,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                     </p>
                     {data!.questions.map((q, qi) => {
                       const pq = data!.stats!.per_question[qi];
+                      if (!pq) return null;
                       const pct = data!.answered > 0 ? Math.round((pq.correct / data!.answered) * 100) : 0;
                       return (
                         <div key={qi} className="space-y-1.5 rounded-xl border border-border bg-surface p-3">

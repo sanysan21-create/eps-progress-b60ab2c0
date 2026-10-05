@@ -72,9 +72,9 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
     }
   }
 
-  async function handleSubmit(finish = false) {
+  async function handleSubmit(finishEarly = false) {
     if (
-      finish &&
+      finishEarly &&
       !window.confirm(
         "Terminer le QCM ? Tes réponses seront enregistrées et tu ne pourras plus les modifier.",
       )
@@ -82,11 +82,12 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
       return;
     setBusy(true);
     try {
-      await submit({ data: { quizId: quiz.id, answers } });
+      if (finishEarly) await finish({ data: { quizId: quiz.id, answers } });
+      else await submit({ data: { quizId: quiz.id, answers } });
       toast.success(
-        finish
+        finishEarly
           ? "QCM terminé. Le corrigé s'affichera à la clôture du QCM."
-          : "Réponses envoyées. Le corrigé s'affichera à la fin du temps.",
+          : "Réponses enregistrées. Tu peux encore les modifier avant de terminer.",
       );
       await qc.invalidateQueries({ queryKey: ["my-quizzes"] });
     } catch (e) {

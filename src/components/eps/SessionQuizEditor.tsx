@@ -20,7 +20,7 @@ const FIELD =
 const BTN =
   "inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary disabled:opacity-50";
 
-const blank = (): QuizQuestion => ({ text: "", options: ["", ""], correct: 0 });
+const blank = (): QuizQuestion => ({ text: "", options: ["", "", "", ""], correct: 0 });
 
 /** QCM d'une séance : création, lancement avec minuteur, résultats. */
 export function SessionQuizEditor({ sessionId }: { sessionId: string }) {

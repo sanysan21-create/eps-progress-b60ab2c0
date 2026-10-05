@@ -475,6 +475,18 @@ create table if not exists session_quiz_answers (
 alter table session_quiz_answers add column if not exists begun_at timestamptz;
 alter table session_quiz_answers add column if not exists finished_at timestamptz;
 
+-- Journal de toutes les connexions élèves (via QR), en plus de last_login_at.
+create table if not exists student_login_logs (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references students(id) on delete cascade,
+  logged_at timestamptz not null default now()
+);
+create index if not exists idx_student_login_logs on student_login_logs(student_id, logged_at desc);
+insert into student_login_logs (student_id, logged_at)
+  select s.id, s.last_login_at from students s
+  where s.last_login_at is not null
+    and not exists (select 1 from student_login_logs l where l.student_id = s.id);
+
 
 create index if not exists idx_students_teacher on students(teacher_id);
 

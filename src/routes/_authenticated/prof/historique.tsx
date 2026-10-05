@@ -2,10 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { ChevronRight, History, Loader2, Search } from "lucide-react";
+import { ChevronRight, History, List as ListIcon, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
-import { listStudentLogins } from "@/lib/classes.functions";
+import { listStudentLoginLogs, listStudentLogins } from "@/lib/classes.functions";
 import { viewStudentAsTeacher } from "@/lib/student-access.functions";
 
 export const Route = createFileRoute("/_authenticated/prof/historique")({
@@ -47,6 +47,39 @@ function relativeLabel(iso: string): string {
   return `il y a ${months} mois`;
 }
 
+function StudentLogs({ studentId }: { studentId: string }) {
+  const fetchLogs = useServerFn(listStudentLoginLogs);
+  const { data, isLoading } = useQuery({
+    queryKey: ["student-login-logs", studentId],
+    queryFn: () => fetchLogs({ data: { studentId } }),
+  });
+  return (
+    <div className="mt-2 rounded-2xl border border-border bg-surface-2 p-4">
+      {isLoading ? (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" /> Chargement…
+        </p>
+      ) : !data || data.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucune connexion enregistrée.</p>
+      ) : (
+        <>
+          <p className="mono-label mb-2 text-muted-foreground">
+            {data.length} connexion{data.length > 1 ? "s" : ""}
+          </p>
+          <ul className="max-h-72 space-y-1 overflow-y-auto">
+            {data.map((iso, i) => (
+              <li key={iso + i} className="flex justify-between gap-3 text-sm">
+                <span>{dateFormatter.format(new Date(iso))}</span>
+                <span className="mono-label text-muted-foreground">{relativeLabel(iso)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 function LoginHistoryPage() {
   const fetchLogins = useServerFn(listStudentLogins);
   const { data, isLoading } = useQuery({
@@ -76,6 +109,7 @@ function LoginHistoryPage() {
   const queryClient = useQueryClient();
   const openStudentSpace = useServerFn(viewStudentAsTeacher);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [logsFor, setLogsFor] = useState<string | null>(null);
 
   /** Ouvre l'espace de l'élève sans enregistrer de connexion dans l'historique. */
   async function openStudent(studentId: string) {
@@ -189,6 +223,15 @@ function LoginHistoryPage() {
                 )}
               </div>
             </button>
+            <button
+              type="button"
+              onClick={() => setLogsFor((v) => (v === row.id ? null : row.id))}
+              className="mt-1 flex items-center gap-1 px-2 font-mono text-[10px] uppercase tracking-tight text-muted-foreground hover:text-primary"
+            >
+              <ListIcon className="size-3" />
+              {logsFor === row.id ? "Masquer le journal" : "Voir toutes les connexions"}
+            </button>
+            {logsFor === row.id && <StudentLogs studentId={row.id} />}
             </li>
           ))}
         </ul>

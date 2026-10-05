@@ -105,6 +105,7 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
           <span className="ml-2 text-xs text-muted-foreground">
             {quiz.activity_name}
             {quiz.session_number ? ` · S${quiz.session_number}` : ""}
+            {` · ${quiz.questions.length} question${quiz.questions.length > 1 ? "s" : ""}`}
           </span>
         </p>
         {notStarted ? (
@@ -128,7 +129,8 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
       {notStarted && (
         <div className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
           <p>
-            Ce QCM ouvre{" "}
+            Ce QCM comporte <strong className="text-foreground">{quiz.questions.length} question{quiz.questions.length > 1 ? "s" : ""}</strong> et
+            ouvre{" "}
             {quiz.starts_at
               ? new Date(quiz.starts_at).toLocaleString("fr-FR", {
                   day: "numeric",

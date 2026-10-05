@@ -57,6 +57,7 @@ export const redeemStudentQr = createServerFn({ method: "POST" })
 
     // Trace de la dernière connexion réussie (visible par l'enseignant).
     await sql`update students set last_login_at = now() where id = ${identity.id}`;
+    await sql`insert into student_login_logs (student_id) values (${identity.id})`;
 
     return { ok: true };
   });

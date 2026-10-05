@@ -397,6 +397,22 @@ export const listStudentLogins = createServerFn({ method: "GET" })
     return [...byStudent.values()];
   });
 
+/** Journal complet des connexions d'un élève de l'enseignant. */
+export const listStudentLoginLogs = createServerFn({ method: "GET" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentId: string }) =>
+    z.object({ studentId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<string[]> => {
+    const rows = await context.sql<{ logged_at: Date }[]>`
+      select l.logged_at from student_login_logs l
+      join students s on s.id = l.student_id
+      where l.student_id = ${data.studentId} and s.teacher_id = ${context.userId}
+      order by l.logged_at desc limit 200
+    `;
+    return rows.map((r) => new Date(r.logged_at).toISOString());
+  });
+
 /** Inscription de l'élève à l'Association Sportive (AS) — badge visible côté élève. */
 export const setStudentAsMember = createServerFn({ method: "POST" })
   .middleware([requireTeacher])

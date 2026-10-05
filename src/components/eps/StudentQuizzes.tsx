@@ -177,6 +177,11 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
       {quiz.begun && finished && !quiz.finished && (
         <p className="text-xs text-muted-foreground">Le corrigé s'affichera à la fermeture du QCM.</p>
       )}
+      {quiz.my_finished && !quiz.finished && (
+        <p className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-xs font-semibold text-primary">
+          🏁 QCM terminé — tes réponses sont enregistrées. Le corrigé s'affichera à la clôture du QCM.
+        </p>
+      )}
       {quiz.finished && (!quiz.my_answers || quiz.my_answers.length === 0) && (
         <p className="text-xs text-muted-foreground">Tu n'as pas répondu à ce QCM.</p>
       )}
@@ -199,7 +204,7 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
                   <button
                     key={k}
                     type="button"
-                    disabled={finished}
+                    disabled={finished || quiz.my_finished}
                     aria-pressed={mine}
                     onClick={() => setAnswers((p) => p.map((v, j) => (j === i ? k : v)))}
                     className={`rounded-xl border px-3 py-2 text-left text-sm ${cls}`}
@@ -213,15 +218,25 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
           </li>
         ))}
       </ol>
-      {!finished && quiz.begun && (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void handleSubmit()}
-          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
-        >
-          {quiz.my_answers ? "Modifier mes réponses" : "Envoyer mes réponses"}
-        </button>
+      {!finished && quiz.begun && !quiz.my_finished && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleSubmit()}
+            className="rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-bold uppercase text-foreground disabled:opacity-60"
+          >
+            {quiz.my_answers?.length ? "Enregistrer" : "Enregistrer mes réponses"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleSubmit(true)}
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
+          >
+            🏁 Terminer le QCM
+          </button>
+        </div>
       )}
     </article>
   );

@@ -28,6 +28,8 @@ export type StudentQuiz = {
   /** Fin du temps personnel de l'élève (après « Commencer »). */
   my_deadline: string | null;
   begun: boolean;
+  /** L'élève a appuyé sur « Terminer » : réponses verrouillées. */
+  my_finished: boolean;
   not_started: boolean;
   finished: boolean;
   questions: { text: string; options: string[]; correct: number | null }[];
@@ -230,11 +232,12 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
         my: (number | null)[] | null;
         ans_id: string | null;
         begun_at: Date | null;
+        my_finished_at: Date | null;
       })[]
     >`
       select z.id, z.title, z.duration_minutes, z.questions, z.started_at, z.ends_at,
              coalesce(a.name, p.activity_name) as activity_name, p.session_number,
-             ans.answers as my, ans.id as ans_id,
+             ans.answers as my, ans.id as ans_id, ans.finished_at as my_finished_at,
              coalesce(ans.begun_at, ans.created_at) as begun_at
       from session_quizzes z
       join program_sessions p on p.id = z.session_id
@@ -275,6 +278,7 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
         ends_at: iso(row.ends_at)!,
         my_deadline: iso(deadline),
         begun,
+        my_finished: !!row.my_finished_at,
         not_started: notStarted,
         finished,
         questions: questions.map((q) => ({
@@ -310,11 +314,12 @@ export const submitMyQuiz = createServerFn({ method: "POST" })
       join session_quiz_answers a on a.quiz_id = z.id and a.student_id = ${studentId}
       where z.id = ${data.quizId} and z.teacher_id = ${scope.teacherId}
         and z.started_at is not null and z.started_at <= now()
+        and a.finished_at is null
         and now() <= least(z.ends_at, coalesce(a.begun_at, a.created_at) + make_interval(mins => z.duration_minutes))
                      + interval '15 seconds'
         and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))
     `;
-    if (!quiz) throw new Error("Ton temps est écoulé.");
+    if (!quiz) throw new Error("Ton temps est écoulé ou le QCM est déjà terminé.");
     await context.sql`
       update session_quiz_answers set answers = ${context.sql.json(data.answers)}, updated_at = now()
       where quiz_id = ${quiz.id} and student_id = ${studentId}
@@ -322,6 +327,40 @@ export const submitMyQuiz = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+/** L'élève appuie sur « Terminer » : ses réponses sont verrouillées définitivement. */
+export const finishMyQuiz = createServerFn({ method: "POST" })
+  .middleware([withDb])
+  .inputValidator((input: { quizId: string; answers: (number | null)[] }) =>
+    z
+      .object({
+        quizId: z.string().uuid(),
+        answers: z.array(z.number().int().min(0).max(10).nullable()).max(100, "100 questions maximum"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const studentId = await studentScope();
+    if (!studentId) throw new Error("Session élève absente");
+    const { loadStudentScope } = await import("./program.server");
+    const scope = await loadStudentScope(context.sql, studentId);
+    if (!scope) throw new Error("Session élève absente");
+    const rows = await context.sql`
+      update session_quiz_answers a set answers = ${context.sql.json(data.answers)},
+        finished_at = now(), updated_at = now()
+      from session_quizzes z join program_sessions p on p.id = z.session_id
+      where a.quiz_id = z.id and a.student_id = ${studentId} and z.id = ${data.quizId}
+        and z.teacher_id = ${scope.teacherId}
+        and z.started_at is not null and z.started_at <= now()
+        and a.finished_at is null
+        and now() <= least(z.ends_at, coalesce(a.begun_at, a.created_at) + make_interval(mins => z.duration_minutes))
+                     + interval '15 seconds'
+        and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))
+      returning a.id
+    `;
+    if (rows.length === 0) throw new Error("Ton temps est écoulé ou le QCM est déjà terminé.");
+    return { ok: true };
+  });
 
 /** L'élève appuie sur « Commencer » : son minuteur personnel démarre. */
 export const beginMyQuiz = createServerFn({ method: "POST" })

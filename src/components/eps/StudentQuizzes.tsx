@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
-import { beginMyQuiz, getMyQuizzes, submitMyQuiz, type StudentQuiz } from "@/lib/quiz.functions";
+import { beginMyQuiz, finishMyQuiz, getMyQuizzes, submitMyQuiz, type StudentQuiz } from "@/lib/quiz.functions";
 import { formatLeft, useNow } from "./quiz-time";
 
 /** QCM lancés par l'enseignant : réponse pendant le minuteur, corrigé + score après. */
@@ -29,6 +29,7 @@ export function StudentQuizzes() {
 function QuizCard({ quiz }: { quiz: StudentQuiz }) {
   const qc = useQueryClient();
   const submit = useServerFn(submitMyQuiz);
+  const finish = useServerFn(finishMyQuiz);
   const begin = useServerFn(beginMyQuiz);
   const now = useNow();
   const closeLeft = new Date(quiz.ends_at).getTime() - now;
@@ -71,11 +72,23 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
     }
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(finishEarly = false) {
+    if (
+      finishEarly &&
+      !window.confirm(
+        "Terminer le QCM ? Tes réponses seront enregistrées et tu ne pourras plus les modifier.",
+      )
+    )
+      return;
     setBusy(true);
     try {
-      await submit({ data: { quizId: quiz.id, answers } });
-      toast.success("Réponses envoyées. Le corrigé s'affichera à la fin du temps.");
+      if (finishEarly) await finish({ data: { quizId: quiz.id, answers } });
+      else await submit({ data: { quizId: quiz.id, answers } });
+      toast.success(
+        finishEarly
+          ? "QCM terminé. Le corrigé s'affichera à la clôture du QCM."
+          : "Réponses enregistrées. Tu peux encore les modifier avant de terminer.",
+      );
       await qc.invalidateQueries({ queryKey: ["my-quizzes"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Envoi impossible");
@@ -136,8 +149,20 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
         <div className="space-y-3 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
           <p>
             Tu auras <strong className="text-foreground">{quiz.duration_minutes} min</strong> pour répondre dès
-            que tu appuies sur « Commencer ». QCM disponible jusqu'à{" "}
-            {new Date(quiz.ends_at).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}.
+            que tu appuies sur « Commencer ».
+          </p>
+          <p className="text-xs">
+            ⏳ Ce QCM se clôture le{" "}
+            <strong className="text-foreground">
+              {new Date(quiz.ends_at).toLocaleString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </strong>
+            . Passé cet horaire, tu ne pourras plus y répondre.
           </p>
           <button
             type="button"
@@ -151,6 +176,11 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
       )}
       {quiz.begun && finished && !quiz.finished && (
         <p className="text-xs text-muted-foreground">Le corrigé s'affichera à la fermeture du QCM.</p>
+      )}
+      {quiz.my_finished && !quiz.finished && (
+        <p className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-xs font-semibold text-primary">
+          🏁 QCM terminé — tes réponses sont enregistrées. Le corrigé s'affichera à la clôture du QCM.
+        </p>
       )}
       {quiz.finished && (!quiz.my_answers || quiz.my_answers.length === 0) && (
         <p className="text-xs text-muted-foreground">Tu n'as pas répondu à ce QCM.</p>
@@ -174,7 +204,7 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
                   <button
                     key={k}
                     type="button"
-                    disabled={finished}
+                    disabled={finished || quiz.my_finished}
                     aria-pressed={mine}
                     onClick={() => setAnswers((p) => p.map((v, j) => (j === i ? k : v)))}
                     className={`rounded-xl border px-3 py-2 text-left text-sm ${cls}`}
@@ -188,15 +218,25 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
           </li>
         ))}
       </ol>
-      {!finished && quiz.begun && (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void handleSubmit()}
-          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
-        >
-          {quiz.my_answers ? "Modifier mes réponses" : "Envoyer mes réponses"}
-        </button>
+      {!finished && quiz.begun && !quiz.my_finished && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleSubmit()}
+            className="rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-bold uppercase text-foreground disabled:opacity-60"
+          >
+            {quiz.my_answers?.length ? "Enregistrer" : "Enregistrer mes réponses"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleSubmit(true)}
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
+          >
+            🏁 Terminer le QCM
+          </button>
+        </div>
       )}
     </article>
   );

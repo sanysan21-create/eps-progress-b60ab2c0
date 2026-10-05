@@ -240,7 +240,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                     void run(() => start({ data: { sessionId, availableMinutes } }), "QCM ouvert");
                 }}
               >
-                <Play className="size-3.5" /> Lancer
+                <Play className="size-3.5" /> Ouvrir maintenant
               </button>
             )}
             {data && (

@@ -105,6 +105,7 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
           <span className="ml-2 text-xs text-muted-foreground">
             {quiz.activity_name}
             {quiz.session_number ? ` · S${quiz.session_number}` : ""}
+            {` · ${quiz.questions.length} question${quiz.questions.length > 1 ? "s" : ""}`}
           </span>
         </p>
         {notStarted ? (

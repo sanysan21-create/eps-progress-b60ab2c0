@@ -239,21 +239,25 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
     const now = new Date();
     return rows.map((row) => {
       const finished = !!row.ends_at && new Date(row.ends_at) <= now;
-      const questions = row.questions ?? [];
+      const notStarted = !!row.started_at && new Date(row.started_at) > now;
+      const questions = notStarted ? [] : (row.questions ?? []);
       return {
         id: row.id,
         title: row.title,
         activity_name: row.activity_name,
         session_number: row.session_number === null ? null : Number(row.session_number),
+        duration_minutes: Number(row.duration_minutes),
+        starts_at: iso(row.started_at),
         ends_at: iso(row.ends_at)!,
+        not_started: notStarted,
         finished,
         questions: questions.map((q) => ({
           text: q.text,
           options: q.options,
           correct: finished ? q.correct : null,
         })),
-        my_answers: row.my,
-        score: finished && row.my ? scoreOf(questions, row.my) : null,
+        my_answers: notStarted ? null : row.my,
+        score: finished && row.my ? scoreOf(row.questions ?? [], row.my) : null,
       };
     });
   });

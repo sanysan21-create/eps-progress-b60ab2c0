@@ -136,8 +136,20 @@ function QuizCard({ quiz }: { quiz: StudentQuiz }) {
         <div className="space-y-3 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
           <p>
             Tu auras <strong className="text-foreground">{quiz.duration_minutes} min</strong> pour répondre dès
-            que tu appuies sur « Commencer ». QCM disponible jusqu'à{" "}
-            {new Date(quiz.ends_at).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}.
+            que tu appuies sur « Commencer ».
+          </p>
+          <p className="text-xs">
+            ⏳ Ce QCM se clôture le{" "}
+            <strong className="text-foreground">
+              {new Date(quiz.ends_at).toLocaleString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </strong>
+            . Passé cet horaire, tu ne pourras plus y répondre.
           </p>
           <button
             type="button"

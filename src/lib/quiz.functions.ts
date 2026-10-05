@@ -25,6 +25,9 @@ export type StudentQuiz = {
   duration_minutes: number;
   starts_at: string | null;
   ends_at: string;
+  /** Fin du temps personnel de l'élève (après « Commencer »). */
+  my_deadline: string | null;
+  begun: boolean;
   not_started: boolean;
   finished: boolean;
   questions: { text: string; options: string[]; correct: number | null }[];
@@ -134,13 +137,13 @@ export const saveSessionQuiz = createServerFn({ method: "POST" })
 
 export const startSessionQuiz = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
-  .inputValidator((input: { sessionId: string }) =>
-    z.object({ sessionId: z.string().uuid() }).parse(input),
+  .inputValidator((input: { sessionId: string; availableMinutes: number }) =>
+    z.object({ sessionId: z.string().uuid(), availableMinutes: z.number().int().min(1).max(43200) }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const rows = await context.sql`
       update session_quizzes set started_at = now(), scheduled_at = null,
-        ends_at = now() + make_interval(mins => duration_minutes), updated_at = now()
+        ends_at = now() + make_interval(mins => ${data.availableMinutes}::int), updated_at = now()
       where session_id = ${data.sessionId} and teacher_id = ${context.userId}
         and jsonb_array_length(questions) > 0
       returning id
@@ -152,9 +155,13 @@ export const startSessionQuiz = createServerFn({ method: "POST" })
 /** Programme l'ouverture du QCM à une date/heure précise (fuseau du navigateur). */
 export const scheduleSessionQuiz = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
-  .inputValidator((input: { sessionId: string; opensAt: string }) =>
+  .inputValidator((input: { sessionId: string; opensAt: string; availableMinutes: number }) =>
     z
-      .object({ sessionId: z.string().uuid(), opensAt: z.string().min(1, "Choisis une date et une heure") })
+      .object({
+        sessionId: z.string().uuid(),
+        opensAt: z.string().min(1, "Choisis une date et une heure"),
+        availableMinutes: z.number().int().min(1).max(43200),
+      })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -164,7 +171,7 @@ export const scheduleSessionQuiz = createServerFn({ method: "POST" })
     const rows = await context.sql`
       update session_quizzes set scheduled_at = ${opensAt.toISOString()}::timestamptz,
         started_at = ${opensAt.toISOString()}::timestamptz,
-        ends_at = ${opensAt.toISOString()}::timestamptz + make_interval(mins => duration_minutes),
+        ends_at = ${opensAt.toISOString()}::timestamptz + make_interval(mins => ${data.availableMinutes}::int),
         updated_at = now()
       where session_id = ${data.sessionId} and teacher_id = ${context.userId}
         and jsonb_array_length(questions) > 0
@@ -217,11 +224,18 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
     const scope = await loadStudentScope(context.sql, studentId);
     if (!scope) return [];
     const rows = await context.sql<
-      (QuizRow & { activity_name: string | null; session_number: number | null; my: (number | null)[] | null })[]
+      (QuizRow & {
+        activity_name: string | null;
+        session_number: number | null;
+        my: (number | null)[] | null;
+        ans_id: string | null;
+        begun_at: Date | null;
+      })[]
     >`
       select z.id, z.title, z.duration_minutes, z.questions, z.started_at, z.ends_at,
              coalesce(a.name, p.activity_name) as activity_name, p.session_number,
-             ans.answers as my
+             ans.answers as my, ans.id as ans_id,
+             coalesce(ans.begun_at, ans.created_at) as begun_at
       from session_quizzes z
       join program_sessions p on p.id = z.session_id
       left join activities a on a.id = p.activity_id
@@ -240,7 +254,17 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
     return rows.map((row) => {
       const finished = !!row.ends_at && new Date(row.ends_at) <= now;
       const notStarted = !!row.started_at && new Date(row.started_at) > now;
-      const questions = notStarted ? [] : (row.questions ?? []);
+      const begun = !!row.ans_id;
+      const deadline =
+        begun && row.begun_at && row.ends_at
+          ? new Date(
+              Math.min(
+                new Date(row.begun_at).getTime() + Number(row.duration_minutes) * 60_000,
+                new Date(row.ends_at).getTime(),
+              ),
+            )
+          : null;
+      const questions = notStarted || (!begun && !finished) ? [] : (row.questions ?? []);
       return {
         id: row.id,
         title: row.title,
@@ -249,6 +273,8 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
         duration_minutes: Number(row.duration_minutes),
         starts_at: iso(row.started_at),
         ends_at: iso(row.ends_at)!,
+        my_deadline: iso(deadline),
+        begun,
         not_started: notStarted,
         finished,
         questions: questions.map((q) => ({
@@ -256,7 +282,7 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
           options: q.options,
           correct: finished ? q.correct : null,
         })),
-        my_answers: notStarted ? null : row.my,
+        my_answers: notStarted || !begun ? null : row.my,
         score: finished && row.my ? scoreOf(row.questions ?? [], row.my) : null,
       };
     });
@@ -281,15 +307,44 @@ export const submitMyQuiz = createServerFn({ method: "POST" })
     const [quiz] = await context.sql<{ id: string }[]>`
       select z.id from session_quizzes z
       join program_sessions p on p.id = z.session_id
+      join session_quiz_answers a on a.quiz_id = z.id and a.student_id = ${studentId}
+      where z.id = ${data.quizId} and z.teacher_id = ${scope.teacherId}
+        and z.started_at is not null and z.started_at <= now()
+        and now() <= least(z.ends_at, coalesce(a.begun_at, a.created_at) + make_interval(mins => z.duration_minutes))
+                     + interval '15 seconds'
+        and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))
+    `;
+    if (!quiz) throw new Error("Ton temps est écoulé.");
+    await context.sql`
+      update session_quiz_answers set answers = ${context.sql.json(data.answers)}, updated_at = now()
+      where quiz_id = ${quiz.id} and student_id = ${studentId}
+    `;
+    return { ok: true };
+  });
+
+
+/** L'élève appuie sur « Commencer » : son minuteur personnel démarre. */
+export const beginMyQuiz = createServerFn({ method: "POST" })
+  .middleware([withDb])
+  .inputValidator((input: { quizId: string }) => z.object({ quizId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const studentId = await studentScope();
+    if (!studentId) throw new Error("Session élève absente");
+    const { loadStudentScope } = await import("./program.server");
+    const scope = await loadStudentScope(context.sql, studentId);
+    if (!scope) throw new Error("Session élève absente");
+    const [quiz] = await context.sql<{ id: string }[]>`
+      select z.id from session_quizzes z
+      join program_sessions p on p.id = z.session_id
       where z.id = ${data.quizId} and z.teacher_id = ${scope.teacherId}
         and z.started_at is not null and z.started_at <= now() and z.ends_at > now()
         and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))
     `;
-    if (!quiz) throw new Error("Ce QCM est terminé.");
+    if (!quiz) throw new Error("Ce QCM n'est pas disponible.");
     await context.sql`
-      insert into session_quiz_answers (quiz_id, student_id, answers)
-      values (${quiz.id}, ${studentId}, ${context.sql.json(data.answers)})
-      on conflict (quiz_id, student_id) do update set answers = excluded.answers, updated_at = now()
+      insert into session_quiz_answers (quiz_id, student_id, answers, begun_at)
+      values (${quiz.id}, ${studentId}, '[]'::jsonb, now())
+      on conflict (quiz_id, student_id) do nothing
     `;
     return { ok: true };
   });

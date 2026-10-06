@@ -475,6 +475,16 @@ create table if not exists session_quiz_answers (
 alter table session_quiz_answers add column if not exists begun_at timestamptz;
 alter table session_quiz_answers add column if not exists finished_at timestamptz;
 
+-- Reprogrammation individuelle d'un QCM pour certains élèves.
+create table if not exists session_quiz_overrides (
+  quiz_id uuid not null references session_quizzes(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  opens_at timestamptz not null,
+  ends_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  primary key (quiz_id, student_id)
+);
+
 -- Journal de toutes les connexions élèves (via QR), en plus de last_login_at.
 create table if not exists student_login_logs (
   id uuid primary key default gen_random_uuid(),

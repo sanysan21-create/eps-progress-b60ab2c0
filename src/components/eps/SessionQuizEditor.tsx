@@ -8,6 +8,7 @@ import {
   deleteSessionQuiz,
   getSessionQuiz,
   listQuizTemplates,
+  rescheduleQuizForStudents,
   resetSessionQuiz,
   saveSessionQuiz,
   scheduleSessionQuiz,
@@ -33,6 +34,9 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const reset = useServerFn(resetSessionQuiz);
   const remove = useServerFn(deleteSessionQuiz);
   const fetchTemplates = useServerFn(listQuizTemplates);
+  const reschedule = useServerFn(rescheduleQuizForStudents);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [reOpensAt, setReOpensAt] = useState("");
   const key = ["session-quiz", sessionId];
   const quiz = useQuery({
     queryKey: key,
@@ -421,7 +425,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                           )}
                         </span>
                         <span className="font-mono font-bold text-primary">
-                          {r.score === null ? "—" : finishedView ? `${r.score}/${data!.questions.length}` : "✓"}
+                          {r.score === null ? "—" : `${r.score}/${data!.questions.length}`}
                         </span>
                       </label>
                     </li>
@@ -434,7 +438,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                     </span>
                     <input
                       type="datetime-local"
-                      className={INPUT + " w-auto"}
+                      className={FIELD + " w-auto"}
                       value={reOpensAt}
                       onChange={(e) => setReOpensAt(e.target.value)}
                     />

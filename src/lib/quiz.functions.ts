@@ -293,7 +293,10 @@ export const resetSessionQuiz = createServerFn({ method: "POST" })
       update session_quizzes set started_at = null, ends_at = null, scheduled_at = null, updated_at = now()
       where session_id = ${data.sessionId} and teacher_id = ${context.userId} returning id
     `;
-    if (quiz) await context.sql`delete from session_quiz_answers where quiz_id = ${quiz.id}`;
+    if (quiz) {
+      await context.sql`delete from session_quiz_answers where quiz_id = ${quiz.id}`;
+      await context.sql`delete from session_quiz_overrides where quiz_id = ${quiz.id}`;
+    }
     return { ok: true };
   });
 

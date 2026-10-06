@@ -375,22 +375,98 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                 <p className="text-sm text-muted-foreground">Aucune réponse.</p>
               )}
               <div className="space-y-1.5">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  Résultats par élève
-                </p>
-                <ul className="divide-y divide-border rounded-xl border border-border">
-                  {data!.results.length === 0 && (
-                    <li className="px-3 py-2 text-sm text-muted-foreground">Aucune réponse.</li>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    Résultats par élève
+                  </p>
+                  {data!.roster.length > 0 && (
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-primary"
+                      onClick={() =>
+                        setPicked(picked.length === data!.roster.length ? [] : data!.roster.map((r) => r.student_id))
+                      }
+                    >
+                      {picked.length === data!.roster.length ? "Tout désélectionner" : "Tout sélectionner"}
+                    </button>
                   )}
-                  {data!.results.map((r) => (
-                    <li key={r.student_id} className="flex justify-between px-3 py-2 text-sm">
-                      <span>{r.name}</span>
-                      <span className="font-mono font-bold text-primary">
-                        {r.score}/{r.total}
-                      </span>
+                </div>
+                <ul className="divide-y divide-border rounded-xl border border-border">
+                  {data!.roster.length === 0 && (
+                    <li className="px-3 py-2 text-sm text-muted-foreground">Aucun élève.</li>
+                  )}
+                  {data!.roster.map((r) => (
+                    <li key={r.student_id}>
+                      <label className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-primary"
+                          checked={picked.includes(r.student_id)}
+                          onChange={(e) =>
+                            setPicked((p) =>
+                              e.target.checked ? [...p, r.student_id] : p.filter((x) => x !== r.student_id),
+                            )
+                          }
+                        />
+                        <span className="flex-1">
+                          {r.name}
+                          {r.override_opens_at && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              🕐 reprogrammé le{" "}
+                              {new Date(r.override_opens_at).toLocaleString("fr-FR", {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })}
+                            </span>
+                          )}
+                        </span>
+                        <span className="font-mono font-bold text-primary">
+                          {r.score === null ? "—" : finishedView ? `${r.score}/${data!.questions.length}` : "✓"}
+                        </span>
+                      </label>
                     </li>
                   ))}
                 </ul>
+                {picked.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/40 p-2">
+                    <span className="text-xs font-semibold">
+                      Reprogrammer pour {picked.length} élève{picked.length > 1 ? "s" : ""} :
+                    </span>
+                    <input
+                      type="datetime-local"
+                      className={INPUT + " w-auto"}
+                      value={reOpensAt}
+                      onChange={(e) => setReOpensAt(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className={BTN}
+                      disabled={busy || !reOpensAt}
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            `Reprogrammer le QCM pour ${picked.length} élève(s) ? Leurs réponses actuelles seront effacées. Disponible ${availableMinutes} min.`,
+                          )
+                        )
+                          return;
+                        void run(
+                          () =>
+                            reschedule({
+                              data: {
+                                sessionId,
+                                studentIds: picked,
+                                opensAt: new Date(reOpensAt).toISOString(),
+                                availableMinutes,
+                              },
+                            }),
+                          "QCM reprogrammé",
+                        ).then(() => setPicked([]));
+                      }}
+                    >
+                      🕐 Reprogrammer
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}

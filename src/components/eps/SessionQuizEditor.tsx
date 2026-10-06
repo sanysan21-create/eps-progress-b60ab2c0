@@ -410,3 +410,40 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
     </section>
   );
 }
+
+/** Permet de charger un QCM déjà enregistré sur une autre séance/classe. */
+function QuizTemplatePicker({
+  fetchTemplates,
+  onPick,
+}: {
+  fetchTemplates: () => Promise<import("@/lib/quiz.functions").QuizTemplate[]>;
+  onPick: (t: import("@/lib/quiz.functions").QuizTemplate) => void;
+}) {
+  const templates = useQuery({ queryKey: ["quiz-templates"], queryFn: () => fetchTemplates() });
+  const list = templates.data ?? [];
+  if (templates.isPending || list.length === 0) return null;
+  return (
+    <label className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+      Réutiliser un QCM déjà enregistré (autre séance ou classe) :
+      <select
+        className={FIELD}
+        defaultValue=""
+        onChange={(e) => {
+          const t = list.find((x) => x.id === e.target.value);
+          if (t) onPick(t);
+          e.target.value = "";
+        }}
+      >
+        <option value="" disabled>
+          Choisir un QCM…
+        </option>
+        {list.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.title} · {t.questions.length} questions{t.origin ? ` · ${t.origin}` : ""}
+            {t.started ? " (déjà lancé)" : ""}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}

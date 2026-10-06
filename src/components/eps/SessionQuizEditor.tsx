@@ -116,6 +116,17 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
 
       {!started ? (
         <>
+          {!data && (
+            <QuizTemplatePicker
+              fetchTemplates={fetchTemplates}
+              onPick={(t) => {
+                setTitle(t.title);
+                setDuration(String(t.duration_minutes));
+                setQuestions(t.questions.length ? t.questions : [blank()]);
+                toast.success(`QCM « ${t.title} » chargé — pense à l'enregistrer`);
+              }}
+            />
+          )}
           <div className="grid gap-2 sm:grid-cols-[1fr_140px]">
             <input className={FIELD} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre" />
             <label className="flex items-center gap-2 text-xs text-muted-foreground">

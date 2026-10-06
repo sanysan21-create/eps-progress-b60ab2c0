@@ -132,6 +132,45 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
     };
   });
 
+export type QuizTemplate = {
+  id: string;
+  title: string;
+  duration_minutes: number;
+  questions: QuizQuestion[];
+  /** Libellé d'origine : activité · séance · classe. */
+  origin: string;
+  started: boolean;
+};
+
+/** Liste tous les QCM enregistrés de l'enseignant (pour les réutiliser ailleurs). */
+export const listQuizTemplates = createServerFn({ method: "GET" })
+  .middleware([requireTeacher])
+  .handler(async ({ context }): Promise<QuizTemplate[]> => {
+    const rows = await context.sql<
+      (QuizRow & { activity_name: string | null; session_number: number | null; class_name: string | null })[]
+    >`
+      select z.id, z.title, z.duration_minutes, z.questions, z.started_at, z.ends_at, z.scheduled_at,
+             coalesce(a.name, p.activity_name) as activity_name, p.session_number, c.name as class_name
+      from session_quizzes z
+      join program_sessions p on p.id = z.session_id
+      left join activities a on a.id = p.activity_id
+      left join classes c on c.id = p.class_id
+      where z.teacher_id = ${context.userId}
+      order by z.updated_at desc
+      limit 50
+    `;
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      duration_minutes: Number(row.duration_minutes),
+      questions: row.questions ?? [],
+      origin: [row.activity_name, row.session_number ? `S${row.session_number}` : null, row.class_name]
+        .filter(Boolean)
+        .join(" · "),
+      started: !!row.started_at,
+    }));
+  });
+
 export const saveSessionQuiz = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
   .inputValidator(

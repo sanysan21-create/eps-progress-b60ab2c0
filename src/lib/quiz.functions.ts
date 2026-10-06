@@ -15,6 +15,8 @@ export type TeacherQuiz = {
   scheduled_at: string | null;
   results: { student_id: string; name: string; score: number; total: number }[];
   answered: number;
+  /** Tous les élèves de la classe, pour la reprogrammation individuelle. */
+  roster: { student_id: string; name: string; score: number | null; override_opens_at: string | null }[];
   /** Nombre d'élèves de la classe concernée (participation). */
   class_size: number;
   /** Stats globales + par question, remplies une fois le QCM terminé. */
@@ -98,6 +100,24 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
       where p.id = ${data.sessionId}
     `;
     const size = sizeRows[0]?.size ?? 0;
+    const rosterRows = await context.sql<
+      { student_id: string; first_name: string; last_name: string; opens_at: Date | null }[]
+    >`
+      select s.id as student_id, s.first_name, s.last_name, o.opens_at
+      from program_sessions p
+      join class_students cs on cs.class_id = p.class_id
+      join students s on s.id = cs.student_id and s.teacher_id = ${context.userId}
+      left join session_quiz_overrides o on o.quiz_id = ${quiz.id} and o.student_id = s.id
+      where p.id = ${data.sessionId}
+      order by s.last_name, s.first_name
+    `;
+    const scoreMap = new Map(results.map((r) => [r.student_id, r.score]));
+    const roster = rosterRows.map((r) => ({
+      student_id: r.student_id,
+      name: `${r.last_name} ${r.first_name}`,
+      score: scoreMap.get(r.student_id) ?? null,
+      override_opens_at: iso(r.opens_at),
+    }));
     let stats: TeacherQuiz["stats"] = null;
     if (finished && results.length > 0) {
       const scores = results.map((r) => r.score).sort((a, b) => a - b);
@@ -126,6 +146,7 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
       ends_at: iso(quiz.ends_at),
       scheduled_at: iso(quiz.scheduled_at ?? null),
       answered: answers.length,
+      roster,
       class_size: Number(size) || 0,
       results: finished ? results : [],
       stats,
@@ -272,7 +293,10 @@ export const resetSessionQuiz = createServerFn({ method: "POST" })
       update session_quizzes set started_at = null, ends_at = null, scheduled_at = null, updated_at = now()
       where session_id = ${data.sessionId} and teacher_id = ${context.userId} returning id
     `;
-    if (quiz) await context.sql`delete from session_quiz_answers where quiz_id = ${quiz.id}`;
+    if (quiz) {
+      await context.sql`delete from session_quiz_answers where quiz_id = ${quiz.id}`;
+      await context.sql`delete from session_quiz_overrides where quiz_id = ${quiz.id}`;
+    }
     return { ok: true };
   });
 
@@ -313,7 +337,8 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
         my_finished_at: Date | null;
       })[]
     >`
-      select z.id, z.title, z.duration_minutes, z.questions, z.started_at, z.ends_at,
+      select z.id, z.title, z.duration_minutes, z.questions,
+             coalesce(o.opens_at, z.started_at) as started_at, coalesce(o.ends_at, z.ends_at) as ends_at,
              coalesce(a.name, p.activity_name) as activity_name, p.session_number,
              ans.answers as my, ans.id as ans_id, ans.finished_at as my_finished_at,
              coalesce(ans.begun_at, ans.created_at) as begun_at
@@ -321,8 +346,9 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
       join program_sessions p on p.id = z.session_id
       left join activities a on a.id = p.activity_id
       left join session_quiz_answers ans on ans.quiz_id = z.id and ans.student_id = ${studentId}
+      left join session_quiz_overrides o on o.quiz_id = z.id and o.student_id = ${studentId}
       where z.teacher_id = ${scope.teacherId} and z.started_at is not null
-        and (z.started_at <= now() or z.scheduled_at is not null)
+        and (z.started_at <= now() or z.scheduled_at is not null or o.opens_at is not null)
         ${
           scope.classIds.length > 0
             ? context.sql`and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))`
@@ -390,10 +416,11 @@ export const submitMyQuiz = createServerFn({ method: "POST" })
       select z.id from session_quizzes z
       join program_sessions p on p.id = z.session_id
       join session_quiz_answers a on a.quiz_id = z.id and a.student_id = ${studentId}
+      left join session_quiz_overrides o on o.quiz_id = z.id and o.student_id = ${studentId}
       where z.id = ${data.quizId} and z.teacher_id = ${scope.teacherId}
-        and z.started_at is not null and z.started_at <= now()
+        and z.started_at is not null and coalesce(o.opens_at, z.started_at) <= now()
         and a.finished_at is null
-        and now() <= least(z.ends_at, coalesce(a.begun_at, a.created_at) + make_interval(mins => z.duration_minutes))
+        and now() <= least(coalesce(o.ends_at, z.ends_at), coalesce(a.begun_at, a.created_at) + make_interval(mins => z.duration_minutes))
                      + interval '15 seconds'
         and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))
     `;
@@ -427,11 +454,12 @@ export const finishMyQuiz = createServerFn({ method: "POST" })
       update session_quiz_answers a set answers = ${context.sql.json(data.answers)},
         finished_at = now(), updated_at = now()
       from session_quizzes z join program_sessions p on p.id = z.session_id
+        left join session_quiz_overrides o on o.quiz_id = z.id and o.student_id = ${studentId}
       where a.quiz_id = z.id and a.student_id = ${studentId} and z.id = ${data.quizId}
         and z.teacher_id = ${scope.teacherId}
-        and z.started_at is not null and z.started_at <= now()
+        and z.started_at is not null and coalesce(o.opens_at, z.started_at) <= now()
         and a.finished_at is null
-        and now() <= least(z.ends_at, coalesce(a.begun_at, a.created_at) + make_interval(mins => z.duration_minutes))
+        and now() <= least(coalesce(o.ends_at, z.ends_at), coalesce(a.begun_at, a.created_at) + make_interval(mins => z.duration_minutes))
                      + interval '15 seconds'
         and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))
       returning a.id
@@ -453,8 +481,10 @@ export const beginMyQuiz = createServerFn({ method: "POST" })
     const [quiz] = await context.sql<{ id: string }[]>`
       select z.id from session_quizzes z
       join program_sessions p on p.id = z.session_id
+      left join session_quiz_overrides o on o.quiz_id = z.id and o.student_id = ${studentId}
       where z.id = ${data.quizId} and z.teacher_id = ${scope.teacherId}
-        and z.started_at is not null and z.started_at <= now() and z.ends_at > now()
+        and z.started_at is not null and coalesce(o.opens_at, z.started_at) <= now()
+        and coalesce(o.ends_at, z.ends_at) > now()
         and (p.class_id is null or p.class_id = any(${scope.classIds}::uuid[]))
     `;
     if (!quiz) throw new Error("Ce QCM n'est pas disponible.");
@@ -464,4 +494,40 @@ export const beginMyQuiz = createServerFn({ method: "POST" })
       on conflict (quiz_id, student_id) do nothing
     `;
     return { ok: true };
+  });
+
+/** Reprogramme le QCM pour certains élèves : leurs réponses sont effacées et ils ont une nouvelle fenêtre. */
+export const rescheduleQuizForStudents = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { sessionId: string; studentIds: string[]; opensAt: string; availableMinutes: number }) =>
+    z
+      .object({
+        sessionId: z.string().uuid(),
+        studentIds: z.array(z.string().uuid()).min(1, "Sélectionne au moins un élève").max(200),
+        opensAt: z.string().min(1, "Choisis une date et une heure"),
+        availableMinutes: z.number().int().min(1).max(43200),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const opensAt = new Date(data.opensAt);
+    if (Number.isNaN(opensAt.getTime())) throw new Error("Date invalide");
+    const [quiz] = await context.sql<{ id: string }[]>`
+      select id from session_quizzes
+      where session_id = ${data.sessionId} and teacher_id = ${context.userId} and started_at is not null
+    `;
+    if (!quiz) throw new Error("Le QCM doit d'abord être ouvert ou programmé.");
+    const students = await context.sql<{ id: string }[]>`
+      select id from students where id = any(${data.studentIds}::uuid[]) and teacher_id = ${context.userId}
+    `;
+    const ids = students.map((s) => s.id);
+    if (ids.length === 0) throw new Error("Aucun élève valide");
+    await context.sql`delete from session_quiz_answers where quiz_id = ${quiz.id} and student_id = any(${ids}::uuid[])`;
+    await context.sql`
+      insert into session_quiz_overrides (quiz_id, student_id, opens_at, ends_at)
+      select ${quiz.id}, unnest(${ids}::uuid[]), ${opensAt.toISOString()}::timestamptz,
+             ${opensAt.toISOString()}::timestamptz + make_interval(mins => ${data.availableMinutes}::int)
+      on conflict (quiz_id, student_id) do update set opens_at = excluded.opens_at, ends_at = excluded.ends_at
+    `;
+    return { ok: true, count: ids.length };
   });

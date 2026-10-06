@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   deleteSessionQuiz,
   getSessionQuiz,
+  listQuizTemplates,
   resetSessionQuiz,
   saveSessionQuiz,
   scheduleSessionQuiz,
@@ -31,6 +32,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const schedule = useServerFn(scheduleSessionQuiz);
   const reset = useServerFn(resetSessionQuiz);
   const remove = useServerFn(deleteSessionQuiz);
+  const fetchTemplates = useServerFn(listQuizTemplates);
   const key = ["session-quiz", sessionId];
   const quiz = useQuery({
     queryKey: key,

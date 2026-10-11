@@ -12,6 +12,7 @@ import {
   resetSessionQuiz,
   saveSessionQuiz,
   scheduleSessionQuiz,
+  setQuizGrading,
   startSessionQuiz,
   quizNote,
   type QuizQuestion,
@@ -349,6 +350,51 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
             <strong>{data!.title}</strong> · {data!.questions.length} questions · {data!.answered} élève(s) ont répondu
             {data!.grade_out_of ? ` · noté sur ${data!.grade_out_of} (coef ${data!.grade_coef})` : ""}
           </p>
+          <div className="flex flex-wrap items-end gap-2 rounded-xl border border-border bg-surface p-3">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Noter sur … points</label>
+              <input
+                className={`${FIELD} w-24`}
+                inputMode="decimal"
+                placeholder="ex. 20"
+                value={outOf}
+                onChange={(e) => setOutOf(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Coefficient</label>
+              <input
+                className={`${FIELD} w-20`}
+                inputMode="decimal"
+                value={coef}
+                onChange={(e) => setCoef(e.target.value)}
+              />
+            </div>
+            <button
+              type="button"
+              className={BTN}
+              disabled={busy}
+              onClick={() =>
+                run(
+                  () =>
+                    setGrading({
+                      data: {
+                        sessionId,
+                        gradeOutOf: Number(outOf.replace(",", ".")) > 0 ? Number(outOf.replace(",", ".")) : null,
+                        gradeCoef: Number(coef.replace(",", ".")) > 0 ? Number(coef.replace(",", ".")) : 1,
+                      },
+                    }),
+                  "Notation enregistrée",
+                )
+              }
+            >
+              <Check className="size-3.5" /> Appliquer la notation
+            </button>
+            <p className="w-full text-xs text-muted-foreground">
+              Laisse « Noter sur » vide pour ne pas noter. La conversion est recalculée automatiquement pour tous les
+              élèves.
+            </p>
+          </div>
           {finished && (
             <div className="space-y-3">
               {data!.stats ? (

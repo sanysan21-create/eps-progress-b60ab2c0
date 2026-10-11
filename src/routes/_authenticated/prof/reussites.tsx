@@ -106,6 +106,7 @@ function TeacherAchievements() {
   const [achievementIds, setAchievementIds] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [detailStudentId, setDetailStudentId] = useState("");
+  const [attribMode, setAttribMode] = useState<"eleve" | "groupe">("eleve");
 
   const students = useQuery({
     queryKey: ["class-students", classId],

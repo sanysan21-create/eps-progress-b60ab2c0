@@ -347,6 +347,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
         <>
           <p className="text-sm">
             <strong>{data!.title}</strong> · {data!.questions.length} questions · {data!.answered} élève(s) ont répondu
+            {data!.grade_out_of ? ` · noté sur ${data!.grade_out_of} (coef ${data!.grade_coef})` : ""}
           </p>
           {finished && (
             <div className="space-y-3">

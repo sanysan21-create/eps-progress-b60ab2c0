@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Power icons use the shared `PowerIcon` visual mapping while persisting compact emoji keys, preserving existing database values and all current server contracts.
+- Student notifications are a read-only feed of existing timestamped records, scoped by the signed QR session and class programming; this avoids duplicate event storage and disclosure across students.

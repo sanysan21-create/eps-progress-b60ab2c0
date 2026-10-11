@@ -11,6 +11,8 @@ export const Route = createFileRoute("/")({
           "EPS Progress : le suivi visuel des compétences EPS. Espace élève mobile et espace enseignant pour évaluer sur 5 niveaux.",
       },
       { property: "og:title", content: "EPS Progress — suivi des compétences en EPS" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         property: "og:description",
         content:

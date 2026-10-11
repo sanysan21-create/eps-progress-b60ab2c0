@@ -13,6 +13,7 @@ import {
   saveSessionQuiz,
   scheduleSessionQuiz,
   startSessionQuiz,
+  quizNote,
   type QuizQuestion,
 } from "@/lib/quiz.functions";
 import { useNow, formatLeft } from "./quiz-time";
@@ -48,6 +49,8 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("QCM");
   const [duration, setDuration] = useState("10");
+  const [outOf, setOutOf] = useState("");
+  const [coef, setCoef] = useState("1");
   const [questions, setQuestions] = useState<QuizQuestion[]>([blank()]);
   const [opensAt, setOpensAt] = useState("");
   const [available, setAvailable] = useState("60");
@@ -59,6 +62,8 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
     setOpen(true);
     setTitle(quiz.data.title);
     setDuration(String(quiz.data.duration_minutes));
+    setOutOf(quiz.data.grade_out_of == null ? "" : String(quiz.data.grade_out_of));
+    setCoef(String(quiz.data.grade_coef ?? 1));
     setQuestions(quiz.data.questions.length ? quiz.data.questions : [blank()]);
   }, [quiz.data?.id, quiz.data?.started_at]);
 
@@ -145,6 +150,29 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
               min / élève
             </label>
           </div>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <label className="flex items-center gap-2">
+              Noter sur
+              <input
+                inputMode="decimal"
+                className={FIELD + " w-20"}
+                value={outOf}
+                onChange={(e) => setOutOf(e.target.value)}
+                placeholder="ex. 20"
+              />
+              points
+            </label>
+            <label className="flex items-center gap-2">
+              Coefficient
+              <input
+                inputMode="decimal"
+                className={FIELD + " w-16"}
+                value={coef}
+                onChange={(e) => setCoef(e.target.value)}
+              />
+            </label>
+            <span>Laisse vide pour ne pas noter.</span>
+          </div>
           {questions.map((q, i) => (
             <div key={i} className="space-y-2 rounded-xl border border-border bg-surface p-3">
               <div className="flex gap-2">
@@ -220,7 +248,14 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                 run(
                   () =>
                     save({
-                      data: { sessionId, title, durationMinutes: Number(duration) || 10, questions },
+                      data: {
+                        sessionId,
+                        title,
+                        durationMinutes: Number(duration) || 10,
+                        questions,
+                        gradeOutOf: Number(outOf.replace(",", ".")) > 0 ? Number(outOf.replace(",", ".")) : null,
+                        gradeCoef: Number(coef.replace(",", ".")) > 0 ? Number(coef.replace(",", ".")) : 1,
+                      },
                     }),
                   "QCM enregistré",
                 )
@@ -312,6 +347,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
         <>
           <p className="text-sm">
             <strong>{data!.title}</strong> · {data!.questions.length} questions · {data!.answered} élève(s) ont répondu
+            {data!.grade_out_of ? ` · noté sur ${data!.grade_out_of} (coef ${data!.grade_coef})` : ""}
           </p>
           {finished && (
             <div className="space-y-3">
@@ -425,7 +461,12 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                           )}
                         </span>
                         <span className="font-mono font-bold text-primary">
-                          {r.score === null ? "—" : `${r.score}/${data!.questions.length}`}
+                          {r.score === null
+                            ? "—"
+                            : `${r.score}/${data!.questions.length}` +
+                              (data!.grade_out_of
+                                ? ` · ${quizNote(r.score, data!.questions.length, data!.grade_out_of).toLocaleString("fr-FR")}/${data!.grade_out_of}`
+                                : "")}
                         </span>
                       </label>
                     </li>

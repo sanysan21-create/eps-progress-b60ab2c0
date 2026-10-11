@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ChevronDown } from "lucide-react";
 
 import { getMyGrades } from "@/lib/grades.functions";
+import { getMyQuizGrades } from "@/lib/quiz.functions";
 import { formatPoints, gradeTotals, type GradeRow } from "@/lib/grades";
 import { activityEmoji } from "@/lib/activity-emoji";
 
@@ -90,6 +91,9 @@ function StudentGrades() {
   const fetchGrades = useServerFn(getMyGrades);
   const grades = useQuery({ queryKey: ["my-grades"], queryFn: () => fetchGrades() });
   const rows = grades.data ?? [];
+  const fetchQuizGrades = useServerFn(getMyQuizGrades);
+  const quizGrades = useQuery({ queryKey: ["my-quiz-grades"], queryFn: () => fetchQuizGrades() });
+  const quizRows = quizGrades.data ?? [];
 
   return (
     <div className="animate-slide-up space-y-6 pb-4">
@@ -102,7 +106,7 @@ function StudentGrades() {
 
       {grades.isPending ? (
         <div className="h-24 animate-pulse rounded-2xl border border-border bg-surface" />
-      ) : rows.length === 0 ? (
+      ) : rows.length === 0 && quizRows.length === 0 ? (
         <div className="space-y-2 rounded-2xl border border-border/60 bg-surface/60 px-5 py-6 text-sm text-muted-foreground">
           <p className="font-medium text-foreground">Aucun résultat disponible pour le moment.</p>
           <p>Les résultats apparaîtront ici lorsque ton enseignant aura évalué tes activités.</p>
@@ -112,6 +116,31 @@ function StudentGrades() {
           {rows.map((grade) => (
             <GradeCard key={grade.id} grade={grade} />
           ))}
+          {quizRows.length > 0 && (
+            <section className="space-y-2 pt-2">
+              <h2 className="mono-label text-muted-foreground">📝 Mes QCM</h2>
+              {quizRows.map((q) => (
+                <article
+                  key={q.id}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold">{q.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[q.activity_name, q.session_number ? `S${q.session_number}` : null]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      {" · "}
+                      {q.score}/{q.total} bonnes réponses · coef {q.coef.toLocaleString("fr-FR")}
+                    </p>
+                  </div>
+                  <span className="display-title shrink-0 text-2xl text-primary">
+                    {formatPoints(q.note)} / {formatPoints(q.out_of)}
+                  </span>
+                </article>
+              ))}
+            </section>
+          )}
         </div>
       )}
     </div>

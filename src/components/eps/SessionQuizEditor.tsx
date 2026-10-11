@@ -33,6 +33,7 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const save = useServerFn(saveSessionQuiz);
   const start = useServerFn(startSessionQuiz);
   const schedule = useServerFn(scheduleSessionQuiz);
+  const setGrading = useServerFn(setQuizGrading);
   const reset = useServerFn(resetSessionQuiz);
   const remove = useServerFn(deleteSessionQuiz);
   const fetchTemplates = useServerFn(listQuizTemplates);

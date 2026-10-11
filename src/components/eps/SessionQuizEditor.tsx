@@ -507,13 +507,22 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
                             </span>
                           )}
                         </span>
-                        <span className="font-mono font-bold text-primary">
-                          {r.score === null
-                            ? "—"
-                            : `${r.score}/${data!.questions.length}` +
-                              (data!.grade_out_of
-                                ? ` · ${quizNote(r.score, data!.questions.length, data!.grade_out_of).toLocaleString("fr-FR")}/${data!.grade_out_of}`
-                                : "")}
+                        <span className="flex flex-col items-end">
+                          <span className="font-mono font-bold text-primary">
+                            {r.score === null
+                              ? data!.grade_out_of
+                                ? `0 · 0,00/${data!.grade_out_of}`
+                                : "—"
+                              : `${r.score}/${data!.questions.length}` +
+                                (data!.grade_out_of
+                                  ? ` · ${quizNote(r.score, data!.questions.length, data!.grade_out_of).toLocaleString("fr-FR")}/${data!.grade_out_of}`
+                                  : "")}
+                          </span>
+                          {r.score === null && data!.grade_out_of && (
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-red-500">
+                              non participé · 0
+                            </span>
+                          )}
                         </span>
                       </label>
                     </li>

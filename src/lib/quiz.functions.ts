@@ -124,8 +124,15 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
       override_opens_at: iso(r.opens_at),
     }));
     let stats: TeacherQuiz["stats"] = null;
-    if (finished && results.length > 0) {
-      const scores = results.map((r) => r.score).sort((a, b) => a - b);
+    // QCM noté : les élèves qui n'ont pas participé comptent pour 0.
+    const statScores = [...results.map((r) => r.score)];
+    if (quiz.grade_out_of != null) {
+      const answered = new Set(results.map((r) => r.student_id));
+      for (const r of roster) if (r.score === null && !answered.has(r.student_id)) statScores.push(0);
+    }
+    statScores.sort((a, b) => a - b);
+    if (finished && statScores.length > 0) {
+      const scores = statScores;
       const mid = Math.floor(scores.length / 2);
       stats = {
         total: questions.length,

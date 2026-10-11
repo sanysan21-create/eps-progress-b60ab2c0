@@ -218,6 +218,23 @@ function TeacherAchievements() {
       toast.error(error instanceof Error ? error.message : "Retrait impossible"),
   });
 
+  /** Attribution / retrait instantané en mode « par élève » (un clic = une action). */
+  const toggleOneMutation = useMutation({
+    mutationFn: async (input: { achievementId: string; studentId: string; awarded: boolean }) => {
+      if (input.awarded) {
+        await revoke({ data: { achievementId: input.achievementId, studentIds: [input.studentId] } });
+      } else {
+        await award({ data: { achievementId: input.achievementId, studentIds: [input.studentId] } });
+      }
+    },
+    onSuccess: (_data, input) => {
+      toast.success(input.awarded ? "Réussite retirée" : "Réussite attribuée");
+      refresh();
+    },
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "Action impossible"),
+  });
+
   function toggleStudent(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
   }

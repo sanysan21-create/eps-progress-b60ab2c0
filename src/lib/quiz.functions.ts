@@ -309,6 +309,29 @@ export const saveSessionQuiz = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Modifie la notation (barème + coefficient) d'un QCM, même déjà lancé ou terminé. */
+export const setQuizGrading = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { sessionId: string; gradeOutOf: number | null; gradeCoef?: number }) =>
+    z
+      .object({
+        sessionId: z.string().uuid(),
+        gradeOutOf: z.number().positive().max(1000).nullable(),
+        gradeCoef: z.number().positive().max(100).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const rows = await context.sql`
+      update session_quizzes
+      set grade_out_of = ${data.gradeOutOf}, grade_coef = ${data.gradeCoef ?? 1}, updated_at = now()
+      where session_id = ${data.sessionId} and teacher_id = ${context.userId}
+      returning id
+    `;
+    if (rows.length === 0) throw new Error("QCM introuvable");
+    return { ok: true };
+  });
+
 export const startSessionQuiz = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
   .inputValidator((input: { sessionId: string; availableMinutes: number }) =>

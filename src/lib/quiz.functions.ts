@@ -13,6 +13,9 @@ export type TeacherQuiz = {
   started_at: string | null;
   ends_at: string | null;
   scheduled_at: string | null;
+  /** Note sur N points (null = pas de conversion) et coefficient. */
+  grade_out_of: number | null;
+  grade_coef: number;
   results: { student_id: string; name: string; score: number; total: number }[];
   answered: number;
   /** Tous les élèves de la classe, pour la reprogrammation individuelle. */
@@ -58,6 +61,8 @@ type QuizRow = {
   started_at: Date | null;
   ends_at: Date | null;
   scheduled_at?: Date | null;
+  grade_out_of?: string | number | null;
+  grade_coef?: string | number | null;
 };
 
 const iso = (d: Date | string | null) => (d ? new Date(d).toISOString() : null);
@@ -73,7 +78,7 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }): Promise<TeacherQuiz | null> => {
     const [quiz] = await context.sql<QuizRow[]>`
-      select id, title, duration_minutes, questions, started_at, ends_at, scheduled_at
+      select id, title, duration_minutes, questions, started_at, ends_at, scheduled_at, grade_out_of, grade_coef
       from session_quizzes where session_id = ${data.sessionId} and teacher_id = ${context.userId}
     `;
     if (!quiz) return null;
@@ -145,6 +150,8 @@ export const getSessionQuiz = createServerFn({ method: "GET" })
       started_at: iso(quiz.started_at),
       ends_at: iso(quiz.ends_at),
       scheduled_at: iso(quiz.scheduled_at ?? null),
+      grade_out_of: quiz.grade_out_of == null ? null : Number(quiz.grade_out_of),
+      grade_coef: Number(quiz.grade_coef ?? 1),
       answered: answers.length,
       roster,
       class_size: Number(size) || 0,
@@ -192,13 +199,78 @@ export const listQuizTemplates = createServerFn({ method: "GET" })
     }));
   });
 
+/** Convertit un score QCM en note sur N points (arrondi au centième). */
+export function quizNote(score: number, total: number, outOf: number) {
+  if (total <= 0) return 0;
+  return Math.round((score / total) * outOf * 100) / 100;
+}
+
+export type MyQuizGrade = {
+  id: string;
+  title: string;
+  activity_name: string | null;
+  session_number: number | null;
+  score: number;
+  total: number;
+  note: number;
+  out_of: number;
+  coef: number;
+};
+
+/** Notes QCM de l'élève (QCM clôturés avec une note sur N points). */
+export const getMyQuizGrades = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(async ({ context }): Promise<MyQuizGrade[]> => {
+    const studentId = await studentScope();
+    if (!studentId) return [];
+    const rows = await context.sql<
+      (QuizRow & { activity_name: string | null; session_number: number | null; my: (number | null)[] | null })[]
+    >`
+      select z.id, z.title, z.duration_minutes, z.questions, z.started_at, z.ends_at, z.grade_out_of, z.grade_coef,
+             coalesce(a.name, p.activity_name) as activity_name, p.session_number, ans.answers as my
+      from session_quiz_answers ans
+      join session_quizzes z on z.id = ans.quiz_id
+      join program_sessions p on p.id = z.session_id
+      left join activities a on a.id = p.activity_id
+      left join session_quiz_overrides o on o.quiz_id = z.id and o.student_id = ${studentId}
+      where ans.student_id = ${studentId} and z.grade_out_of is not null
+        and coalesce(o.ends_at, z.ends_at) <= now()
+      order by z.ends_at desc
+    `;
+    return rows.map((r) => {
+      const qs = r.questions ?? [];
+      const score = scoreOf(qs, r.my ?? []);
+      const outOf = Number(r.grade_out_of);
+      return {
+        id: r.id,
+        title: r.title,
+        activity_name: r.activity_name,
+        session_number: r.session_number === null ? null : Number(r.session_number),
+        score,
+        total: qs.length,
+        note: quizNote(score, qs.length, outOf),
+        out_of: outOf,
+        coef: Number(r.grade_coef ?? 1),
+      };
+    });
+  });
+
 export const saveSessionQuiz = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
   .inputValidator(
-    (input: { sessionId: string; title: string; durationMinutes: number; questions: QuizQuestion[] }) =>
+    (input: {
+      sessionId: string;
+      title: string;
+      durationMinutes: number;
+      questions: QuizQuestion[];
+      gradeOutOf?: number | null;
+      gradeCoef?: number;
+    }) =>
       z
         .object({
           sessionId: z.string().uuid(),
+          gradeOutOf: z.number().positive().max(1000).nullable().optional(),
+          gradeCoef: z.number().positive().max(100).optional(),
           title: z.string().trim().min(1).max(120),
           durationMinutes: z.number().int().min(1).max(180),
           questions: z
@@ -226,11 +298,12 @@ export const saveSessionQuiz = createServerFn({ method: "POST" })
     `;
     if (existing?.started_at) throw new Error("Le QCM est déjà lancé : réinitialise-le pour le modifier.");
     await context.sql`
-      insert into session_quizzes (teacher_id, session_id, title, duration_minutes, questions)
+      insert into session_quizzes (teacher_id, session_id, title, duration_minutes, questions, grade_out_of, grade_coef)
       values (${context.userId}, ${data.sessionId}, ${data.title}, ${data.durationMinutes},
-              ${context.sql.json(data.questions)})
+              ${context.sql.json(data.questions)}, ${data.gradeOutOf ?? null}, ${data.gradeCoef ?? 1})
       on conflict (session_id) do update set
         title = excluded.title, duration_minutes = excluded.duration_minutes,
+        grade_out_of = excluded.grade_out_of, grade_coef = excluded.grade_coef,
         questions = excluded.questions, updated_at = now()
     `;
     return { ok: true };

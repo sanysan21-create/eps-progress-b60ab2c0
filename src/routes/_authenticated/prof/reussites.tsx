@@ -528,7 +528,35 @@ function TeacherAchievements() {
 
       {/* Attribuer des réussites */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Attribuer des réussites</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">Attribuer des réussites</h2>
+          <div
+            role="tablist"
+            aria-label="Mode d'attribution"
+            className="inline-flex rounded-full border border-border bg-background p-1"
+          >
+            {(
+              [
+                { code: "eleve", label: "👤 Par élève" },
+                { code: "groupe", label: "👥 En groupe" },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.code}
+                role="tab"
+                aria-selected={attribMode === item.code}
+                onClick={() => setAttribMode(item.code)}
+                className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase transition-colors ${
+                  attribMode === item.code
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="space-y-5 rounded-2xl border border-border bg-surface p-5">
           <div className="space-y-1.5">
@@ -538,6 +566,7 @@ function TeacherAchievements() {
               onChange={(event) => {
                 setClassId(event.target.value);
                 setSelected([]);
+                setDetailStudentId("");
               }}
               className="w-full max-w-xs rounded-xl border border-border bg-background px-4 py-2.5 text-sm"
             >
@@ -550,7 +579,136 @@ function TeacherAchievements() {
             </select>
           </div>
 
-          {classId && (
+          {classId && attribMode === "eleve" && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Choisis un élève, puis touche une réussite pour la lui attribuer — touche-la à
+                nouveau pour la retirer. C'est immédiat, sans confirmation.
+              </p>
+              <div className="relative max-w-xs">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Rechercher un élève"
+                  className="w-full rounded-full border border-border bg-background py-2 pl-9 pr-4 text-sm"
+                />
+              </div>
+
+              <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleStudents.map((student) => {
+                  const code = medalOf(student.id);
+                  const active = detailStudentId === student.id;
+                  return (
+                    <li key={student.id}>
+                      <button
+                        onClick={() => setDetailStudentId(active ? "" : student.id)}
+                        aria-expanded={active}
+                        className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
+                          active
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-background hover:bg-accent"
+                        }`}
+                      >
+                        <span className="min-w-0 flex-1 truncate font-medium">
+                          {student.first_name} {student.last_name}
+                        </span>
+                        {code && <MedalBadge code={code} size={24} />}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {detailStudentId && (
+                <div className="space-y-4 rounded-2xl border border-primary/40 bg-primary/5 p-5">
+                  {(() => {
+                    const student = (students.data ?? []).find((s) => s.id === detailStudentId);
+                    if (!student) return null;
+                    const code = medalOf(student.id);
+                    const awardedIds = studentAchievements.data ?? [];
+                    return (
+                      <>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-display text-base uppercase tracking-wide">
+                            {student.first_name} {student.last_name}
+                          </p>
+                          <span className="mono-label text-muted-foreground">
+                            {awardedIds.length} réussite{awardedIds.length > 1 ? "s" : ""} obtenue
+                            {awardedIds.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
+
+                        {studentAchievements.isPending ? (
+                          <p className="text-xs text-muted-foreground">Chargement…</p>
+                        ) : (
+                          <div className="space-y-4">
+                            {[
+                              ...MEDALS.map((item) => ({ ...item, rows: byMedal(item.code) })),
+                              { code: "", label: "À classer", emoji: "•", rows: unclassified },
+                            ]
+                              .filter((group) => group.rows.length > 0)
+                              .map((group) => (
+                                <div key={group.code || "unclassified"} className="space-y-2">
+                                  <p className="mono-label text-muted-foreground">
+                                    <span aria-hidden>{group.emoji}</span> {group.label}
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {group.rows.map((achievement) => {
+                                      const has = awardedIds.includes(achievement.id);
+                                      return (
+                                        <button
+                                          key={achievement.id}
+                                          onClick={() =>
+                                            toggleOneMutation.mutate({
+                                              achievementId: achievement.id,
+                                              studentId: student.id,
+                                              awarded: has,
+                                            })
+                                          }
+                                          disabled={toggleOneMutation.isPending}
+                                          aria-pressed={has}
+                                          aria-label={`${has ? "Retirer" : "Attribuer"} la réussite ${achievement.name} à ${student.first_name} ${student.last_name}`}
+                                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors disabled:opacity-60 ${
+                                            has
+                                              ? "border-primary bg-primary text-primary-foreground"
+                                              : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                                          }`}
+                                        >
+                                          <span aria-hidden>{has ? "✓" : achievement.icon}</span>
+                                          {achievement.name}
+                                          {achievement.is_required && <span aria-hidden>⭐</span>}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+
+                        {code === "gold" && (
+                          <div className="space-y-2 rounded-xl border border-dashed border-border bg-surface/60 px-4 py-3">
+                            <p className="mono-label text-[10px] font-bold text-muted-foreground">
+                              🥇 Or — carte Premium débloquée
+                            </p>
+                            <PremiumCardButton
+                              student={student}
+                              className={
+                                (classes.data ?? []).find((row) => row.id === classId)?.name ?? ""
+                              }
+                            />
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {classId && attribMode === "groupe" && (
             <>
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -661,54 +819,6 @@ function TeacherAchievements() {
                           </span>
                           {code && <MedalBadge code={code} size={24} />}
                         </label>
-                        <button
-                          onClick={() =>
-                            setDetailStudentId((prev) => (prev === student.id ? "" : student.id))
-                          }
-                          aria-expanded={detailStudentId === student.id}
-                          className="mt-1.5 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-[11px] font-bold uppercase text-muted-foreground hover:bg-accent hover:text-foreground"
-                        >
-                          <ListChecks className="size-3.5" />
-                          {detailStudentId === student.id
-                            ? "Masquer ses réussites"
-                            : "Voir ses réussites"}
-                        </button>
-                        {detailStudentId === student.id && (
-                          <div className="mt-1.5 space-y-2 rounded-xl border border-border bg-surface-2/50 px-4 py-3">
-                            {studentAchievements.isPending ? (
-                              <p className="text-xs text-muted-foreground">Chargement…</p>
-                            ) : awardedRows.length === 0 ? (
-                              <p className="text-xs text-muted-foreground">
-                                Aucune réussite attribuée pour le moment.
-                              </p>
-                            ) : (
-                              <ul className="space-y-1.5">
-                                {awardedRows.map((row) => (
-                                  <li
-                                    key={row.id}
-                                    className="flex items-center gap-2 rounded-lg bg-background px-3 py-2 text-xs"
-                                  >
-                                    <span aria-hidden>{row.icon}</span>
-                                    <span className="min-w-0 flex-1 truncate">{row.name}</span>
-                                    <button
-                                      onClick={() =>
-                                        revokeMutation.mutate({
-                                          achievementId: row.id,
-                                          studentId: student.id,
-                                        })
-                                      }
-                                      disabled={revokeMutation.isPending}
-                                      aria-label={`Retirer la réussite ${row.name} à ${student.first_name} ${student.last_name}`}
-                                      className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive disabled:opacity-60"
-                                    >
-                                      <X className="size-3.5" />
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        )}
                         {code === "gold" && (
                           <div className="mt-1.5 space-y-2 rounded-xl border border-dashed border-border bg-surface/60 px-4 py-3">
                             <p className="mono-label text-[10px] font-bold text-muted-foreground">

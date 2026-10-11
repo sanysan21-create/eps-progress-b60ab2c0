@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { LogOut } from "lucide-react";
 
 import { StudentNav } from "@/components/eps/StudentNav";
+import { StudentNotifications } from "@/components/eps/StudentNotifications";
 import { getStudentSessionInfo, signOutStudent } from "@/lib/student-access.functions";
 
 export const Route = createFileRoute("/eleve")({
@@ -52,6 +53,7 @@ function StudentLayout() {
             </button>
           </div>
         </div>
+        <StudentNotifications />
         <Outlet />
 
         <div className="mt-10 border-t border-border pt-6">

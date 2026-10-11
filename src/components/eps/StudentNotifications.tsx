@@ -6,7 +6,7 @@ import { Bell, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Trophy } 
 import { Button } from "@/components/ui/button";
 import { getMyNotifications } from "@/lib/student-notifications.functions";
 
-const icons = { achievement: Trophy, result: ClipboardList, program: CalendarDays, quiz: ClipboardList };
+const icons = { achievement: Trophy, result: ClipboardList, program: CalendarDays, quiz: ClipboardList, competency: ClipboardList };
 const dateFormat = new Intl.DateTimeFormat("fr-FR", {
   day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
 });

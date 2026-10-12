@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Search, Trash2, Check, Pencil, Star, X, ListChecks } from "lucide-react";
+import { Plus, Search, Trash2, Check, Pencil, Star } from "lucide-react";
 
 import { listClasses } from "@/lib/classes.functions";
 import {
@@ -140,11 +140,6 @@ function TeacherAchievements() {
   const medalOf = (id: string) =>
     (medals.data ?? []).find((row) => row.student_id === id)?.medal ?? null;
 
-  /** Réussites déjà attribuées à l'élève ouvert dans le panneau de détail. */
-  const awardedRows = useMemo(() => {
-    const ids = studentAchievements.data ?? [];
-    return list.filter((row) => ids.includes(row.id));
-  }, [studentAchievements.data, list]);
 
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["achievements"] });
@@ -205,17 +200,6 @@ function TeacherAchievements() {
     },
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : "Attribution impossible"),
-  });
-
-  const revokeMutation = useMutation({
-    mutationFn: (input: { achievementId: string; studentId: string }) =>
-      revoke({ data: { achievementId: input.achievementId, studentIds: [input.studentId] } }),
-    onSuccess: () => {
-      toast.success("Réussite retirée. Médailles recalculées.");
-      refresh();
-    },
-    onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Retrait impossible"),
   });
 
   /** Attribution / retrait instantané en mode « par élève » (un clic = une action). */

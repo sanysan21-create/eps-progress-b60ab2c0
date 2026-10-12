@@ -202,17 +202,6 @@ function TeacherAchievements() {
       toast.error(error instanceof Error ? error.message : "Attribution impossible"),
   });
 
-  const revokeMutation = useMutation({
-    mutationFn: (input: { achievementId: string; studentId: string }) =>
-      revoke({ data: { achievementId: input.achievementId, studentIds: [input.studentId] } }),
-    onSuccess: () => {
-      toast.success("Réussite retirée. Médailles recalculées.");
-      refresh();
-    },
-    onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Retrait impossible"),
-  });
-
   /** Attribution / retrait instantané en mode « par élève » (un clic = une action). */
   const toggleOneMutation = useMutation({
     mutationFn: async (input: { achievementId: string; studentId: string; awarded: boolean }) => {

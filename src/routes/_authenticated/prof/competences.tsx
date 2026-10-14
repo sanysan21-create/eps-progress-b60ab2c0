@@ -346,6 +346,37 @@ function QuickCompetencies() {
         <p className="text-sm text-muted-foreground">
           Choisis un élève (ou plusieurs), une activité, puis le niveau de chaque compétence cible.
         </p>
+        <div
+          role="tablist"
+          aria-label="Mode d'évaluation"
+          className="inline-flex rounded-full border border-border bg-background p-1"
+        >
+          {(
+            [
+              { code: "eleve", label: "👤 Par élève" },
+              { code: "groupe", label: "👥 En groupe" },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.code}
+              role="tab"
+              aria-selected={attribMode === item.code}
+              onClick={() => {
+                setAttribMode(item.code);
+                if (item.code === "eleve" && selected.length > 1) {
+                  setSelected((prev) => prev.slice(0, 1));
+                }
+              }}
+              className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase transition-colors ${
+                attribMode === item.code
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="grid items-stretch gap-6 lg:grid-cols-[320px_1fr]">

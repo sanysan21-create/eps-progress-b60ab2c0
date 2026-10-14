@@ -22,7 +22,7 @@ import {
 } from "@/lib/competencies.functions";
 import { DEFAULT_LEVELS } from "@/lib/levels";
 import { AFL_CODES, AFL_HINTS, AFL_LABELS, type AflCode } from "@/lib/afl";
-import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
+import { ActivityIcon, ActivityIconBadge } from "@/components/eps/ActivityIcon";
 import { LevelProgressIcon } from "@/components/eps/LevelProgressIcon";
 
 export const Route = createFileRoute("/_authenticated/prof/activites")({

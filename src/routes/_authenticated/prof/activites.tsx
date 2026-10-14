@@ -22,7 +22,7 @@ import {
 } from "@/lib/competencies.functions";
 import { DEFAULT_LEVELS } from "@/lib/levels";
 import { AFL_CODES, AFL_HINTS, AFL_LABELS, type AflCode } from "@/lib/afl";
-import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
+import { ActivityIcon, ActivityIconBadge } from "@/components/eps/ActivityIcon";
 import { LevelProgressIcon } from "@/components/eps/LevelProgressIcon";
 
 export const Route = createFileRoute("/_authenticated/prof/activites")({
@@ -58,7 +58,19 @@ function TeacherActivities() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
+  /** Activité seule affichée (null = toutes). */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
+
+  const allActivities = activities.data ?? [];
+  const isSelectedValid = selectedId !== null && allActivities.some((a) => a.id === selectedId);
+  const visibleActivities = isSelectedValid
+    ? allActivities.filter((a) => a.id === selectedId)
+    : allActivities;
+  const selectedActivity = isSelectedValid
+    ? allActivities.find((a) => a.id === selectedId)
+    : undefined;
 
   async function refresh() {
     await queryClient.invalidateQueries({ queryKey: ["activities"] });
@@ -131,8 +143,61 @@ function TeacherActivities() {
         </p>
       )}
 
+      {allActivities.length > 1 && (
+        <section className="space-y-2">
+          <p className="mono-label text-muted-foreground">
+            Afficher une seule activité
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedId(null)}
+              aria-pressed={selectedId === null}
+              className={`rounded-full border px-3.5 py-2 text-xs font-bold uppercase transition-colors ${
+                selectedId === null
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-surface text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Toutes ({allActivities.length})
+            </button>
+            {allActivities.map((activity) => {
+              const active = selectedId === activity.id;
+              return (
+                <button
+                  key={activity.id}
+                  onClick={() => setSelectedId(active ? null : activity.id)}
+                  aria-pressed={active}
+                  className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-surface text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <ActivityIcon name={activity.name} className="text-base" />
+                  {activity.name}
+                  <span className={active ? "text-primary-foreground/80" : "text-muted-foreground/70"}>
+                    {activity.competencies.length}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {selectedActivity && (
+            <p className="text-sm text-muted-foreground">
+              Seule l’activité « {selectedActivity.name} » est affichée.{" "}
+              <button
+                onClick={() => setSelectedId(null)}
+                className="font-semibold text-primary underline underline-offset-2"
+              >
+                Revenir à toutes les activités
+              </button>
+            </p>
+          )}
+        </section>
+      )}
+
       <div className="space-y-6">
-        {(activities.data ?? []).map((activity) => (
+        {visibleActivities.map((activity) => (
           <ActivityCard key={activity.id} activity={activity} onChanged={refresh} />
         ))}
       </div>

@@ -58,7 +58,19 @@ function TeacherActivities() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
+  /** Activité seule affichée (null = toutes). */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
+
+  const allActivities = activities.data ?? [];
+  const isSelectedValid = selectedId !== null && allActivities.some((a) => a.id === selectedId);
+  const visibleActivities = isSelectedValid
+    ? allActivities.filter((a) => a.id === selectedId)
+    : allActivities;
+  const selectedActivity = isSelectedValid
+    ? allActivities.find((a) => a.id === selectedId)
+    : undefined;
 
   async function refresh() {
     await queryClient.invalidateQueries({ queryKey: ["activities"] });

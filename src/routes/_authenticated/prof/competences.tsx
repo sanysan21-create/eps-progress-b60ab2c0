@@ -733,27 +733,61 @@ function QuickCompetencies() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <select
-                            value={currentLevelId}
-                            onChange={(e) => void handleChange(competency.id, e.target.value)}
-                            disabled={competency.levels.length === 0}
-                            className="min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50"
-                          >
-                            <option value="">Non renseigné</option>
-                            {competency.levels.map((level, index) => (
-                              <option key={level.id} value={level.id}>
-                                Niveau {index + 1} — {level.label}
-                              </option>
-                            ))}
-                          </select>
-                          {soloId && currentLevelId && (
-                            <button
-                              onClick={() => void handleChange(competency.id, "")}
-                              aria-label="Retirer le niveau attribué"
-                              className="rounded-xl border border-border p-2 text-muted-foreground hover:text-primary"
-                            >
-                              <X className="size-4" />
-                            </button>
+                          {attribMode === "eleve" && soloId ? (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {competency.levels.map((level, index) => {
+                                const active = currentLevelId === level.id;
+                                return (
+                                  <button
+                                    key={level.id}
+                                    onClick={() =>
+                                      void handleChange(competency.id, active ? "" : level.id)
+                                    }
+                                    aria-pressed={active}
+                                    aria-label={`${active ? "Retirer" : "Attribuer"} le niveau ${index + 1} (${level.label})`}
+                                    className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-bold transition-colors ${
+                                      active
+                                        ? "border-primary bg-primary text-primary-foreground"
+                                        : "border-border bg-surface text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                                    }`}
+                                  >
+                                    {active && <Check className="size-3" />}
+                                    N{index + 1}
+                                  </button>
+                                );
+                              })}
+                              {currentLevelId && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                  {competency.levels.find((l) => l.id === currentLevelId)?.label ??
+                                    ""}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              <select
+                                value={currentLevelId}
+                                onChange={(e) => void handleChange(competency.id, e.target.value)}
+                                disabled={competency.levels.length === 0}
+                                className="min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50"
+                              >
+                                <option value="">Non renseigné</option>
+                                {competency.levels.map((level, index) => (
+                                  <option key={level.id} value={level.id}>
+                                    Niveau {index + 1} — {level.label}
+                                  </option>
+                                ))}
+                              </select>
+                              {soloId && currentLevelId && (
+                                <button
+                                  onClick={() => void handleChange(competency.id, "")}
+                                  aria-label="Retirer le niveau attribué"
+                                  className="rounded-xl border border-border p-2 text-muted-foreground hover:text-primary"
+                                >
+                                  <X className="size-4" />
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </article>

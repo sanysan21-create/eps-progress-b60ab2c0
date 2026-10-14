@@ -88,6 +88,7 @@ function QuickCompetencies() {
   const [selected, setSelected] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"last" | "first">("last");
   const [activityId, setActivityId] = useState<string>("");
+  const [attribMode, setAttribMode] = useState<"eleve" | "groupe">("eleve");
 
   const students = useQuery({ queryKey: ["teacher-students"], queryFn: () => fetchStudents() });
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
@@ -301,6 +302,10 @@ function QuickCompetencies() {
   }
 
   function toggle(id: string) {
+    if (attribMode === "eleve") {
+      setSelected((prev) => (prev.includes(id) ? [] : [id]));
+      return;
+    }
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 

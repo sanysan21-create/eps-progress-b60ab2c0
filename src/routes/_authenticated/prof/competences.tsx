@@ -563,6 +563,11 @@ function QuickCompetencies() {
                     );
                   })}
                 </div>
+                {!activity && (
+                  <p className="text-sm text-muted-foreground">
+                    Sélectionne une activité pour afficher ses compétences.
+                  </p>
+                )}
               </div>
             )}
 

@@ -42,7 +42,7 @@ import {
 } from "@/lib/engagement";
 import { listClasses } from "@/lib/classes.functions";
 import { listClassStudents } from "@/lib/achievements.functions";
-import { ActivityIconBadge } from "@/components/eps/ActivityIcon";
+import { ActivityIcon, ActivityIconBadge } from "@/components/eps/ActivityIcon";
 import { useProgrammedActivities } from "@/hooks/use-programmed-activities";
 
 export const Route = createFileRoute("/_authenticated/prof/competences")({
@@ -531,19 +531,40 @@ function QuickCompetencies() {
                 </p>
               </div>
               {activity && <ActivityIconBadge name={activity.name} />}
-              <select
-                value={activity?.id ?? ""}
-                onChange={(e) => setActivityId(e.target.value)}
-                className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              >
-                {activityList.length === 0 && <option value="">Aucune activité</option>}
-                {activityList.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
             </div>
+
+            {activityList.length > 1 && (
+              <div className="space-y-2">
+                <p className="mono-label text-muted-foreground">Afficher une seule activité</p>
+                <div className="flex flex-wrap gap-2">
+                  {activityList.map((a) => {
+                    const active = activity?.id === a.id;
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => setActivityId(a.id)}
+                        aria-pressed={active}
+                        className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <ActivityIcon name={a.name} className="text-base" />
+                        {a.name}
+                        <span
+                          className={
+                            active ? "text-primary-foreground/80" : "text-muted-foreground/70"
+                          }
+                        >
+                          {a.competencies.length}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {activityList.length === 0 && (
               <p className="text-sm text-muted-foreground">

@@ -58,7 +58,7 @@ function TeacherActivities() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  /** Activité seule affichée (null = toutes). */
+  /** Activité seule affichée (null = aucune). */
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
@@ -67,7 +67,7 @@ function TeacherActivities() {
   const isSelectedValid = selectedId !== null && allActivities.some((a) => a.id === selectedId);
   const visibleActivities = isSelectedValid
     ? allActivities.filter((a) => a.id === selectedId)
-    : allActivities;
+    : [];
   const selectedActivity = isSelectedValid
     ? allActivities.find((a) => a.id === selectedId)
     : undefined;
@@ -143,23 +143,12 @@ function TeacherActivities() {
         </p>
       )}
 
-      {allActivities.length > 1 && (
+      {allActivities.length > 0 && (
         <section className="space-y-2">
           <p className="mono-label text-muted-foreground">
             Afficher une seule activité
           </p>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelectedId(null)}
-              aria-pressed={selectedId === null}
-              className={`rounded-full border px-3.5 py-2 text-xs font-bold uppercase transition-colors ${
-                selectedId === null
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-surface text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Toutes ({allActivities.length})
-            </button>
             {allActivities.map((activity) => {
               const active = selectedId === activity.id;
               return (
@@ -182,15 +171,9 @@ function TeacherActivities() {
               );
             })}
           </div>
-          {selectedActivity && (
+          {!selectedActivity && (
             <p className="text-sm text-muted-foreground">
-              Seule l’activité « {selectedActivity.name} » est affichée.{" "}
-              <button
-                onClick={() => setSelectedId(null)}
-                className="font-semibold text-primary underline underline-offset-2"
-              >
-                Revenir à toutes les activités
-              </button>
+              Sélectionne une activité ci-dessus pour l’afficher.
             </p>
           )}
         </section>

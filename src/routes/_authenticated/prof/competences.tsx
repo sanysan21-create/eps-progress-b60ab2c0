@@ -160,7 +160,7 @@ function QuickCompetencies() {
     const all = activities.data ?? [];
     return programmedIds ? all.filter((a) => programmedIds.has(a.id)) : all;
   }, [activities.data, programmedIds]);
-  const activity = activityList.find((a) => a.id === activityId) ?? activityList[0] ?? null;
+  const activity = activityList.find((a) => a.id === activityId) ?? null;
   const isClimbing = isClimbingActivity(activity?.name);
   const isBadminton = isBadmintonActivity(activity?.name);
   const isUltimate = isUltimateActivity(activity?.name);
@@ -533,7 +533,7 @@ function QuickCompetencies() {
               {activity && <ActivityIconBadge name={activity.name} />}
             </div>
 
-            {activityList.length > 1 && (
+            {activityList.length > 0 && (
               <div className="space-y-2">
                 <p className="mono-label text-muted-foreground">Afficher une seule activité</p>
                 <div className="flex flex-wrap gap-2">

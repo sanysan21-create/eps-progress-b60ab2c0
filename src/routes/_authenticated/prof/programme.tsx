@@ -37,6 +37,8 @@ import { sessionWhen } from "@/lib/program";
 import { ActivityIcon } from "@/components/eps/ActivityIcon";
 import { UltimateMatchScores } from "@/components/eps/UltimateMatchScores";
 import { SessionQuizEditor } from "@/components/eps/SessionQuizEditor";
+import { getSessionQuiz } from "@/lib/quiz.functions";
+
 import { UltimatePowers } from "@/components/eps/UltimatePowers";
 import { isUltimateActivity } from "@/lib/ultimate";
 
@@ -105,6 +107,8 @@ function TeacherProgram() {
   const removeLegacy = useServerFn(deleteProgramSession);
   const fetchClassActivities = useServerFn(listClassActivityData);
   const clearClassActivity = useServerFn(clearClassActivityData);
+  const fetchSessionQuiz = useServerFn(getSessionQuiz);
+
 
   const sequences = useQuery({ queryKey: ["sequence-details"], queryFn: () => fetchSequences() });
   const activities = useQuery({ queryKey: ["activities"], queryFn: () => fetchActivities() });
@@ -119,6 +123,9 @@ function TeacherProgram() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Le bloc QCM n'apparaît que si l'enseignant le demande pour cette séance. */
+  const [quizRequested, setQuizRequested] = useState(false);
+
 
   const [form, setForm] = useState({ name: "", activityId: "", startDate: "", endDate: "" });
 
@@ -159,6 +166,17 @@ function TeacherProgram() {
       keyPoints: session?.key_points ?? "",
     });
   }, [session?.id, session?.session_date, session?.objective, session?.key_points]);
+
+  // Changement de séance : le QCM redemandé redevient masqué.
+  useEffect(() => setQuizRequested(false), [session?.id]);
+
+  // Même clé que l'éditeur : une seule lecture du QCM de la séance.
+  const sessionQuiz = useQuery({
+    queryKey: ["session-quiz", session?.id ?? ""],
+    queryFn: () => fetchSessionQuiz({ data: { sessionId: session!.id } }),
+    enabled: Boolean(session?.id),
+  });
+
 
   async function refresh() {
     await queryClient.invalidateQueries({ queryKey: ["sequence-details"] });
@@ -756,16 +774,32 @@ function TeacherProgram() {
                   <h3 className="text-sm font-bold uppercase">
                     S{session.session_number} — {longDate(session.session_date)}
                   </h3>
-                  <button
-                    type="button"
-                    onClick={() => void handleDeleteSession(session.id)}
-                    disabled={busy}
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label="Supprimer la séance"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {!sessionQuiz.isPending && !sessionQuiz.data && (
+                      <button
+                        type="button"
+                        onClick={() => setQuizRequested((row) => !row)}
+                        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold ${
+                          quizRequested
+                            ? "border-primary text-primary"
+                            : "border-border hover:border-primary"
+                        }`}
+                      >
+                        📝 {quizRequested ? "Masquer le QCM" : "Créer un QCM"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteSession(session.id)}
+                      disabled={busy}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Supprimer la séance"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
                 </div>
+
 
                 <label className="block space-y-1 md:max-w-[220px]">
                   <span className={LABEL}>Date de la séance</span>
@@ -867,7 +901,12 @@ function TeacherProgram() {
                   <UltimateMatchScores sessionId={session.id} />
                 )}
 
-                <SessionQuizEditor sessionId={session.id} />
+                <SessionQuizEditor
+                  key={session.id}
+                  sessionId={session.id}
+                  requested={quizRequested}
+                />
+
 
                 <button
                   type="button"

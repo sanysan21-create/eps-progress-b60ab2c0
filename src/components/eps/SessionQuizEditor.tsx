@@ -27,7 +27,15 @@ const BTN =
 const blank = (): QuizQuestion => ({ text: "", options: ["", "", "", ""], correct: 0 });
 
 /** QCM d'une séance : création, lancement avec minuteur, résultats. */
-export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
+export function SessionQuizEditor({
+  sessionId,
+  requested = false,
+}: {
+  sessionId: string;
+  /** Séance dont l'enseignant a explicitement demandé le QCM. */
+  requested?: boolean;
+}) {
+
   const qc = useQueryClient();
   const fetchQuiz = useServerFn(getSessionQuiz);
   const save = useServerFn(saveSessionQuiz);
@@ -100,13 +108,9 @@ export function SessionQuizEditor({ sessionId }: { sessionId: string }) {
   const endsAt = data?.ends_at ? new Date(data.ends_at).getTime() : null;
   const finished = endsAt !== null && endsAt <= now;
 
-  if (!open && !data) {
-    return (
-      <button type="button" className={BTN} onClick={() => setOpen(true)}>
-        <Plus className="size-3.5" /> Créer un QCM
-      </button>
-    );
-  }
+  // Aucun QCM et aucune demande explicite : la séance reste sans section QCM.
+  if (!open && !data && !requested) return null;
+
 
   return (
     <section className="space-y-3 rounded-2xl border border-border bg-surface-2 p-4">

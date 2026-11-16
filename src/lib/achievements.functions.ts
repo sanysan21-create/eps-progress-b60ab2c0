@@ -184,6 +184,11 @@ export const awardAchievement = createServerFn({ method: "POST" })
         )
       on conflict (student_id, achievement_id) do nothing
     `;
+    const { notifyStudents } = await import("./push.server");
+    const [ach] = await context.sql<{ name: string }[]>`select name from achievements where id = ${data.achievementId}`;
+    await notifyStudents(context.sql, data.studentIds, {
+      title: "🏆 Nouvelle réussite obtenue", body: ach?.name ?? "", url: "/eleve/reussites",
+    });
     return { saved: data.studentIds.length };
   });
 

@@ -44,7 +44,7 @@ export function PushToggle() {
       await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toBytes(key) });
       const json = sub.toJSON();
-      await subscribe({ data: { endpoint: sub.endpoint, p256dh: json.keys!.p256dh!, auth: json.keys!.auth! } });
+      await subscribe({ data: { endpoint: sub.endpoint, p256dh: json.keys!["p256dh"]!, auth: json.keys!["auth"]! } });
       setState("on");
       toast.success("Alertes activées sur ce téléphone");
     } catch (e) {

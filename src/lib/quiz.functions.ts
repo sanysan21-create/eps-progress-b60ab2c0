@@ -353,6 +353,8 @@ export const startSessionQuiz = createServerFn({ method: "POST" })
       returning id
     `;
     if (rows.length === 0) throw new Error("Enregistre d'abord le QCM avec au moins une question.");
+    const { notifyQuizClass } = await import("./push.server");
+    await notifyQuizClass(context.sql, data.sessionId, "📝 Nouveau QCM disponible");
     return { ok: true };
   });
 
@@ -382,6 +384,8 @@ export const scheduleSessionQuiz = createServerFn({ method: "POST" })
       returning id
     `;
     if (rows.length === 0) throw new Error("Enregistre d'abord le QCM avec au moins une question.");
+    const { notifyQuizClass } = await import("./push.server");
+    await notifyQuizClass(context.sql, data.sessionId, "📝 QCM programmé");
     return { ok: true };
   });
 

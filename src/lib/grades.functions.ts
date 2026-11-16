@@ -96,6 +96,11 @@ export const saveStudentGrade = createServerFn({ method: "POST" })
       saved += 1;
     }
 
+    const { notifyStudents } = await import("./push.server");
+    const [a] = await context.sql<{ name: string }[]>`select name from activities where id = ${data.activityId}`;
+    await notifyStudents(context.sql, data.studentIds, {
+      title: "📊 Résultats mis à jour", body: a?.name ?? "", url: "/eleve/notes",
+    });
     return { saved };
   });
 

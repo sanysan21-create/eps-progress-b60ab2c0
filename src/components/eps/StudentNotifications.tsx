@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Bell, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getMyNotifications } from "@/lib/student-notifications.functions";
+import { PushToggle } from "@/components/eps/PushToggle";
 
 const icons = { achievement: Trophy, result: ClipboardList, program: CalendarDays, quiz: ClipboardList, competency: ClipboardList };
 const dateFormat = new Intl.DateTimeFormat("fr-FR", {
@@ -29,6 +30,7 @@ export function StudentNotifications() {
         <h2 className="mono-label flex-1 text-xs font-bold">Notifications</h2>
         {items.length > 0 && <span className="text-xs font-bold text-primary">{items.length}</span>}
       </div>
+      <PushToggle />
       {notifications.isPending ? (
         <p role="status" className="px-4 pb-3 text-xs text-muted-foreground">Chargement des nouveautés…</p>
       ) : notifications.isError ? (

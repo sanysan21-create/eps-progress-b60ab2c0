@@ -577,6 +577,17 @@ create table if not exists ultimate_team_powers (
   created_at timestamptz not null default now(),
   primary key (team_setting_id, power_id)
 );
+
+-- Abonnements aux notifications push (téléphone de l'élève).
+create table if not exists student_push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references students(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_student_push_student on student_push_subscriptions(student_id);
 `;
 
 /** Génère un code élève unique (ELV-XXXXXX). */

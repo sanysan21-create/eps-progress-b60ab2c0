@@ -405,6 +405,12 @@ export const setStudentLevel = createServerFn({ method: "POST" })
       on conflict (student_id, competency_id)
       do update set level_id = excluded.level_id, updated_at = now()
     `;
+    const { notifyStudents } = await import("./push.server");
+    const [c] = await context.sql<{ label: string; name: string }[]>`
+      select c.label, a.name from competencies c join activities a on a.id = c.activity_id where c.id = ${data.competencyId}`;
+    await notifyStudents(context.sql, data.studentIds, {
+      title: "🎯 Compétence mise à jour", body: c ? `${c.name} · ${c.label}` : "", url: "/eleve/progression",
+    });
     return { saved: data.studentIds.length };
   });
 

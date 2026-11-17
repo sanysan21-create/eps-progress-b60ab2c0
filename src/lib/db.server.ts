@@ -444,6 +444,20 @@ create table if not exists student_competency_objectives (
   unique (student_id, competency_id)
 );
 
+-- Groupes d'acrosport formés par les élèves eux-mêmes (un groupe par élève et par activité).
+create table if not exists acrosport_group_members (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  class_id uuid not null references classes(id) on delete cascade,
+  activity_id uuid not null references activities(id) on delete cascade,
+  group_id uuid not null,
+  student_id uuid not null references students(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (student_id, activity_id)
+);
+
+create index if not exists idx_acrosport_group on acrosport_group_members(group_id);
+
 -- Scores des rencontres entre équipes d'une séance (activité Ultimate).
 create table if not exists program_session_matches (
   id uuid primary key default gen_random_uuid(),

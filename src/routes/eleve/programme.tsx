@@ -11,6 +11,7 @@ import { activityEmoji } from "@/lib/activity-emoji";
 import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches";
 import { CaptainPowers } from "@/components/eps/CaptainPowers";
 import { StudentQuizzes } from "@/components/eps/StudentQuizzes";
+import { AcrosportGroupPicker } from "@/components/eps/AcrosportGroupPicker";
 
 export const Route = createFileRoute("/eleve/programme")({
   head: () => ({
@@ -74,6 +75,7 @@ function StudentProgram() {
       <StudentQuizzes />
       <UltimateStudentMatches />
       <CaptainPowers />
+      <AcrosportGroupPicker />
 
       {sequences.length > 0 && (
         <section className="space-y-3">

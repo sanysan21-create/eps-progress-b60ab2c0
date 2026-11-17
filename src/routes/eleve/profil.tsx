@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ObjectiveBar } from "@/components/eps/ObjectiveBar";
 import { activityEmoji } from "@/lib/activity-emoji";
 
 import { LevelDots } from "@/components/eps/LevelDots";
@@ -262,6 +263,12 @@ function StudentProfile() {
                               <p className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground/80">
                                 💡 {competency.level_tip}
                               </p>
+                            )}
+                            {competency.objective && (
+                              <ObjectiveBar
+                                achieved={competency.objective.achieved}
+                                target={competency.objective.target}
+                              />
                             )}
                           </div>
                         </div>

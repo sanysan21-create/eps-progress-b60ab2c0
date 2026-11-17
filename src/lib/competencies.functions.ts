@@ -61,6 +61,8 @@ export type StudentProfileActivity = {
     /** Niveau immédiatement supérieur (N+1) tel que configuré par l'enseignant. */
     next_level_label: string | null;
     next_level_tip: string | null;
+    /** Objectif quantifié (x/y) renseigné par l'enseignant, sinon null. */
+    objective: { achieved: number; target: number } | null;
   }[];
 };
 
@@ -485,6 +487,19 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
       order by a.name asc, c.afl asc, c.position asc, c.label asc
     `;
 
+    const objectives = await context.sql<
+      { competency_id: string; achieved: number; target: number }[]
+    >`
+      select competency_id, achieved, target from student_competency_objectives
+      where student_id = ${studentId}
+    `;
+    const objectiveByCompetency = new Map(
+      objectives.map((row) => [
+        row.competency_id,
+        { achieved: Number(row.achieved), target: Number(row.target) },
+      ]),
+    );
+
     const climbing = await context.sql<{ activity_id: string; grade: string }[]>`
       select activity_id, grade from student_climbing_grades
       where student_id = ${studentId}
@@ -556,6 +571,7 @@ export const getMyProfileCompetencies = createServerFn({ method: "GET" })
         level_tip: row.level_tip ?? null,
         next_level_label: row.next_level_label ?? null,
         next_level_tip: row.next_level_tip ?? null,
+        objective: objectiveByCompetency.get(row.competency_id) ?? null,
       });
       grouped.set(row.activity_id, entry);
     }
@@ -760,6 +776,75 @@ export const clearStudentUltimateTeam = createServerFn({ method: "POST" })
       delete from student_ultimate_teams
       where teacher_id = ${context.userId}
         and activity_id = ${data.activityId}
+        and student_id = any(${data.studentIds}::uuid[])
+    `;
+    return { ok: true };
+  });
+
+/** Objectifs quantifiés (x/y) d'un élève, par compétence. */
+export const listStudentObjectives = createServerFn({ method: "GET" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentId: string }) =>
+    z.object({ studentId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const rows = await context.sql<
+      { competency_id: string; achieved: number; target: number }[]
+    >`
+      select competency_id, achieved, target from student_competency_objectives
+      where teacher_id = ${context.userId} and student_id = ${data.studentId}
+    `;
+    return rows.map((row) => ({
+      competency_id: row.competency_id,
+      achieved: Number(row.achieved),
+      target: Number(row.target),
+    }));
+  });
+
+/** Enregistre un objectif quantifié x/y pour un ou plusieurs élèves. */
+export const setStudentObjective = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator(
+    (input: { studentIds: string[]; competencyId: string; achieved: number; target: number }) =>
+      z
+        .object({
+          studentIds: z.array(z.string().uuid()).min(1).max(200),
+          competencyId: z.string().uuid(),
+          achieved: z.number().int().min(0).max(999),
+          target: z.number().int().min(1).max(999),
+        })
+        .refine((v) => v.achieved <= v.target, "Le résultat ne peut pas dépasser l'objectif")
+        .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await context.sql`
+      insert into student_competency_objectives (teacher_id, student_id, competency_id, achieved, target)
+      select ${context.userId}, s.id, c.id, ${data.achieved}, ${data.target}
+      from students s
+      join competencies c on c.id = ${data.competencyId} and c.teacher_id = ${context.userId}
+      where s.teacher_id = ${context.userId} and s.id = any(${data.studentIds}::uuid[])
+      on conflict (student_id, competency_id)
+      do update set achieved = excluded.achieved, target = excluded.target, updated_at = now()
+    `;
+    return { saved: data.studentIds.length };
+  });
+
+/** Retire l'objectif quantifié. */
+export const clearStudentObjective = createServerFn({ method: "POST" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { studentIds: string[]; competencyId: string }) =>
+    z
+      .object({
+        studentIds: z.array(z.string().uuid()).min(1).max(200),
+        competencyId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await context.sql`
+      delete from student_competency_objectives
+      where teacher_id = ${context.userId}
+        and competency_id = ${data.competencyId}
         and student_id = any(${data.studentIds}::uuid[])
     `;
     return { ok: true };

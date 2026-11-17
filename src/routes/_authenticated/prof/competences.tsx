@@ -21,7 +21,12 @@ import {
   setStudentUltimateTeam,
   clearStudentUltimateTeam,
   listUltimateTeams,
+  listStudentObjectives,
+  setStudentObjective,
+  clearStudentObjective,
 } from "@/lib/competencies.functions";
+import { isOrientationActivity } from "@/lib/orientation";
+import { ObjectiveBar } from "@/components/eps/ObjectiveBar";
 import { CLIMBING_GRADES, isClimbingActivity } from "@/lib/climbing";
 import { BADMINTON_POOLS, isBadmintonActivity } from "@/lib/badminton";
 import { ULTIMATE_TEAMS, isUltimateActivity, ultimateTeam } from "@/lib/ultimate";
@@ -164,6 +169,14 @@ function QuickCompetencies() {
   const isClimbing = isClimbingActivity(activity?.name);
   const isBadminton = isBadmintonActivity(activity?.name);
   const isUltimate = isUltimateActivity(activity?.name);
+  const isOrientation = isOrientationActivity(activity?.name);
+
+  const fetchObjectives = useServerFn(listStudentObjectives);
+  const objectives = useQuery({
+    queryKey: ["student-objectives", soloId],
+    queryFn: () => fetchObjectives({ data: { studentId: soloId! } }),
+    enabled: Boolean(soloId && isOrientation),
+  });
 
   const fetchClimbingGrade = useServerFn(getStudentClimbingGrade);
   const saveClimbingGrade = useServerFn(setStudentClimbingGrade);
@@ -816,6 +829,20 @@ function QuickCompetencies() {
                             </>
                           )}
                         </div>
+                        {isOrientation && competency.afl === "AFL2" && selected.length > 0 && (
+                          <ObjectiveEditor
+                            key={`${soloId ?? "group"}-${competency.id}`}
+                            competencyId={competency.id}
+                            studentIds={selected}
+                            current={
+                              soloId
+                                ? ((objectives.data ?? []).find(
+                                    (row) => row.competency_id === competency.id,
+                                  ) ?? null)
+                                : null
+                            }
+                          />
+                        )}
                       </article>
                     );
                   })}
@@ -938,6 +965,101 @@ function QuickCompetencies() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Saisie d'un objectif quantifié x/y (course d'orientation, AFL2). */
+function ObjectiveEditor({
+  competencyId,
+  studentIds,
+  current,
+}: {
+  competencyId: string;
+  studentIds: string[];
+  current: { achieved: number; target: number } | null;
+}) {
+  const queryClient = useQueryClient();
+  const save = useServerFn(setStudentObjective);
+  const clear = useServerFn(clearStudentObjective);
+  const [achieved, setAchieved] = useState(current ? String(current.achieved) : "");
+  const [target, setTarget] = useState(current ? String(current.target) : "");
+  const [busy, setBusy] = useState(false);
+  const a = Number(achieved);
+  const t = Number(target);
+  const valid = achieved !== "" && target !== "" && t >= 1 && a >= 0 && a <= t;
+
+  async function run(action: "save" | "clear") {
+    setBusy(true);
+    try {
+      if (action === "save") {
+        await save({ data: { studentIds, competencyId, achieved: a, target: t } });
+        toast.success(`Objectif ${a}/${t} enregistré`);
+      } else {
+        await clear({ data: { studentIds, competencyId } });
+        setAchieved("");
+        setTarget("");
+        toast.success("Objectif retiré");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["student-objectives"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Échec de l'enregistrement");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const input =
+    "w-16 rounded-xl border border-border bg-surface px-2 py-2 text-center text-sm outline-none focus:border-primary";
+  return (
+    <div className="w-full space-y-2 border-t border-border pt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold">🎯 Objectif quantifié</span>
+        <input
+          type="number"
+          min={0}
+          inputMode="numeric"
+          value={achieved}
+          onChange={(e) => setAchieved(e.target.value)}
+          aria-label="Réalisé"
+          placeholder="x"
+          className={input}
+        />
+        <span className="text-sm font-bold">/</span>
+        <input
+          type="number"
+          min={1}
+          inputMode="numeric"
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
+          aria-label="Objectif"
+          placeholder="y"
+          className={input}
+        />
+        <button
+          type="button"
+          disabled={!valid || busy}
+          onClick={() => void run("save")}
+          className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-40"
+        >
+          Enregistrer
+        </button>
+        {current && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void run("clear")}
+            aria-label="Retirer l'objectif"
+            className="rounded-xl border border-border p-2 text-muted-foreground hover:text-primary"
+          >
+            <X className="size-4" />
+          </button>
+        )}
+      </div>
+      {valid && <ObjectiveBar achieved={a} target={t} />}
+      {!valid && achieved !== "" && target !== "" && (
+        <p className="text-xs text-destructive">Le réalisé doit être entre 0 et l'objectif.</p>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ObjectiveBar } from "@/components/eps/ObjectiveBar";
 import { useState } from "react";
 import { Flame } from "lucide-react";
 
@@ -257,6 +258,12 @@ function StudentProgress() {
                                   Niveau {c.level_position}/{c.level_max} — {c.level_label}
                                 </p>
                               </div>
+                              {c.objective && (
+                                <ObjectiveBar
+                                  achieved={c.objective.achieved}
+                                  target={c.objective.target}
+                                />
+                              )}
                             </article>
                           );
                         })}

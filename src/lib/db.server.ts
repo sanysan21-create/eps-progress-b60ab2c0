@@ -431,6 +431,19 @@ create table if not exists student_badminton_pools (
   unique (student_id, activity_id)
 );
 
+-- Objectif quantifié (x/y) d'un élève sur une compétence (ex. course d'orientation, AFL2).
+create table if not exists student_competency_objectives (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  competency_id uuid not null references competencies(id) on delete cascade,
+  achieved smallint not null default 0,
+  target smallint not null default 1,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (student_id, competency_id)
+);
+
 -- Scores des rencontres entre équipes d'une séance (activité Ultimate).
 create table if not exists program_session_matches (
   id uuid primary key default gen_random_uuid(),

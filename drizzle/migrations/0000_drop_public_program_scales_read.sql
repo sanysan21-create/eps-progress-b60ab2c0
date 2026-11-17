@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Program scales are publicly readable" ON storage.objects;

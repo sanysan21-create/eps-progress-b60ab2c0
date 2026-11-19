@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Afficher les QCM uniquement dans leur séance sélectionnée dans Programme.
+- [ ] Ajouter des propositions de musique par lien internet en acrosport.
+
 - [x] Cadre de notifications en haut de l'espace élève : réussites, compétences, résultats, programme et QCM ; lecture vérifiée sur les données existantes.
 
 - [x] Limiter les activites evaluables aux activites programmees pour la classe (Resultats + Evaluer competences)

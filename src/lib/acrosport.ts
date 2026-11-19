@@ -1,5 +1,5 @@
 /** Nombre maximum d'élèves par groupe d'acrosport. */
-export const ACROSPORT_MAX_GROUP_SIZE = 4;
+export const ACROSPORT_MAX_GROUP_SIZE = 6;
 
 /** Vrai si l'activité correspond à l'acrosport. */
 export function isAcrosportActivity(name: string | null | undefined): boolean {

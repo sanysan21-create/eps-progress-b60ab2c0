@@ -35,6 +35,7 @@ export type TeacherQuiz = {
 
 export type StudentQuiz = {
   id: string;
+  session_id: string;
   title: string;
   activity_name: string | null;
   session_number: number | null;
@@ -436,6 +437,7 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
     if (!scope) return [];
     const rows = await context.sql<
       (QuizRow & {
+        session_id: string;
         activity_name: string | null;
         session_number: number | null;
         my: (number | null)[] | null;
@@ -444,7 +446,7 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
         my_finished_at: Date | null;
       })[]
     >`
-      select z.id, z.title, z.duration_minutes, z.questions,
+      select z.id, z.session_id, z.title, z.duration_minutes, z.questions,
              coalesce(o.opens_at, z.started_at) as started_at, coalesce(o.ends_at, z.ends_at) as ends_at,
              coalesce(a.name, p.activity_name) as activity_name, p.session_number,
              ans.answers as my, ans.id as ans_id, ans.finished_at as my_finished_at,
@@ -462,7 +464,6 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
             : context.sql`and p.class_id is null`
         }
       order by z.started_at desc
-      limit 20
     `;
     const now = new Date();
     return rows.map((row) => {
@@ -481,6 +482,7 @@ export const getMyQuizzes = createServerFn({ method: "GET" })
       const questions = notStarted || (!begun && !finished) ? [] : (row.questions ?? []);
       return {
         id: row.id,
+        session_id: row.session_id,
         title: row.title,
         activity_name: row.activity_name,
         session_number: row.session_number === null ? null : Number(row.session_number),

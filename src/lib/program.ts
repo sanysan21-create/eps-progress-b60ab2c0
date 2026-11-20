@@ -1,5 +1,7 @@
 export type ProgramSession = {
   id: string;
+  sequence_id?: string | null;
+  session_number?: number | null;
   class_id: string | null;
   class_name: string | null;
   activity_id: string | null;

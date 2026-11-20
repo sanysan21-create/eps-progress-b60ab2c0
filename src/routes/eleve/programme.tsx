@@ -12,6 +12,10 @@ import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches"
 import { CaptainPowers } from "@/components/eps/CaptainPowers";
 import { StudentQuizzes } from "@/components/eps/StudentQuizzes";
 import { AcrosportGroupPicker } from "@/components/eps/AcrosportGroupPicker";
+import { AcrosportMusic } from "@/components/eps/AcrosportMusic";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isAcrosportActivity } from "@/lib/acrosport";
 
 export const Route = createFileRoute("/eleve/programme")({
   head: () => ({
@@ -47,6 +51,7 @@ function StudentProgram() {
   const next = nextSession(sessions);
   const upcoming = upcomingSessions(sessions);
   const [zoom, setZoom] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   // Barèmes photo attachés aux séquences, affichés en bas de page.
   const sequenceScales = sequences.filter((sequence) => sequence.scale_image_url);
@@ -72,10 +77,18 @@ function StudentProgram() {
         </p>
       </header>
 
-      <StudentQuizzes />
       <UltimateStudentMatches />
       <CaptainPowers />
-      <AcrosportGroupPicker />
+      {sequences.some((sequence) => isAcrosportActivity(sequence.activity_name)) && (
+        <Tabs defaultValue="group">
+          <TabsList>
+            <TabsTrigger value="group">Groupe d’acrosport</TabsTrigger>
+            <TabsTrigger value="music">Musique</TabsTrigger>
+          </TabsList>
+          <TabsContent value="group"><AcrosportGroupPicker /></TabsContent>
+          <TabsContent value="music"><AcrosportMusic /></TabsContent>
+        </Tabs>
+      )}
 
       {sequences.length > 0 && (
         <section className="space-y-3">
@@ -96,9 +109,44 @@ function StudentProgram() {
                   {[sequenceRange(sequence), sequence.activity_name].filter(Boolean).join(" · ") ||
                     "Séquence à venir"}
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {sessions.filter((session) => session.sequence_id === sequence.id).map((session, index) => (
+                    <Button key={session.id} variant={selectedSessionId === session.id ? "default" : "outline"} size="sm"
+                      aria-pressed={selectedSessionId === session.id}
+                      aria-label={`${sequence.name} — Séance ${session.session_number ?? index + 1}`}
+                      onClick={() => setSelectedSessionId((id) => id === session.id ? null : session.id)}>
+                      S{session.session_number ?? index + 1} · {sessionWhen(session)}
+                    </Button>
+                  ))}
+                </div>
+                {sessions.filter((session) => session.sequence_id === sequence.id && session.id === selectedSessionId).map((session) => (
+                  <div key={session.id} className="mt-4 space-y-3">
+                    {session.objective && <p className="text-sm">{session.objective}</p>}
+                    {session.description && <p className="text-sm text-muted-foreground">{session.description}</p>}
+                    <StudentQuizzes sessionId={session.id} />
+                  </div>
+                ))}
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {sessions.some((session) => !session.sequence_id) && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground">Mes séances</h2>
+          <div className="flex flex-wrap gap-2">
+            {sessions.filter((session) => !session.sequence_id).map((session) => (
+              <Button key={session.id} variant={selectedSessionId === session.id ? "default" : "outline"}
+                aria-pressed={selectedSessionId === session.id}
+                onClick={() => setSelectedSessionId((id) => id === session.id ? null : session.id)}>
+                {session.activity_name} · {sessionWhen(session)}
+              </Button>
+            ))}
+          </div>
+          {sessions.filter((session) => !session.sequence_id && session.id === selectedSessionId).map((session) => (
+            <StudentQuizzes key={session.id} sessionId={session.id} />
+          ))}
         </section>
       )}
 

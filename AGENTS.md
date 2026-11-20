@@ -11,3 +11,6 @@
 
 - Power icons use the shared `PowerIcon` visual mapping while persisting compact emoji keys, preserving existing database values and all current server contracts.
 - Student notifications are a read-only feed of existing timestamped records, scoped by the signed QR session and class programming; this avoids duplicate event storage and disclosure across students.
+- Programme quizzes are selected by the persisted session ID, not activity or session number, to avoid mixing sessions.
+- Acrosport music proposals use the existing QR student scope and class programming; links are validated as HTTP(S), and only authors may remove their proposals.
+- Apply application SQL migrations to the existing DATABASE_URL database, not the separate managed Cloud database, because application tables live in the former.

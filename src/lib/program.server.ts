@@ -5,6 +5,8 @@ const SELECT_SESSIONS = (sql: Db) => sql;
 
 export type ProgramRow = {
   id: string;
+  sequence_id: string | null;
+  session_number: number | null;
   class_id: string | null;
   class_name: string | null;
   activity_id: string | null;
@@ -29,6 +31,8 @@ function toDateString(value: Date | string | null): string | null {
 export function mapProgramRows(rows: ProgramRow[]): ProgramSession[] {
   return rows.map((row) => ({
     id: row.id,
+    sequence_id: row.sequence_id,
+    session_number: row.session_number,
     class_id: row.class_id,
     class_name: row.class_name ?? null,
     activity_id: row.activity_id,
@@ -54,6 +58,8 @@ export async function loadProgramSessions(
   const rows = await sql<ProgramRow[]>`
     select
       p.id,
+      p.sequence_id,
+      p.session_number,
       p.class_id,
       c.name as class_name,
       p.activity_id,

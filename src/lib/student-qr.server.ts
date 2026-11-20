@@ -2,14 +2,13 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { useSession } from "@tanstack/react-start/server";
 
 import type { Db } from "./db.server";
+import { appSecret } from "./auth.server";
 
 export type StudentSessionData = { studentId?: string };
 
 export function getStudentSession() {
-  // Import dynamique différé : appSecret() lit une variable d'environnement serveur.
-  const secretModule = require("./auth.server") as typeof import("./auth.server");
   return useSession<StudentSessionData>({
-    password: secretModule.appSecret(),
+    password: appSecret(),
     name: "eps-student-session",
     maxAge: 60 * 60 * 12,
     cookie: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
@@ -22,7 +21,6 @@ export function getStudentSession() {
  * cannot be guessed or recovered from the database alone.
  */
 export function signStudentToken(tokenId: string): string {
-  const { appSecret } = require("./auth.server") as typeof import("./auth.server");
   const mac = createHmac("sha256", appSecret()).update(tokenId).digest("base64url");
   return `${tokenId}.${mac}`;
 }

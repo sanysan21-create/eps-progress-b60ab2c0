@@ -5,16 +5,17 @@ import { toast } from "sonner";
 
 import { beginMyQuiz, finishMyQuiz, getMyQuizzes, submitMyQuiz, type StudentQuiz } from "@/lib/quiz.functions";
 import { formatLeft, useNow } from "./quiz-time";
+import { quizzesForSession } from "@/lib/program-selection";
 
 /** QCM lancés par l'enseignant : réponse pendant le minuteur, corrigé + score après. */
-export function StudentQuizzes() {
+export function StudentQuizzes({ sessionId }: { sessionId: string }) {
   const fetchQuizzes = useServerFn(getMyQuizzes);
   const quizzes = useQuery({
     queryKey: ["my-quizzes"],
     queryFn: () => fetchQuizzes(),
     refetchInterval: 15_000,
   });
-  const list = quizzes.data ?? [];
+  const list = quizzesForSession(quizzes.data ?? [], sessionId);
   if (list.length === 0) return null;
   return (
     <section className="space-y-3">

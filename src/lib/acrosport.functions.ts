@@ -4,6 +4,7 @@ import { z } from "zod";
 import { withDb } from "./auth-middleware";
 import type { Db } from "./db.server";
 import { ACROSPORT_MAX_GROUP_SIZE, type AcrosportBoard } from "./acrosport";
+import { musicProposalSchema, type MusicProposal } from "./acrosport-music";
 
 /** Activité d'acrosport programmée pour une classe de l'élève connecté. */
 async function loadContext(sql: Db) {
@@ -26,6 +27,49 @@ async function loadContext(sql: Db) {
   const row = rows[0];
   return row ? { studentId, ...row } : null;
 }
+
+export const getMyAcrosportMusic = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .handler(async ({ context }): Promise<{ proposals: MusicProposal[] } | null> => {
+    const ctx = await loadContext(context.sql);
+    if (!ctx) return null;
+    const proposals = await context.sql<MusicProposal[]>`
+      select m.id, m.title, m.url, s.first_name || ' ' || s.last_name as author,
+             m.student_id = ${ctx.studentId} as mine
+      from acrosport_music_proposals m join students s on s.id = m.student_id
+      where m.teacher_id = ${ctx.teacher_id} and m.class_id = ${ctx.class_id}
+        and m.activity_id = ${ctx.activity_id}
+      order by m.created_at desc
+    `;
+    return { proposals };
+  });
+
+export const proposeMyAcrosportMusic = createServerFn({ method: "POST" })
+  .middleware([withDb])
+  .inputValidator((input: { title: string; url: string }) => musicProposalSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const ctx = await loadContext(context.sql);
+    if (!ctx) throw new Error("Aucune séquence d'acrosport programmée");
+    await context.sql`
+      insert into acrosport_music_proposals (teacher_id, class_id, activity_id, student_id, title, url)
+      values (${ctx.teacher_id}, ${ctx.class_id}, ${ctx.activity_id}, ${ctx.studentId}, ${data.title}, ${data.url})
+    `;
+    return { ok: true };
+  });
+
+export const removeMyAcrosportMusic = createServerFn({ method: "POST" })
+  .middleware([withDb])
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ctx = await loadContext(context.sql);
+    if (!ctx) throw new Error("Aucune séquence d'acrosport programmée");
+    await context.sql`
+      delete from acrosport_music_proposals where id = ${data.id}
+        and student_id = ${ctx.studentId} and teacher_id = ${ctx.teacher_id}
+        and class_id = ${ctx.class_id} and activity_id = ${ctx.activity_id}
+    `;
+    return { ok: true };
+  });
 
 export const getMyAcrosportGroup = createServerFn({ method: "GET" })
   .middleware([withDb])

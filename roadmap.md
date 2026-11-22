@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Afficher les QCM uniquement dans leur séance sélectionnée dans Programme.
-- [ ] Ajouter des propositions de musique par lien internet en acrosport.
+- [x] Afficher les QCM uniquement dans leur séance sélectionnée dans Programme ; vérifié avec un accès élève et deux séances.
+- [x] Ajouter des propositions de musique par lien internet en acrosport ; ajout, lecture après rechargement et suppression vérifiés sur mobile et ordinateur.
 
 - [x] Cadre de notifications en haut de l'espace élève : réussites, compétences, résultats, programme et QCM ; lecture vérifiée sur les données existantes.
 

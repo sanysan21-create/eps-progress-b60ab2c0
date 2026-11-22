@@ -13,8 +13,6 @@ export type CompetencyLevel = {
   label: string;
   position: number;
   tip?: string | null;
-  /** Points attribués à ce niveau dans la note (null = non défini). */
-  points?: number | null;
 };
 export type Competency = {
   id: string;
@@ -89,7 +87,6 @@ export const listActivities = createServerFn({ method: "GET" })
         level_label: string | null;
         level_position: number | null;
         level_tip: string | null;
-        level_points: string | number | null;
       }[]
     >`
       select
@@ -104,8 +101,7 @@ export const listActivities = createServerFn({ method: "GET" })
         l.id as level_id,
         l.label as level_label,
         l.position as level_position,
-        l.tip as level_tip,
-        l.points as level_points
+        l.tip as level_tip
       from activities a
       left join competencies c on c.activity_id = a.id
       left join competency_levels l on l.competency_id = c.id
@@ -148,7 +144,6 @@ export const listActivities = createServerFn({ method: "GET" })
           label: row.level_label ?? "",
           position: row.level_position ?? 0,
           tip: row.level_tip ?? null,
-          points: row.level_points == null ? null : Number(row.level_points),
         });
       }
     }
@@ -325,20 +320,6 @@ export const deleteCompetencyLevel = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await context.sql`
       delete from competency_levels where id = ${data.id} and teacher_id = ${context.userId}
-    `;
-    return { ok: true };
-  });
-
-/** Définit les points attribués à un niveau (pour calculer la note). */
-export const setCompetencyLevelPoints = createServerFn({ method: "POST" })
-  .middleware([requireTeacher])
-  .inputValidator((input: { id: string; points: number | null }) =>
-    z.object({ id: z.string().uuid(), points: z.number().min(0).max(100).nullable() }).parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    await context.sql`
-      update competency_levels set points = ${data.points}, updated_at = now()
-      where id = ${data.id} and teacher_id = ${context.userId}
     `;
     return { ok: true };
   });

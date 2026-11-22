@@ -458,9 +458,6 @@ create table if not exists acrosport_group_members (
 
 create index if not exists idx_acrosport_group on acrosport_group_members(group_id);
 
--- Points attribués par niveau de compétence (calcul automatique de la note).
-alter table competency_levels add column if not exists points numeric;
-
 -- Scores des rencontres entre équipes d'une séance (activité Ultimate).
 create table if not exists program_session_matches (
   id uuid primary key default gen_random_uuid(),

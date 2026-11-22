@@ -8,7 +8,6 @@ import { toast } from "sonner";
 
 import {
   listActivities,
-  setCompetencyLevelPoints,
   listStudentMarks,
   listTeacherStudents,
 } from "@/lib/competencies.functions";
@@ -68,7 +67,6 @@ function TeacherGrades() {
   const fetchMarks = useServerFn(listStudentMarks);
   const saveGrade = useServerFn(saveStudentGrade);
   const removeGrade = useServerFn(deleteStudentGrade);
-  const savePoints = useServerFn(setCompetencyLevelPoints);
 
   const [query, setQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
@@ -465,22 +463,6 @@ function TeacherGrades() {
                                 </span>
                               </label>
 
-                              {score && competency.levels.length > 0 && (
-                                <AflLevelPoints
-                                  levels={competency.levels}
-                                  points={score.points}
-                                  onPick={(points, maxPoints) =>
-                                    patchScore(activeAfl, competency.id, {
-                                      points: String(points),
-                                      ...(maxPoints != null ? { maxPoints: String(maxPoints) } : {}),
-                                    })
-                                  }
-                                  onSavePoints={async (levelId, points) => {
-                                    await savePoints({ data: { id: levelId, points } });
-                                    await queryClient.invalidateQueries({ queryKey: ["activities"] });
-                                  }}
-                                />
-                              )}
                               {score && (
                                 <div className="mt-3 flex flex-wrap items-end gap-5 pl-7">
                                   <div className="space-y-1">
@@ -631,85 +613,6 @@ function TeacherGrades() {
             maxPoints={focusedEntry?.maxPoints ?? 0}
           />
         )}
-      </div>
-    </div>
-  );
-}
-
-/** Niveaux d'AFL : l'enseignant fixe les points de chaque niveau, puis choisit le niveau atteint. */
-function AflLevelPoints({
-  levels,
-  points,
-  onPick,
-  onSavePoints,
-}: {
-  levels: { id: string; label: string; position: number; points?: number | null }[];
-  points: string;
-  onPick: (points: number, maxPoints: number | null) => void;
-  onSavePoints: (levelId: string, points: number | null) => Promise<void>;
-}) {
-  const sorted = [...levels].sort((a, b) => a.position - b.position);
-  const defined = sorted.map((l) => l.points).filter((p): p is number => p != null);
-  const max = defined.length ? Math.max(...defined) : null;
-  const current = Number(points.replace(",", "."));
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-  return (
-    <div className="mt-3 space-y-2 pl-7">
-      <p className="text-xs text-muted-foreground">
-        Niveau atteint — fixe les points de chaque niveau, puis touche le niveau : la note se
-        calcule toute seule.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {sorted.map((level, index) => {
-          const value = drafts[level.id] ?? (level.points == null ? "" : String(level.points));
-          const active = level.points != null && level.points === current;
-          return (
-            <div
-              key={level.id}
-              className={`flex items-center gap-1 rounded-lg border p-1 ${
-                active ? "border-primary bg-primary/10" : "border-border"
-              }`}
-            >
-              <button
-                type="button"
-                title={level.label}
-                disabled={level.points == null}
-                onClick={() => level.points != null && onPick(level.points, max)}
-                className={`rounded-md px-2 py-1 font-mono text-xs font-bold disabled:opacity-40 ${
-                  active ? "bg-primary text-primary-foreground" : "hover:bg-accent"
-                }`}
-              >
-                N{index + 1}
-              </button>
-              <input
-                inputMode="decimal"
-                value={value}
-                placeholder="pts"
-                aria-label={`Points du niveau ${index + 1}`}
-                onChange={(e) => setDrafts((d) => ({ ...d, [level.id]: e.target.value }))}
-                onBlur={async () => {
-                  const raw = drafts[level.id];
-                  if (raw === undefined) return;
-                  const n = raw.trim() === "" ? null : Number(raw.replace(",", "."));
-                  if (n != null && (!Number.isFinite(n) || n < 0 || n > 100)) {
-                    toast.error("Points invalides (0 à 100).");
-                    return;
-                  }
-                  try {
-                    await onSavePoints(level.id, n);
-                    setDrafts((d) => {
-                      const { [level.id]: _, ...rest } = d;
-                      return rest;
-                    });
-                  } catch {
-                    toast.error("Impossible d'enregistrer les points du niveau.");
-                  }
-                }}
-                className="w-12 rounded-md border border-border bg-background px-1 py-1 text-center text-xs outline-none focus:border-primary"
-              />
-            </div>
-          );
-        })}
       </div>
     </div>
   );

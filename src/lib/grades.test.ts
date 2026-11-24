@@ -16,3 +16,9 @@ test("default scale adds up to 20 points", () => {
   strictEqual(totals.max, 20);
   strictEqual(totals.percent, 100);
 });
+
+test("AFL1 is split into AFL1a 6 pts and AFL1b 6 pts", async () => {
+  const { AFL1_PARTS } = await import("./grades");
+  strictEqual(AFL1_PARTS.find((p) => p.label === "AFL1a")?.maxPoints, 6);
+  strictEqual(AFL1_PARTS.find((p) => p.label === "AFL1b")?.maxPoints, 6);
+});

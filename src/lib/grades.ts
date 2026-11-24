@@ -5,6 +5,13 @@ export const DEFAULT_AFL_ITEMS = [
   { label: "AFL3", maxPoints: 4 },
 ] as const;
 
+/** AFL1 est noté en deux volets de 6 points : AFL1a et AFL1b. */
+export const AFL1_PARTS = [
+  { part: "a", label: "AFL1a", maxPoints: 6 },
+  { part: "b", label: "AFL1b", maxPoints: 6 },
+] as const;
+export type Afl1Part = (typeof AFL1_PARTS)[number]["part"];
+
 export type GradeItem = {
   id: string;
   position: number;

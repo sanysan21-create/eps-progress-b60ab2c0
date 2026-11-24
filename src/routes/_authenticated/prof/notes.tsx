@@ -20,7 +20,7 @@ import {
   listStudentGrades,
   saveStudentGrade,
 } from "@/lib/grades.functions";
-import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
+import { AFL1_PARTS, DEFAULT_AFL_ITEMS, formatPoints, gradeTotals, type Afl1Part } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 import { NumberField } from "@/components/eps/NumberField";
 import { NumericButtons } from "@/components/eps/NumericButtons";
@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/prof/notes")({
   component: TeacherGrades,
 });
 
-type Score = { points: string; maxPoints: string };
+type Score = { points: string; maxPoints: string; part?: Afl1Part };
 /** Par AFL : compétences cochées et points saisis. */
 type AflState = Record<string, Record<string, Score>>;
 
@@ -63,6 +63,7 @@ function initialAflState(): AflState {
 }
 
 function defaultMax(afl: string): string {
+  if (afl === "AFL1") return String(AFL1_PARTS[0].maxPoints);
   const found = DEFAULT_AFL_ITEMS.find((item) => item.label === afl);
   return String(found?.maxPoints ?? 5);
 }
@@ -180,7 +181,7 @@ function TeacherGrades() {
     () =>
       AFL_LABELS.flatMap((label) =>
         Object.entries(afl[label] ?? {}).map(([competencyId, score]) => ({
-          label,
+          label: label === "AFL1" ? `AFL1${score.part ?? "a"}` : label,
           competencyId,
           points: Number(score.points.replace(",", ".")) || 0,
           maxPoints: Number(score.maxPoints.replace(",", ".")) || 0,
@@ -227,7 +228,12 @@ function TeacherGrades() {
     setAfl((current) => {
       const group = { ...(current[aflLabel] ?? {}) };
       if (group[competencyId]) delete group[competencyId];
-      else group[competencyId] = { points: "0", maxPoints: defaultMax(aflLabel) };
+      else
+        group[competencyId] = {
+          points: "0",
+          maxPoints: defaultMax(aflLabel),
+          ...(aflLabel === "AFL1" ? { part: "a" as const } : {}),
+        };
       return { ...current, [aflLabel]: group };
     });
     setFocused({ afl: aflLabel, competencyId });
@@ -420,7 +426,7 @@ function TeacherGrades() {
                           {row.firstName} {row.lastName}
                         </td>
                         {AFL_LABELS.map((label) => {
-                          const items = row.items.filter((item) => item.label === label);
+                          const items = row.items.filter((item) => item.label.startsWith(label));
                           const sub = gradeTotals(
                             items.map((item) => ({
                               points: item.points,
@@ -642,6 +648,36 @@ function TeacherGrades() {
 
                               {score && (
                                 <div className="mt-3 flex flex-wrap items-end gap-5 pl-7">
+                                  {activeAfl === "AFL1" && (
+                                    <div className="space-y-1">
+                                      <span className="text-xs text-muted-foreground">Volet</span>
+                                      <div className="flex gap-1.5">
+                                        {AFL1_PARTS.map((p) => {
+                                          const on = (score.part ?? "a") === p.part;
+                                          return (
+                                            <button
+                                              key={p.part}
+                                              type="button"
+                                              aria-pressed={on}
+                                              onClick={() =>
+                                                patchScore(activeAfl, competency.id, {
+                                                  part: p.part,
+                                                  maxPoints: String(p.maxPoints),
+                                                })
+                                              }
+                                              className={`rounded-lg border px-2.5 py-1.5 font-mono text-xs ${
+                                                on
+                                                  ? "border-primary bg-primary/15 font-bold text-foreground"
+                                                  : "border-border text-muted-foreground hover:border-primary/60"
+                                              }`}
+                                            >
+                                              {p.label} · {p.maxPoints} pts
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
                                   <div className="space-y-1">
                                     <span className="text-xs text-muted-foreground">
                                       Points obtenus

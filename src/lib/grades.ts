@@ -1,8 +1,8 @@
 /** Barème par défaut : 3 AFL, total 20 points. Entièrement modifiable par l'enseignant. */
 export const DEFAULT_AFL_ITEMS = [
-  { label: "AFL1", maxPoints: 8 },
-  { label: "AFL2", maxPoints: 6 },
-  { label: "AFL3", maxPoints: 6 },
+  { label: "AFL1", maxPoints: 12 },
+  { label: "AFL2", maxPoints: 4 },
+  { label: "AFL3", maxPoints: 4 },
 ] as const;
 
 export type GradeItem = {

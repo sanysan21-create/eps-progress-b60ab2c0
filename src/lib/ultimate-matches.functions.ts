@@ -122,6 +122,65 @@ export const deleteSessionMatch = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Lecture seule : rencontres d'ultimate d'une séance précise, visibles par l'élève. */
+export const getMySessionUltimateMatches = createServerFn({ method: "GET" })
+  .middleware([withDb])
+  .inputValidator((input: { sessionId: string }) =>
+    z.object({ sessionId: z.string().uuid() }).parse(input),
+  )
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ my_team: string | null; matches: SessionMatch[] }> => {
+      const { getStudentSession } = await import("./student-qr.server");
+      const { loadStudentScope } = await import("./program.server");
+      const session = await getStudentSession();
+      const studentId = session.data.studentId;
+      if (!studentId) return { my_team: null, matches: [] };
+
+      const scope = await loadStudentScope(context.sql, studentId);
+      if (!scope) return { my_team: null, matches: [] };
+
+      // La séance doit appartenir au professeur de l'élève et à une de ses classes.
+      const allowed = await context.sql<{ id: string }[]>`
+        select p.id from program_sessions p
+        join program_sequences q on q.id = p.sequence_id
+        where p.id = ${data.sessionId}
+          and p.teacher_id = ${scope.teacherId}
+          ${
+            scope.classIds.length > 0
+              ? context.sql`and (q.class_id is null or q.class_id = any(${scope.classIds}::uuid[]))`
+              : context.sql`and q.class_id is null`
+          }
+        limit 1
+      `;
+      if (!allowed[0]) return { my_team: null, matches: [] };
+
+      const matches = await context.sql<SessionMatch[]>`
+        select id, team_a, team_b, score_a, score_b
+        from program_session_matches
+        where session_id = ${data.sessionId} and teacher_id = ${scope.teacherId}
+        order by created_at asc
+      `;
+
+      const teams = await context.sql<{ team: string }[]>`
+        select t.team from student_ultimate_teams t
+        where t.student_id = ${studentId}
+        order by t.updated_at desc limit 1
+      `;
+
+      return {
+        my_team: teams[0]?.team ?? null,
+        matches: matches.map((row) => ({
+          ...row,
+          score_a: Number(row.score_a),
+          score_b: Number(row.score_b),
+        })),
+      };
+    },
+  );
+
 /** Lecture seule : rencontres d'ultimate visibles par l'élève (toutes les séances). */
 export const getMyUltimateMatches = createServerFn({ method: "GET" })
   .middleware([withDb])

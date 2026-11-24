@@ -8,7 +8,7 @@ import { nextSession, sessionWhen, upcomingSessions } from "@/lib/program";
 import { getMyProgramSequences } from "@/lib/program-sequences.functions";
 import { sequenceRange } from "@/lib/program-sequences";
 import { activityEmoji } from "@/lib/activity-emoji";
-import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches";
+import { UltimateSessionMatches } from "@/components/eps/UltimateSessionMatches";
 import { CaptainPowers } from "@/components/eps/CaptainPowers";
 import { StudentQuizzes } from "@/components/eps/StudentQuizzes";
 import { AcrosportGroupPicker } from "@/components/eps/AcrosportGroupPicker";
@@ -77,7 +77,6 @@ function StudentProgram() {
         </p>
       </header>
 
-      <UltimateStudentMatches />
       <CaptainPowers />
       {sequences.some((sequence) => isAcrosportActivity(sequence.activity_name)) && (
         <Tabs defaultValue="group">
@@ -123,6 +122,7 @@ function StudentProgram() {
                   <div key={session.id} className="mt-4 space-y-3">
                     {session.objective && <p className="text-sm">{session.objective}</p>}
                     {session.description && <p className="text-sm text-muted-foreground">{session.description}</p>}
+                    <UltimateSessionMatches sessionId={session.id} />
                     <StudentQuizzes sessionId={session.id} />
                   </div>
                 ))}
@@ -145,7 +145,10 @@ function StudentProgram() {
             ))}
           </div>
           {sessions.filter((session) => !session.sequence_id && session.id === selectedSessionId).map((session) => (
-            <StudentQuizzes key={session.id} sessionId={session.id} />
+            <div key={session.id} className="space-y-3">
+              <UltimateSessionMatches sessionId={session.id} />
+              <StudentQuizzes sessionId={session.id} />
+            </div>
           ))}
         </section>
       )}

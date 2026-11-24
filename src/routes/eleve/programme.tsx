@@ -52,6 +52,27 @@ function StudentProgram() {
   const upcoming = upcomingSessions(sessions);
   const [zoom, setZoom] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+
+  // Activités programmées : une entrée par nom, issues des séquences et des séances libres.
+  const activityNames = Array.from(
+    new Set(
+      [
+        ...sequences.map((sequence) => sequence.activity_name),
+        ...sessions.filter((session) => !session.sequence_id).map((session) => session.activity_name),
+      ].filter((name): name is string => Boolean(name)),
+    ),
+  );
+  const activeActivity =
+    selectedActivity && activityNames.includes(selectedActivity)
+      ? selectedActivity
+      : (activityNames[0] ?? null);
+  const visibleSequences = sequences.filter(
+    (sequence) => sequence.activity_name === activeActivity,
+  );
+  const visibleFreeSessions = sessions.filter(
+    (session) => !session.sequence_id && session.activity_name === activeActivity,
+  );
 
   // Barèmes photo attachés aux séquences, affichés en bas de page.
   const sequenceScales = sequences.filter((sequence) => sequence.scale_image_url);
@@ -89,13 +110,38 @@ function StudentProgram() {
         </Tabs>
       )}
 
-      {sequences.length > 0 && (
+      {activityNames.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-            🗂️ Mes séquences
+            🗂️ Mes activités
+          </h2>
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Activités programmées">
+            {activityNames.map((name) => (
+              <Button
+                key={name}
+                variant={activeActivity === name ? "default" : "outline"}
+                size="sm"
+                role="tab"
+                aria-selected={activeActivity === name}
+                onClick={() => {
+                  setSelectedActivity(name);
+                  setSelectedSessionId(null);
+                }}
+              >
+                {activityEmoji(name)} {name}
+              </Button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {visibleSequences.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+            Mes séquences
           </h2>
           <ul className="space-y-3">
-            {sequences.map((sequence) => (
+            {visibleSequences.map((sequence) => (
               <li
                 key={sequence.id}
                 className="rounded-2xl border border-border bg-surface px-5 py-4"
@@ -132,11 +178,11 @@ function StudentProgram() {
         </section>
       )}
 
-      {sessions.some((session) => !session.sequence_id) && (
+      {visibleFreeSessions.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground">Mes séances</h2>
           <div className="flex flex-wrap gap-2">
-            {sessions.filter((session) => !session.sequence_id).map((session) => (
+            {visibleFreeSessions.map((session) => (
               <Button key={session.id} variant={selectedSessionId === session.id ? "default" : "outline"}
                 aria-pressed={selectedSessionId === session.id}
                 onClick={() => setSelectedSessionId((id) => id === session.id ? null : session.id)}>
@@ -144,8 +190,12 @@ function StudentProgram() {
               </Button>
             ))}
           </div>
-          {sessions.filter((session) => !session.sequence_id && session.id === selectedSessionId).map((session) => (
+          {visibleFreeSessions.filter((session) => session.id === selectedSessionId).map((session) => (
             <div key={session.id} className="space-y-3">
+              {session.objective && <p className="text-sm">{session.objective}</p>}
+              {session.description && (
+                <p className="text-sm text-muted-foreground">{session.description}</p>
+              )}
               <UltimateSessionMatches sessionId={session.id} />
               <StudentQuizzes sessionId={session.id} />
             </div>

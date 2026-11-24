@@ -32,8 +32,13 @@ function connectionString(): string {
 
 function parseConnectionString(url: string) {
   const u = new URL(url);
+  // Passe par le pooler Neon : connexions courtes réutilisées, sans saturer Postgres.
+  const host =
+    u.hostname.endsWith(".neon.tech") && !u.hostname.includes("-pooler")
+      ? u.hostname.replace(/^([^.]+)/, "$1-pooler")
+      : u.hostname;
   return {
-    host: u.hostname,
+    host,
     port: Number(u.port) || 5432,
     user: decodeURIComponent(u.username),
     password: decodeURIComponent(u.password),
@@ -76,13 +81,34 @@ function rawClient(): Sql {
 export async function db() {
   const sql = rawClient();
   if (!schemaApplied) {
-    // Exécuté dans le contexte de la requête courante, jamais partagé.
-    await sql.unsafe(SCHEMA_SQL);
+    // Rejoue le schéma seulement s'il a changé (empreinte stockée en base).
+    const version = schemaVersion();
+    let current: string | undefined;
+    try {
+      const rows = await sql`select version from app_schema_version where id = 1`;
+      current = rows[0]?.["version"] as string | undefined;
+    } catch {
+      current = undefined;
+    }
+    if (current !== version) {
+      await sql.unsafe(SCHEMA_SQL);
+      await sql.unsafe(
+        "create table if not exists app_schema_version (id int primary key, version text not null)",
+      );
+      await sql`insert into app_schema_version (id, version) values (1, ${version})
+        on conflict (id) do update set version = excluded.version`;
+    }
     schemaApplied = true;
   }
   return sql;
 }
 
+
+function schemaVersion(): string {
+  let h = 5381;
+  for (let i = 0; i < SCHEMA_SQL.length; i++) h = ((h << 5) + h + SCHEMA_SQL.charCodeAt(i)) | 0;
+  return `${SCHEMA_SQL.length}-${h >>> 0}`;
+}
 
 export type Db = Awaited<ReturnType<typeof db>>;
 

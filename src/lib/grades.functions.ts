@@ -21,6 +21,69 @@ export const listStudentGrades = createServerFn({ method: "GET" })
     return loadStudentGrades(context.sql, data.studentId);
   });
 
+export type ClassGradeRow = {
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  gradeId: string | null;
+  evaluatedOn: string | null;
+  items: { label: string; points: number; maxPoints: number }[];
+};
+
+/** Vue classe : notes de tous les élèves d'une classe pour une activité donnée. */
+export const listClassGrades = createServerFn({ method: "GET" })
+  .middleware([requireTeacher])
+  .inputValidator((input: { className: string; activityId: string }) =>
+    z
+      .object({
+        className: z.string().trim().min(1).max(60),
+        activityId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<ClassGradeRow[]> => {
+    const rows = await context.sql<
+      {
+        id: string;
+        first_name: string;
+        last_name: string;
+        grade_id: string | null;
+        evaluated_on: string | null;
+        items: { label: string; points: number; max_points: number }[] | null;
+      }[]
+    >`
+      select s.id, s.first_name, s.last_name, g.id as grade_id, g.evaluated_on,
+        coalesce(
+          jsonb_agg(
+            jsonb_build_object('label', i.label, 'points', i.points, 'max_points', i.max_points)
+            order by i.position
+          ) filter (where i.id is not null),
+          '[]'
+        ) as items
+      from students s
+      join class_students cs on cs.student_id = s.id
+      join classes c on c.id = cs.class_id and c.name = ${data.className}
+      left join student_grades g
+        on g.student_id = s.id and g.activity_id = ${data.activityId}
+      left join student_grade_items i on i.grade_id = g.id
+      where s.teacher_id = ${context.userId}
+      group by s.id, g.id
+      order by s.last_name asc, s.first_name asc
+    `;
+    return rows.map((row) => ({
+      studentId: row.id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      gradeId: row.grade_id,
+      evaluatedOn: row.evaluated_on,
+      items: (row.items ?? []).map((item) => ({
+        label: item.label,
+        points: item.points,
+        maxPoints: item.max_points,
+      })),
+    }));
+  });
+
 /** Crée ou met à jour la note d'un élève pour une activité (AFL1/AFL2/AFL3). */
 export const saveStudentGrade = createServerFn({ method: "POST" })
   .middleware([requireTeacher])

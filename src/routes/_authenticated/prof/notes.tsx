@@ -11,7 +11,12 @@ import {
   listStudentMarks,
   listTeacherStudents,
 } from "@/lib/competencies.functions";
-import { deleteStudentGrade, listStudentGrades, saveStudentGrade } from "@/lib/grades.functions";
+import {
+  deleteStudentGrade,
+  listClassGrades,
+  listStudentGrades,
+  saveStudentGrade,
+} from "@/lib/grades.functions";
 import { DEFAULT_AFL_ITEMS, formatPoints, gradeTotals } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 import { NumberField } from "@/components/eps/NumberField";
@@ -64,11 +69,14 @@ function TeacherGrades() {
   const fetchStudents = useServerFn(listTeacherStudents);
   const fetchActivities = useServerFn(listActivities);
   const fetchGrades = useServerFn(listStudentGrades);
+  const fetchClassGrades = useServerFn(listClassGrades);
   const fetchMarks = useServerFn(listStudentMarks);
   const saveGrade = useServerFn(saveStudentGrade);
   const removeGrade = useServerFn(deleteStudentGrade);
 
   const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<"eleve" | "classe">("eleve");
+  const [classActivityId, setClassActivityId] = useState("");
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [studentId, setStudentId] = useState<string | null>(null);
   const [activityId, setActivityId] = useState("");
@@ -92,6 +100,13 @@ function TeacherGrades() {
     queryFn: () => fetchMarks({ data: { studentId: studentId! } }),
     enabled: Boolean(studentId),
   });
+  /** Vue classe : notes de toute la classe pour l'activité choisie. */
+  const classGrades = useQuery({
+    queryKey: ["class-grades", selectedClass, classActivityId],
+    queryFn: () =>
+      fetchClassGrades({ data: { className: selectedClass!, activityId: classActivityId } }),
+    enabled: mode === "classe" && Boolean(selectedClass) && Boolean(classActivityId),
+  });
 
   const student = (students.data ?? []).find((row) => row.id === studentId) ?? null;
   /** Seules les activités programmées pour la classe sélectionnée sont évaluables. */
@@ -112,7 +127,10 @@ function TeacherGrades() {
       setActivityId("");
       setAfl(initialAflState());
     }
-  }, [activityId, activityOptions]);
+    if (classActivityId && !activityOptions.some((row) => row.id === classActivityId)) {
+      setClassActivityId("");
+    }
+  }, [activityId, classActivityId, activityOptions]);
 
   const classNames = useMemo(() => {
     const set = new Set<string>();
@@ -276,6 +294,149 @@ function TeacherGrades() {
         </p>
       </header>
 
+      <div
+        role="tablist"
+        aria-label="Mode d'affichage"
+        className="flex w-fit gap-2 rounded-xl border border-border bg-surface p-1"
+      >
+        {(
+          [
+            { id: "eleve", label: "Par élève" },
+            { id: "classe", label: "Vue classe" },
+          ] as const
+        ).map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            role="tab"
+            aria-selected={mode === option.id}
+            onClick={() => setMode(option.id)}
+            className={`rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-tight transition-colors ${
+              mode === option.id
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "classe" ? (
+        <section className="space-y-5 rounded-2xl border border-border bg-surface p-5">
+          <h2 className="mono-label text-muted-foreground">Classe puis activité</h2>
+
+          <div
+            role="tablist"
+            aria-label="Classes"
+            className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+          >
+            {classNames.map((name) => (
+              <button
+                key={name}
+                type="button"
+                role="tab"
+                aria-selected={selectedClass === name}
+                onClick={() => setSelectedClass(name)}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  selectedClass === name
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border bg-background text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                {name}
+              </button>
+            ))}
+            {classNames.length === 0 && (
+              <span className="py-1.5 text-xs text-muted-foreground">Aucune classe</span>
+            )}
+          </div>
+
+          <label className="block max-w-md space-y-1">
+            <span className="mono-label text-muted-foreground">Activité</span>
+            <select
+              value={classActivityId}
+              onChange={(event) => setClassActivityId(event.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            >
+              <option value="">Choisir une activité…</option>
+              {activityOptions.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {!classActivityId ? (
+            <p className="text-sm text-muted-foreground">
+              Sélectionne une activité pour afficher les notes de toute la classe.
+            </p>
+          ) : classGrades.isPending ? (
+            <div className="h-40 animate-pulse rounded-2xl border border-border bg-background" />
+          ) : (classGrades.data ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucun élève dans cette classe.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="py-2 pr-4 font-semibold">Élève</th>
+                    {AFL_LABELS.map((label) => (
+                      <th key={label} className="px-3 py-2 font-mono text-xs uppercase">
+                        {label}
+                      </th>
+                    ))}
+                    <th className="py-2 pl-3 text-right font-semibold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(classGrades.data ?? []).map((row) => {
+                    const totals = gradeTotals(
+                      row.items.map((item) => ({
+                        points: item.points,
+                        max_points: item.maxPoints,
+                      })),
+                    );
+                    return (
+                      <tr key={row.studentId} className="border-b border-border/50">
+                        <td className="py-2.5 pr-4 font-medium">
+                          {row.firstName} {row.lastName}
+                        </td>
+                        {AFL_LABELS.map((label) => {
+                          const items = row.items.filter((item) => item.label === label);
+                          const sub = gradeTotals(
+                            items.map((item) => ({
+                              points: item.points,
+                              max_points: item.maxPoints,
+                            })),
+                          );
+                          return (
+                            <td key={label} className="px-3 py-2.5 text-muted-foreground">
+                              {items.length === 0
+                                ? "—"
+                                : `${formatPoints(sub.points)} / ${formatPoints(sub.max)}`}
+                            </td>
+                          );
+                        })}
+                        <td className="py-2.5 pl-3 text-right">
+                          {row.gradeId ? (
+                            <span className="display-title text-lg text-primary">
+                              {formatPoints(totals.points)} / {formatPoints(totals.max)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">Pas de note</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : (
       <div className="grid gap-6 lg:grid-cols-[300px_1fr] xl:grid-cols-[300px_1fr_320px]">
         {/* Élèves */}
         <section className="space-y-3 rounded-2xl border border-border bg-surface p-5">
@@ -614,6 +775,7 @@ function TeacherGrades() {
           />
         )}
       </div>
+      )}
     </div>
   );
 }

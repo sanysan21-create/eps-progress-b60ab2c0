@@ -114,7 +114,9 @@ const verified = new WeakSet<object>();
 
 export async function db() {
   const scope = requestScope();
-  const sql = scope && verified.has(rawClient()) ? rawClient() : await connectedClient();
+  // Une fois le schéma vérifié, pas de ping préalable : la vraie requête ouvre la connexion.
+  const sql =
+    (scope && verified.has(rawClient())) || schemaApplied ? rawClient() : await connectedClient();
   verified.add(sql);
   if (!schemaApplied) {
     // Rejoue le schéma seulement s'il a changé (empreinte stockée en base).

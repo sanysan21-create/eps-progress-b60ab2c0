@@ -10,7 +10,10 @@ import {
   listActivities,
   listStudentMarks,
   listTeacherStudents,
+  setStudentLevel,
+  clearStudentLevel,
 } from "@/lib/competencies.functions";
+import { LevelProgressIcon } from "@/components/eps/LevelProgressIcon";
 import {
   deleteStudentGrade,
   listClassGrades,
@@ -73,6 +76,19 @@ function TeacherGrades() {
   const fetchMarks = useServerFn(listStudentMarks);
   const saveGrade = useServerFn(saveStudentGrade);
   const removeGrade = useServerFn(deleteStudentGrade);
+  const assignLevel = useServerFn(setStudentLevel);
+  const unassignLevel = useServerFn(clearStudentLevel);
+  const qcLevels = useQueryClient();
+  async function toggleLevel(competencyId: string, levelId: string, current: string | null) {
+    if (!studentId) return;
+    try {
+      if (current === levelId) await unassignLevel({ data: { studentIds: [studentId], competencyId } });
+      else await assignLevel({ data: { studentIds: [studentId], competencyId, levelId } });
+      await qcLevels.invalidateQueries({ queryKey: ["student-marks", studentId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Niveau non enregistré.");
+    }
+  }
 
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"eleve" | "classe">("eleve");
@@ -633,7 +649,7 @@ function TeacherGrades() {
                                     <NumericButtons
                                       value={score.points}
                                       max={Number(score.maxPoints.replace(",", ".")) || 20}
-                                      step={1}
+                                      step={0.5}
                                       onValueChange={(points: string) =>
                                         patchScore(activeAfl, competency.id, { points })
                                       }
@@ -656,6 +672,35 @@ function TeacherGrades() {
                                   </label>
                                 </div>
                               )}
+                              {score && competency.levels.length > 0 && (() => {
+                                const levels = [...competency.levels].sort((a, b) => a.position - b.position);
+                                const current = (marks.data ?? []).find((m) => m.competency_id === competency.id)?.level_id ?? null;
+                                return (
+                                  <div className="mt-3 space-y-1 pl-7">
+                                    <span className="text-xs text-muted-foreground">Niveau dans l'attendu</span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {levels.map((level, i) => {
+                                        const active = current === level.id;
+                                        return (
+                                          <button
+                                            key={level.id}
+                                            type="button"
+                                            title={level.label}
+                                            aria-pressed={active}
+                                            onClick={() => void toggleLevel(competency.id, level.id, current)}
+                                            className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs transition-colors ${
+                                              active ? "border-primary bg-primary/15 font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/60"
+                                            }`}
+                                          >
+                                            <LevelProgressIcon currentLevel={i + 1} totalLevels={levels.length} size={24} />
+                                            <span className="max-w-[10rem] truncate">{level.label}</span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
 
                             </li>
                           );

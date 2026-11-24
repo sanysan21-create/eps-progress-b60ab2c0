@@ -30,11 +30,11 @@ function connectionString(): string {
   return url;
 }
 
-function parseConnectionString(url: string) {
+function parseConnectionString(url: string, usePooler = true) {
   const u = new URL(url);
   // Passe par le pooler Neon : connexions courtes réutilisées, sans saturer Postgres.
   const host =
-    u.hostname.endsWith(".neon.tech") && !u.hostname.includes("-pooler")
+    usePooler && u.hostname.endsWith(".neon.tech") && !u.hostname.includes("-pooler")
       ? u.hostname.replace(/^([^.]+)/, "$1-pooler")
       : u.hostname;
   return {
@@ -47,9 +47,9 @@ function parseConnectionString(url: string) {
   };
 }
 
-function createClient(): Sql {
+function createClient(usePooler = true): Sql {
   return postgres({
-    ...parseConnectionString(connectionString()),
+    ...parseConnectionString(connectionString(), usePooler),
     prepare: false,
     max: 1,
     idle_timeout: 20,
@@ -78,8 +78,44 @@ function rawClient(): Sql {
 }
 
 /** Client SQL prêt à l'emploi (schéma garanti présent). */
+function isConnectError(e: unknown): boolean {
+  const m = String((e as Error)?.message ?? e);
+  return /cannot connect|proxy request failed|ECONNRE|CONNECT_TIMEOUT|connection|socket|terminated|closed/i.test(m);
+}
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Ouvre la connexion avec quelques nouvelles tentatives : la base Neon peut
+ * refuser brièvement la connexion au réveil (« cannot connect to the
+ * specified address »). On alterne pooler et accès direct.
+ */
+async function connectedClient(): Promise<Sql> {
+  const scope = requestScope();
+  let sql = rawClient();
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      await sql`select 1`;
+      return sql;
+    } catch (e) {
+      lastError = e;
+      if (!isConnectError(e)) throw e;
+      sql.end({ timeout: 0 }).catch(() => {});
+      await wait(300 * (attempt + 1));
+      sql = createClient(attempt % 2 === 1);
+      if (scope) perRequestClients.set(scope, sql);
+    }
+  }
+  throw lastError;
+}
+
+const verified = new WeakSet<object>();
+
 export async function db() {
-  const sql = rawClient();
+  const scope = requestScope();
+  const sql = scope && verified.has(rawClient()) ? rawClient() : await connectedClient();
+  verified.add(sql);
   if (!schemaApplied) {
     // Rejoue le schéma seulement s'il a changé (empreinte stockée en base).
     const version = schemaVersion();

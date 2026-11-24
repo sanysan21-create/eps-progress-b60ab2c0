@@ -11,3 +11,5 @@
 - [x] Parcours de médailles : réussites classées bronze/argent/or, réussites obligatoires, médailles calculées automatiquement (5 réussites + obligatoires + palier précédent)
 
 - [x] Récompenses médailles : thèmes Bronze/Argent/Or, titre de profil (Argent+), section "Mes récompenses", carte Premium imprimable (Or, QR existant réutilisé)
+
+- [ ] Garder la base réveillée pendant les cours (ping périodique) : en attente du feu vert, car cela consomme le quota mensuel Neon.

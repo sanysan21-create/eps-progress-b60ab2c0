@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 
+import { useWarmDatabase } from "@/lib/use-warm-database";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -27,6 +29,7 @@ const studentPills = ["5 niveaux", "Progression", "Objectifs", "Réussites"];
 const teacherPills = ["Classes", "Élèves", "Évaluations", "Compétences", "Progression"];
 
 function Landing() {
+  useWarmDatabase();
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       <div className="pointer-events-none absolute -right-40 -top-40 size-96 rounded-full bg-primary/10 blur-3xl" />

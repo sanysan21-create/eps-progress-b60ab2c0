@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Camera, ImageUp, Loader2, ScanLine } from "lucide-react";
 
 import { redeemStudentQr, type RedeemResult } from "@/lib/student-access.functions";
+import { useWarmDatabase } from "@/lib/use-warm-database";
 
 export const Route = createFileRoute("/acces-eleve/")({
   ssr: false,
@@ -49,6 +50,7 @@ export function extractToken(text: string): string | null {
 }
 
 function StudentAccessPage() {
+  useWarmDatabase();
   const navigate = useNavigate();
   const redeem = useServerFn(redeemStudentQr);
 

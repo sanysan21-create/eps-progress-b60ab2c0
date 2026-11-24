@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { GraduationCap, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
+import { useWarmDatabase } from "@/lib/use-warm-database";
+
 import {
   checkTeacherAccessCode,
   getTeacherAccount,
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
+  useWarmDatabase();
   const navigate = useNavigate();
   const [space, setSpace] = useState<"choice" | "teacher">("choice");
   const [mode, setMode] = useState<"signin" | "signup">("signin");

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { currentActivityName } from "./current-activity";
 
 const seq = (activity_name: string, start_date: string, end_date: string) =>

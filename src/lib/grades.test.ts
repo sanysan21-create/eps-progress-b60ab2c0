@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strictEqual } from "node:assert";
-import { DEFAULT_AFL_ITEMS, gradeTotals, levelForScore } from "./grades";
+import { DEFAULT_AFL_ITEMS, activityScale, competencyMaxPoints, gradeTotals, levelForScore } from "./grades";
 
 /** Barème demandé par l'enseignant : AFL1 12 pts, AFL2 4 pts, AFL3 4 pts. */
 test("default scale is AFL1 12, AFL2 4, AFL3 4", () => {
@@ -21,6 +21,38 @@ test("AFL1 is split into AFL1a 6 pts and AFL1b 6 pts", async () => {
   const { AFL1_PARTS } = await import("./grades");
   strictEqual(AFL1_PARTS.find((p) => p.label === "AFL1a")?.maxPoints, 6);
   strictEqual(AFL1_PARTS.find((p) => p.label === "AFL1b")?.maxPoints, 6);
+});
+
+test("le barème d'activité conserve 6 + 6, 4, 4 par défaut", () => {
+  const scale = activityScale();
+  strictEqual(scale.AFL1a, 6);
+  strictEqual(scale.AFL1b, 6);
+  strictEqual(scale.AFL2, 4);
+  strictEqual(scale.AFL3, 4);
+});
+
+test("une compétence accepte un barème de 0.5 point", () => {
+  const competency = { id: "c", afl: "AFL2", max_points: 0.5 };
+  strictEqual(competencyMaxPoints(competency, [competency]), 0.5);
+});
+
+test("les compétences se partagent le budget de leur AFL sans le multiplier", () => {
+  const a = { id: "a", afl: "AFL2", max_points: 1.5 };
+  const b = { id: "b", afl: "AFL2" };
+  strictEqual(competencyMaxPoints(b, [a, b]), 2.5);
+  strictEqual(competencyMaxPoints(b, [a, b], { AFL2: 6 }), 4.5);
+});
+
+test("AFL1a et AFL1b disposent de budgets indépendants de 6 points", () => {
+  const a = { id: "a", afl: "AFL1", afl1_part: "a" as const };
+  const b = { id: "b", afl: "AFL1", afl1_part: "b" as const };
+  strictEqual(competencyMaxPoints(a, [a, b]), 6);
+  strictEqual(competencyMaxPoints(b, [a, b]), 6);
+});
+
+test("les compétences non répertoriées n'ont pas de points AFL", () => {
+  const competency = { id: "c", afl: "OTHER", max_points: 5 };
+  strictEqual(competencyMaxPoints(competency, [competency]), 0);
 });
 
 const levels = Array.from({ length: 4 }, (_, i) => ({ id: String(i + 1), position: i + 1 }));

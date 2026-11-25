@@ -236,6 +236,10 @@ create table if not exists competency_levels (
   updated_at timestamptz not null default now()
 );
 
+alter table activities add column if not exists grading_scale jsonb;
+alter table competencies add column if not exists max_points numeric;
+alter table competencies add column if not exists afl1_part text;
+
 create table if not exists student_competency_levels (
   id uuid primary key default gen_random_uuid(),
   teacher_id uuid not null references teachers(id) on delete cascade,

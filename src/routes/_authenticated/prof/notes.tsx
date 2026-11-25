@@ -20,7 +20,7 @@ import {
   listStudentGrades,
   saveStudentGrade,
 } from "@/lib/grades.functions";
-import { AFL1_PARTS, DEFAULT_AFL_ITEMS, formatPoints, gradeTotals, levelForScore, type Afl1Part } from "@/lib/grades";
+import { AFL1_PARTS, activityScale, competencyMaxPoints, DEFAULT_AFL_ITEMS, formatPoints, gradeTotals, levelForScore, type Afl1Part } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 import { NumberField } from "@/components/eps/NumberField";
 import { NumericButtons } from "@/components/eps/NumericButtons";
@@ -60,12 +60,6 @@ function initialAflState(): AflState {
     acc[label] = {};
     return acc;
   }, {});
-}
-
-function defaultMax(afl: string): string {
-  if (afl === "AFL1") return String(AFL1_PARTS[0].maxPoints);
-  const found = DEFAULT_AFL_ITEMS.find((item) => item.label === afl);
-  return String(found?.maxPoints ?? 5);
 }
 
 function TeacherGrades() {
@@ -140,6 +134,15 @@ function TeacherGrades() {
   }, [activities.data, programmedIds]);
   const activity = activityOptions.find((row) => row.id === activityId) ?? null;
   const competencies = activity?.competencies ?? [];
+  const scale = activityScale(activity?.grading_scale);
+  function defaultScore(competencyId: string): Score {
+    const competency = competencies.find((item) => item.id === competencyId);
+    return {
+      points: "0",
+      maxPoints: String(competency ? competencyMaxPoints(competency, competencies, scale) : 0),
+      ...(competency?.afl === "AFL1" ? { part: competency.afl1_part ?? "a" } : {}),
+    };
+  }
   /** Compétences classées dans l'AFL actif (catégorie choisie à la création). */
 
   /** Si la classe change et que l'activité n'est plus programmée, on la réinitialise. */
@@ -245,11 +248,7 @@ function TeacherGrades() {
       const group = { ...(current[aflLabel] ?? {}) };
       if (group[competencyId]) delete group[competencyId];
       else
-        group[competencyId] = {
-          points: "0",
-          maxPoints: defaultMax(aflLabel),
-          ...(aflLabel === "AFL1" ? { part: "a" as const } : {}),
-        };
+        group[competencyId] = defaultScore(competencyId);
       return { ...current, [aflLabel]: group };
     });
     setFocused({ afl: aflLabel, competencyId });
@@ -259,11 +258,7 @@ function TeacherGrades() {
     setFocused({ afl: aflLabel, competencyId });
     setAfl((current) => {
       const group = current[aflLabel] ?? {};
-      const score = group[competencyId] ?? {
-        points: "0",
-        maxPoints: defaultMax(aflLabel),
-        ...(aflLabel === "AFL1" ? { part: "a" as const } : {}),
-      };
+      const score = group[competencyId] ?? defaultScore(competencyId);
       const next = { ...score, ...patch };
       if (patch.points !== undefined || patch.maxPoints !== undefined) delete next.levelId;
       return { ...current, [aflLabel]: { ...group, [competencyId]: next } };
@@ -627,11 +622,7 @@ function TeacherGrades() {
                       <ul className="space-y-2">
                         {aflCompetencies.map((competency) => {
                           const checked = Boolean(activeGroup[competency.id]);
-                          const score = activeGroup[competency.id] ?? {
-                            points: "0",
-                            maxPoints: defaultMax(activeAfl),
-                            ...(activeAfl === "AFL1" ? { part: "a" as const } : {}),
-                          };
+                          const score = activeGroup[competency.id] ?? defaultScore(competency.id);
                           return (
                             <li
                               key={competency.id}
@@ -667,7 +658,7 @@ function TeacherGrades() {
                                               onClick={() =>
                                                 patchScore(activeAfl, competency.id, {
                                                   part: p.part,
-                                                  maxPoints: String(p.maxPoints),
+                                                  maxPoints: String(scale[p.label]),
                                                 })
                                               }
                                               className={`rounded-lg border px-2.5 py-1.5 font-mono text-xs ${
@@ -676,7 +667,7 @@ function TeacherGrades() {
                                                   : "border-border text-muted-foreground hover:border-primary/60"
                                               }`}
                                             >
-                                              {p.label} · {p.maxPoints} pts
+                                              {p.label} · {formatPoints(scale[p.label])} pts
                                             </button>
                                           );
                                         })}
@@ -701,9 +692,9 @@ function TeacherGrades() {
                                     <span className="text-xs text-muted-foreground">Barème</span>
                                     <NumberField
                                       value={score.maxPoints}
-                                      min={1}
+                                      min={0}
                                       max={100}
-                                      step={1}
+                                      step={0.5}
                                       onValueChange={(maxPoints) =>
                                         patchScore(activeAfl, competency.id, { maxPoints })
                                       }

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireTeacher, withDb } from "./auth-middleware";
+import { type ActivityScale, type Afl1Part } from "./grades";
 import { DEFAULT_LEVELS } from "@/lib/levels";
 import { AFL_CODES, type AflCode, toAfl } from "@/lib/afl";
 import { CLIMBING_GRADES } from "@/lib/climbing";
@@ -20,12 +21,15 @@ export type Competency = {
   afl: AflCode;
   position: number;
   progress_tip: string | null;
+  max_points?: number | null;
+  afl1_part?: Afl1Part | null;
   levels: CompetencyLevel[];
 };
 export type ActivityTree = {
   id: string;
   name: string;
   description: string | null;
+  grading_scale?: ActivityScale | null;
   competencies: Competency[];
 };
 
@@ -68,6 +72,12 @@ export type StudentProfileActivity = {
 
 
 
+const gradingScaleSchema = z.object({
+  AFL1a: z.number().finite().min(0).max(100),
+  AFL1b: z.number().finite().min(0).max(100),
+  AFL2: z.number().finite().min(0).max(100),
+  AFL3: z.number().finite().min(0).max(100),
+});
 const labelSchema = z.string().trim().min(1, "Champ requis").max(200);
 
 export const listActivities = createServerFn({ method: "GET" })
@@ -78,6 +88,9 @@ export const listActivities = createServerFn({ method: "GET" })
         activity_id: string;
         activity_name: string;
         activity_description: string | null;
+        grading_scale: ActivityScale | null;
+        max_points: number | null;
+        afl1_part: Afl1Part | null;
         competency_id: string | null;
         competency_label: string | null;
         competency_position: number | null;
@@ -93,6 +106,9 @@ export const listActivities = createServerFn({ method: "GET" })
         a.id as activity_id,
         a.name as activity_name,
         a.description as activity_description,
+        a.grading_scale,
+        c.max_points,
+        c.afl1_part,
         c.id as competency_id,
         c.label as competency_label,
         c.position as competency_position,
@@ -119,6 +135,7 @@ export const listActivities = createServerFn({ method: "GET" })
           id: row.activity_id,
           name: row.activity_name,
           description: row.activity_description,
+          grading_scale: row.grading_scale,
           competencies: [],
         };
         activities.set(row.activity_id, activity);
@@ -133,6 +150,8 @@ export const listActivities = createServerFn({ method: "GET" })
           afl: toAfl(row.competency_afl),
           position: row.competency_position ?? 0,
           progress_tip: row.progress_tip ?? null,
+          max_points: row.max_points == null ? null : Number(row.max_points),
+          afl1_part: row.afl1_part,
           levels: [],
         };
         competencies.set(row.competency_id, competency);
@@ -170,19 +189,21 @@ export const createActivity = createServerFn({ method: "POST" })
 
 export const updateActivity = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
-  .inputValidator((input: { id: string; name?: string; description?: string | null }) =>
+  .inputValidator((input: { id: string; name?: string; description?: string | null; gradingScale?: ActivityScale }) =>
     z
       .object({
         id: z.string().uuid(),
         name: labelSchema.optional(),
         description: z.string().trim().max(1000).nullable().optional(),
+        gradingScale: gradingScaleSchema.optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    if (data.name === undefined && data.description === undefined) return { ok: true };
+    if (data.name === undefined && data.description === undefined && data.gradingScale === undefined) return { ok: true };
     await context.sql`
       update activities set
+        grading_scale = case when ${data.gradingScale !== undefined} then ${data.gradingScale ? context.sql.json(data.gradingScale) : null}::jsonb else grading_scale end,
         name = coalesce(${data.name ?? null}, name),
         description = case when ${data.description !== undefined} then ${data.description ?? null} else description end,
         updated_at = now()
@@ -240,21 +261,25 @@ export const createCompetency = createServerFn({ method: "POST" })
 
 export const updateCompetency = createServerFn({ method: "POST" })
   .middleware([requireTeacher])
-  .inputValidator((input: { id: string; label?: string; afl?: string; progressTip?: string | null }) =>
+  .inputValidator((input: { id: string; label?: string; afl?: string; progressTip?: string | null; maxPoints?: number | null; afl1Part?: Afl1Part }) =>
     z
       .object({
         id: z.string().uuid(),
         label: labelSchema.optional(),
         afl: z.enum(AFL_CODES).optional(),
         progressTip: z.string().trim().max(300).nullable().optional(),
+        maxPoints: z.number().finite().min(0).max(100).nullable().optional(),
+        afl1Part: z.enum(["a", "b"]).optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    if (data.label === undefined && data.afl === undefined && data.progressTip === undefined)
+    if (data.label === undefined && data.afl === undefined && data.progressTip === undefined && data.maxPoints === undefined && data.afl1Part === undefined)
       return { ok: true };
     await context.sql`
       update competencies set
+        max_points = case when ${data.maxPoints !== undefined} then ${data.maxPoints ?? null}::numeric else max_points end,
+        afl1_part = coalesce(${data.afl1Part ?? null}, afl1_part),
         label = coalesce(${data.label ?? null}, label),
         afl = coalesce(${data.afl ?? null}, afl),
         progress_tip = case when ${data.progressTip !== undefined} then ${data.progressTip || null} else progress_tip end,

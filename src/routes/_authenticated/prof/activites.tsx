@@ -24,6 +24,7 @@ import { DEFAULT_LEVELS } from "@/lib/levels";
 import { AFL_CODES, AFL_HINTS, AFL_LABELS, type AflCode } from "@/lib/afl";
 import { ActivityIcon, ActivityIconBadge } from "@/components/eps/ActivityIcon";
 import { LevelProgressIcon } from "@/components/eps/LevelProgressIcon";
+import { ActivityGrading, CompetencyGrading } from "@/components/eps/GradingSettings";
 
 export const Route = createFileRoute("/_authenticated/prof/activites")({
   head: () => ({
@@ -275,6 +276,8 @@ function ActivityCard({
         </button>
       </div>
 
+      <ActivityGrading activity={activity} onChanged={onChanged} />
+
       <div className="space-y-4">
         <p className="mono-label text-primary">Compétences cibles</p>
         {activity.competencies.length === 0 && (
@@ -283,7 +286,7 @@ function ActivityCard({
           </p>
         )}
         {activity.competencies.map((competency) => (
-          <CompetencyCard key={competency.id} competency={competency} onChanged={onChanged} />
+          <CompetencyCard key={competency.id} competency={competency} activity={activity} onChanged={onChanged} />
         ))}
 
         <div className="flex flex-wrap gap-2">
@@ -322,9 +325,11 @@ function ActivityCard({
 
 function CompetencyCard({
   competency,
+  activity,
   onChanged,
 }: {
   competency: Competency;
+  activity: ActivityTree;
   onChanged: () => Promise<void>;
 }) {
   const patchCompetency = useServerFn(updateCompetency);
@@ -350,7 +355,7 @@ function CompetencyCard({
 
   return (
     <article className="space-y-3 rounded-2xl border border-border bg-background p-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <input
           defaultValue={competency.label}
           onBlur={async (e) => {
@@ -364,7 +369,7 @@ function CompetencyCard({
               fail(error);
             }
           }}
-          className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-bold outline-none focus:border-primary"
+          className="min-w-0 basis-full rounded-xl border border-border bg-surface px-3 py-2 text-sm font-bold outline-none focus:border-primary sm:flex-1 sm:basis-auto"
         />
         <select
           value={competency.afl}
@@ -405,6 +410,8 @@ function CompetencyCard({
         </button>
       </div>
 
+      <CompetencyGrading competency={competency} activity={activity} onChanged={onChanged} />
+
       <label className="block space-y-1.5">
         <span className="mono-label text-muted-foreground">
           Conseil pour progresser (visible par l'élève)
@@ -441,7 +448,7 @@ function CompetencyCard({
                 totalLevels={competency.levels.length}
                 size={32}
               />
-              <div className="flex-1 space-y-1.5">
+              <div className="min-w-0 flex-1 space-y-1.5">
                 <input
                   defaultValue={level.label}
                   onBlur={async (e) => {

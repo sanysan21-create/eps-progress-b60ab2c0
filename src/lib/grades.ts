@@ -12,6 +12,31 @@ export const AFL1_PARTS = [
 ] as const;
 export type Afl1Part = (typeof AFL1_PARTS)[number]["part"];
 
+export const DEFAULT_ACTIVITY_SCALE = { AFL1a: 6, AFL1b: 6, AFL2: 4, AFL3: 4 };
+export type ActivityScale = typeof DEFAULT_ACTIVITY_SCALE;
+export type GradingCompetency = { id: string; afl: string; max_points?: number | null; afl1_part?: Afl1Part | null };
+
+export function activityScale(scale?: Partial<ActivityScale> | null): ActivityScale {
+  return { ...DEFAULT_ACTIVITY_SCALE, ...scale };
+}
+
+export function competencyBudgetKey(competency: GradingCompetency): keyof ActivityScale | null {
+  if (competency.afl === "AFL1") return competency.afl1_part === "b" ? "AFL1b" : "AFL1a";
+  if (competency.afl === "AFL2" || competency.afl === "AFL3") return competency.afl;
+  return null;
+}
+
+/** Les compétences sans barème explicite se partagent les points restants de leur volet. */
+export function competencyMaxPoints(competency: GradingCompetency, competencies: GradingCompetency[], scale?: Partial<ActivityScale> | null): number {
+  const key = competencyBudgetKey(competency);
+  if (!key) return 0;
+  if (competency.max_points != null) return Number(competency.max_points);
+  const group = competencies.filter((item) => competencyBudgetKey(item) === key);
+  const assigned = group.reduce((sum, item) => sum + Number(item.max_points ?? 0), 0);
+  const automatic = group.filter((item) => item.max_points == null).length;
+  return automatic ? Math.round(Math.max(0, activityScale(scale)[key] - assigned) / automatic * 100) / 100 : 0;
+}
+
 export type GradeItem = {
   id: string;
   position: number;

@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isAcrosportActivity } from "@/lib/acrosport";
 import { isUltimateActivity } from "@/lib/ultimate";
-import { currentActivityName, currentSessionId, isPastSession } from "@/lib/current-activity";
+import { localToday, currentActivityName, currentSessionId, isPastSession } from "@/lib/current-activity";
 
 export const Route = createFileRoute("/eleve/programme")({
   head: () => ({
@@ -66,7 +66,7 @@ function StudentProgram() {
   );
   // Aucune activité présélectionnée : l'élève doit cliquer pour afficher les séances.
   // L'activité en cours est mise au premier plan par défaut ; les autres restent accessibles.
-  const currentActivity = currentActivityName(sessions);
+  const currentActivity = currentActivityName(sessions, localToday(), sequences);
   const currentId = currentSessionId(sessions);
   const activeActivity =
     selectedActivity && activityNames.includes(selectedActivity)
@@ -106,18 +106,6 @@ function StudentProgram() {
         </p>
       </header>
 
-      {isUltimateActivity(activeActivity) && <CaptainPowers />}
-      {isAcrosportActivity(activeActivity) && (
-        <Tabs defaultValue="group">
-          <TabsList>
-            <TabsTrigger value="group">Groupe d’acrosport</TabsTrigger>
-            <TabsTrigger value="music">Musique</TabsTrigger>
-          </TabsList>
-          <TabsContent value="group"><AcrosportGroupPicker /></TabsContent>
-          <TabsContent value="music"><AcrosportMusic /></TabsContent>
-        </Tabs>
-      )}
-
       {activityNames.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
@@ -141,6 +129,18 @@ function StudentProgram() {
             ))}
           </div>
         </section>
+      )}
+
+      {isUltimateActivity(activeActivity) && <CaptainPowers />}
+      {isAcrosportActivity(activeActivity) && (
+        <Tabs defaultValue="group">
+          <TabsList>
+            <TabsTrigger value="group">Groupe d’acrosport</TabsTrigger>
+            <TabsTrigger value="music">Musique</TabsTrigger>
+          </TabsList>
+          <TabsContent value="group"><AcrosportGroupPicker /></TabsContent>
+          <TabsContent value="music"><AcrosportMusic /></TabsContent>
+        </Tabs>
       )}
 
       {visibleSequences.length > 0 && (

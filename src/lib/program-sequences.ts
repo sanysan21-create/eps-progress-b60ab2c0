@@ -8,6 +8,8 @@ export type ProgramSequence = {
   from_session: number | null;
   to_session: number | null;
   position: number;
+  start_date?: string | null;
+  end_date?: string | null;
   scale_image_url: string | null;
 };
 

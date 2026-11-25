@@ -16,6 +16,8 @@ type Raw = {
   to_session: number | null;
   position: number | null;
   scale_file_id: string | null;
+  start_date: string | null;
+  end_date: string | null;
 };
 
 async function loadSequences(
@@ -25,7 +27,8 @@ async function loadSequences(
 ): Promise<ProgramSequence[]> {
   const rows = await sql<Raw[]>`
     select s.id, s.class_id, c.name as class_name, s.activity_id, a.name as activity_name,
-           s.name, s.from_session, s.to_session, s.position, s.scale_file_id
+           s.name, s.from_session, s.to_session, s.position, s.scale_file_id,
+           s.start_date::text as start_date, s.end_date::text as end_date
     from program_sequences s
     left join classes c on c.id = s.class_id
     left join activities a on a.id = s.activity_id
@@ -49,6 +52,8 @@ async function loadSequences(
     from_session: row.from_session,
     to_session: row.to_session,
     position: row.position ?? 0,
+    start_date: row.start_date ?? null,
+    end_date: row.end_date ?? null,
     scale_image_url: row.scale_file_id ? `/api/files/${row.scale_file_id}` : null,
   }));
 }

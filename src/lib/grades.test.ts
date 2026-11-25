@@ -31,9 +31,29 @@ test("le barème d'activité conserve 6 + 6, 4, 4 par défaut", () => {
   strictEqual(scale.AFL3, 4);
 });
 
-test("une compétence accepte un barème de 0.5 point", () => {
+test("une compétence accepte une allocation de 0.5 point dans son budget AFL", () => {
   const competency = { id: "c", afl: "AFL2", max_points: 0.5 };
-  strictEqual(competencyMaxPoints(competency, [competency]), 0.5);
+  strictEqual(competencyMaxPoints(competency, [competency, { id: "other", afl: "AFL2" }]), 0.5);
+});
+
+test("un ancien barème de 4 suit automatiquement AFL1a sur 8 et AFL1b sur 4", () => {
+  const a = { id: "a", afl: "AFL1", afl1_part: "a" as const, max_points: 4 };
+  const b = { id: "b", afl: "AFL1", afl1_part: "b" as const, max_points: 4 };
+  const scale = { AFL1a: 8, AFL1b: 4 };
+  strictEqual(competencyMaxPoints(a, [a, b], scale), 8);
+  strictEqual(competencyMaxPoints(b, [a, b], scale), 4);
+});
+
+test("plusieurs compétences personnalisées se répartissent les 8 points sans multiplier le budget", () => {
+  const a = { id: "a", afl: "AFL1", max_points: 4 };
+  const b = { id: "b", afl: "AFL1", max_points: 4 };
+  strictEqual(competencyMaxPoints(a, [a, b], { AFL1a: 8 }), 4);
+  strictEqual(competencyMaxPoints(b, [a, b], { AFL1a: 8 }), 4);
+});
+
+test("les arrondis de trois compétences totalisent exactement 4 points", () => {
+  const group = ["a", "b", "c"].map((id) => ({ id, afl: "AFL2" }));
+  strictEqual(gradeTotals(group.map((c) => ({ points: 0, max_points: competencyMaxPoints(c, group) }))).max, 4);
 });
 
 test("les compétences se partagent le budget de leur AFL sans le multiplier", () => {

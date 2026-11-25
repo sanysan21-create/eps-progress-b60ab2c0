@@ -24,6 +24,7 @@ import { AFL1_PARTS, activityScale, competencyMaxPoints, DEFAULT_AFL_ITEMS, form
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 import { NumberField } from "@/components/eps/NumberField";
 import { NumericButtons } from "@/components/eps/NumericButtons";
+import { Button } from "@/components/ui/button";
 import { useProgrammedActivities } from "@/hooks/use-programmed-activities";
 
 
@@ -143,6 +144,13 @@ function TeacherGrades() {
       ...(competency?.afl === "AFL1" ? { part: competency.afl1_part ?? "a" } : {}),
     };
   }
+  function scoreBudget(competencyId: string, state: AflState): number {
+    const adjusted = competencies.map((item) => item.afl === "AFL1"
+      ? { ...item, afl1_part: state["AFL1"]?.[item.id]?.part ?? item.afl1_part ?? "a" }
+      : item);
+    const competency = adjusted.find((item) => item.id === competencyId);
+    return competency ? competencyMaxPoints(competency, adjusted, scale) : 0;
+  }
   /** Compétences classées dans l'AFL actif (catégorie choisie à la création). */
 
   /** Si la classe change et que l'activité n'est plus programmée, on la réinitialise. */
@@ -248,7 +256,7 @@ function TeacherGrades() {
       const group = { ...(current[aflLabel] ?? {}) };
       if (group[competencyId]) delete group[competencyId];
       else
-        group[competencyId] = defaultScore(competencyId);
+        group[competencyId] = { ...defaultScore(competencyId), maxPoints: String(scoreBudget(competencyId, current)) };
       return { ...current, [aflLabel]: group };
     });
     setFocused({ afl: aflLabel, competencyId });
@@ -258,10 +266,20 @@ function TeacherGrades() {
     setFocused({ afl: aflLabel, competencyId });
     setAfl((current) => {
       const group = current[aflLabel] ?? {};
-      const score = group[competencyId] ?? defaultScore(competencyId);
+      const score = group[competencyId] ?? { ...defaultScore(competencyId), maxPoints: String(scoreBudget(competencyId, current)) };
       const next = { ...score, ...patch };
       if (patch.points !== undefined || patch.maxPoints !== undefined) delete next.levelId;
-      return { ...current, [aflLabel]: { ...group, [competencyId]: next } };
+      const updatedGroup = { ...group, [competencyId]: next };
+      const updated = { ...current, [aflLabel]: updatedGroup };
+      if (patch.part !== undefined) {
+        for (const [id, value] of Object.entries(updatedGroup)) {
+          const maxPoints = scoreBudget(id, updated);
+          const adjustedScore = { ...value, maxPoints: String(maxPoints), points: String(Math.min(Number(value.points.replace(",", ".")) || 0, maxPoints)) };
+          delete adjustedScore.levelId;
+          updatedGroup[id] = adjustedScore;
+        }
+      }
+      return updated;
     });
   }
 
@@ -622,7 +640,7 @@ function TeacherGrades() {
                       <ul className="space-y-2">
                         {aflCompetencies.map((competency) => {
                           const checked = Boolean(activeGroup[competency.id]);
-                          const score = activeGroup[competency.id] ?? defaultScore(competency.id);
+                          const score = activeGroup[competency.id] ?? { ...defaultScore(competency.id), maxPoints: String(scoreBudget(competency.id, afl)) };
                           return (
                             <li
                               key={competency.id}
@@ -651,14 +669,13 @@ function TeacherGrades() {
                                         {AFL1_PARTS.map((p) => {
                                           const on = (score.part ?? "a") === p.part;
                                           return (
-                                            <button
+                                            <Button
                                               key={p.part}
                                               type="button"
                                               aria-pressed={on}
                                               onClick={() =>
                                                 patchScore(activeAfl, competency.id, {
                                                   part: p.part,
-                                                  maxPoints: String(scale[p.label]),
                                                 })
                                               }
                                               className={`rounded-lg border px-2.5 py-1.5 font-mono text-xs ${
@@ -668,7 +685,7 @@ function TeacherGrades() {
                                               }`}
                                             >
                                               {p.label} · {formatPoints(scale[p.label])} pts
-                                            </button>
+                                            </Button>
                                           );
                                         })}
                                       </div>

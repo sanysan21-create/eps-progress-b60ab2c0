@@ -15,4 +15,4 @@
 - Acrosport music proposals use the existing QR student scope and class programming; links are validated as HTTP(S), and only authors may remove their proposals.
 - Apply application SQL migrations to the existing DATABASE_URL database, not the separate managed Cloud database, because application tables live in the former.
 - Grade-to-level conversion lives in `grades.ts` and is shared by the teacher preview and grade saving; use configured levels in position order so variable scales stay consistent.
-- Activity grading budgets and competency point allocations are resolved in `grades.ts`; Results uses these defaults without rewriting saved grades, keeping reference settings separate from historical evaluations.
+- Activity grading budgets and competency point allocations are resolved in `grades.ts`; allocations fill each AFL budget proportionally with cumulative rounding, and Results recalculates draft allocations on part changes without rewriting historical grades.

@@ -26,15 +26,31 @@ export function competencyBudgetKey(competency: GradingCompetency): keyof Activi
   return null;
 }
 
-/** Les compétences sans barème explicite se partagent les points restants de leur volet. */
+/** Répartition du budget du volet, en conservant les proportions des points personnalisés. */
 export function competencyMaxPoints(competency: GradingCompetency, competencies: GradingCompetency[], scale?: Partial<ActivityScale> | null): number {
   const key = competencyBudgetKey(competency);
   if (!key) return 0;
-  if (competency.max_points != null) return Number(competency.max_points);
-  const group = competencies.filter((item) => competencyBudgetKey(item) === key);
+  const group = competencies.filter((item) => competencyBudgetKey(item) === key).map((item) => item.id === competency.id ? competency : item);
+  if (!group.some((item) => item.id === competency.id)) group.push(competency);
+  const budget = Math.max(0, activityScale(scale)[key]);
   const assigned = group.reduce((sum, item) => sum + Number(item.max_points ?? 0), 0);
   const automatic = group.filter((item) => item.max_points == null).length;
-  return automatic ? Math.round(Math.max(0, activityScale(scale)[key] - assigned) / automatic * 100) / 100 : 0;
+  const weights = group.map((item) => {
+    if (automatic && assigned <= budget) return item.max_points == null ? (budget - assigned) / automatic : Number(item.max_points);
+    return Number(item.max_points ?? 0);
+  });
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  const cents = Math.round(budget * 100);
+  // Arrondir les cumuls plutôt que chaque part assure un total exactement égal au budget.
+  let cumulative = 0;
+  let previous = 0;
+  for (let index = 0; index < group.length; index++) {
+    cumulative += weightTotal > 0 ? (weights[index] ?? 0) / weightTotal : 1 / group.length;
+    const next = Math.round(cumulative * cents);
+    if (group[index]?.id === competency.id) return (next - previous) / 100;
+    previous = next;
+  }
+  return 0;
 }
 
 export type GradeItem = {

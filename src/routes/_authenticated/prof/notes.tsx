@@ -98,7 +98,6 @@ function TeacherGrades() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [activityId, setActivityId] = useState("");
   const [afl, setAfl] = useState<AflState>(initialAflState);
-  const [activeAfl, setActiveAfl] = useState<string>(AFL_LABELS[0] ?? "AFL1");
   const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
   /** Dernière compétence saisie : alimente le panneau de niveau à droite. */
@@ -136,7 +135,6 @@ function TeacherGrades() {
   const activity = activityOptions.find((row) => row.id === activityId) ?? null;
   const competencies = activity?.competencies ?? [];
   /** Compétences classées dans l'AFL actif (catégorie choisie à la création). */
-  const aflCompetencies = competencies.filter((competency) => competency.afl === activeAfl);
 
   /** Si la classe change et que l'activité n'est plus programmée, on la réinitialise. */
   useEffect(() => {
@@ -304,7 +302,6 @@ function TeacherGrades() {
     }
   }
 
-  const activeGroup = afl[activeAfl] ?? {};
 
   return (
     <div className="space-y-8 p-6 lg:p-10">
@@ -592,34 +589,11 @@ function TeacherGrades() {
 
                 {activityId && competencies.length > 0 && (
                   <div className="space-y-4">
-                    <div
-                      role="tablist"
-                      aria-label="AFL"
-                      className="flex gap-2 rounded-xl border border-border bg-background p-1"
-                    >
-                      {AFL_LABELS.map((label) => {
-                        const count = Object.keys(afl[label] ?? {}).length;
-                        return (
-                          <button
-                            key={label}
-                            type="button"
-                            role="tab"
-                            aria-selected={activeAfl === label}
-                            onClick={() => setActiveAfl(label)}
-                            className={`flex-1 rounded-lg px-3 py-2 font-mono text-xs uppercase tracking-tight transition-colors ${
-                              activeAfl === label
-                                ? "bg-primary font-bold text-primary-foreground"
-                                : "text-muted-foreground hover:bg-accent"
-                            }`}
-                          >
-                            {label}
-                            {count > 0 && <span className="ml-1 opacity-80">({count})</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="space-y-3 rounded-xl border border-border/70 bg-background p-4">
+                    {AFL_LABELS.map((activeAfl) => {
+                      const activeGroup = afl[activeAfl] ?? {};
+                      const aflCompetencies = competencies.filter((c) => c.afl === activeAfl);
+                      return (
+                    <div key={activeAfl} className="space-y-3 rounded-xl border border-border/70 bg-background p-4">
                       <p className="mono-label text-muted-foreground">
                         Compétences évaluées dans {activeAfl}
                       </p>
@@ -754,6 +728,8 @@ function TeacherGrades() {
                         </p>
                       )}
                     </div>
+                      );
+                    })}
                   </div>
                 )}
 

@@ -28,6 +28,24 @@ export function currentActivityName(
   return pick?.activity_name ?? null;
 }
 
+/**
+ * Noms des activités programmées : celles des séquences du calendrier, puis celles
+ * des séances libres. Les doublons sont retirés, l'ordre de découverte est conservé.
+ */
+export function programActivityNames(
+  sessions: ProgramSession[],
+  sequences: ProgramSequence[] = [],
+): string[] {
+  return Array.from(
+    new Set(
+      [
+        ...sequences.map((sequence) => sequence.activity_name),
+        ...sessions.filter((session) => !session.sequence_id).map((session) => session.activity_name),
+      ].filter((name): name is string => Boolean(name)),
+    ),
+  );
+}
+
 /** Séance du moment : la séance du jour ou la prochaine, sinon la dernière passée. */
 export function currentSessionId(sessions: ProgramSession[], today = localToday()): string | null {
   const dated = sessions.filter((s) => s.session_date).sort((a, b) => (a.session_date ?? "").localeCompare(b.session_date ?? ""));

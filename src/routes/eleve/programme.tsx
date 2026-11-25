@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isAcrosportActivity } from "@/lib/acrosport";
 import { isUltimateActivity } from "@/lib/ultimate";
-import { localToday, currentActivityName, currentSessionId, isPastSession } from "@/lib/current-activity";
+import { localToday, currentActivityName, currentSessionId, isPastSession, programActivityNames } from "@/lib/current-activity";
+import { ActivityPills } from "@/components/eps/ActivityPills";
 
 export const Route = createFileRoute("/eleve/programme")({
   head: () => ({
@@ -56,14 +57,7 @@ function StudentProgram() {
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
 
   // Activités programmées : une entrée par nom, issues des séquences et des séances libres.
-  const activityNames = Array.from(
-    new Set(
-      [
-        ...sequences.map((sequence) => sequence.activity_name),
-        ...sessions.filter((session) => !session.sequence_id).map((session) => session.activity_name),
-      ].filter((name): name is string => Boolean(name)),
-    ),
-  );
+  const activityNames = programActivityNames(sessions, sequences);
   // Aucune activité présélectionnée : l'élève doit cliquer pour afficher les séances.
   // L'activité en cours est mise au premier plan par défaut ; les autres restent accessibles.
   const currentActivity = currentActivityName(sessions, localToday(), sequences);
@@ -106,30 +100,14 @@ function StudentProgram() {
         </p>
       </header>
 
-      {activityNames.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-            🗂️ Mes activités
-          </h2>
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Activités programmées">
-            {activityNames.map((name) => (
-              <Button
-                key={name}
-                variant={activeActivity === name ? "default" : "outline"}
-                size="sm"
-                role="tab"
-                aria-selected={activeActivity === name}
-                onClick={() => {
-                  setSelectedActivity(name);
-                  setSelectedSessionId(null);
-                }}
-              >
-                {activityEmoji(name)} {name}
-              </Button>
-            ))}
-          </div>
-        </section>
-      )}
+      <ActivityPills
+        names={activityNames}
+        active={activeActivity}
+        onSelect={(name) => {
+          setSelectedActivity(name);
+          setSelectedSessionId(null);
+        }}
+      />
 
       {isUltimateActivity(activeActivity) && <CaptainPowers />}
       {isAcrosportActivity(activeActivity) && (

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { ObjectiveBar } from "@/components/eps/ObjectiveBar";
 import { activityEmoji } from "@/lib/activity-emoji";
 
@@ -32,8 +33,9 @@ import { AsBadge } from "@/components/eps/AsBadge";
 import { useMyRewards } from "@/hooks/use-rewards";
 import { profileTitleLabel } from "@/lib/rewards";
 import { ultimateTeamLabel } from "@/lib/ultimate";
-import { useCurrentActivityName } from "@/hooks/use-current-activity";
+import { useMyProgramActivities } from "@/hooks/use-current-activity";
 import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches";
+import { ActivityPills } from "@/components/eps/ActivityPills";
 
 export const Route = createFileRoute("/eleve/profil")({
   head: () => ({
@@ -87,11 +89,27 @@ function StudentProfile() {
 
   const info = session.data;
   const allActivities = profile.data ?? [];
-  const currentActivity = useCurrentActivityName();
-  // Activité en cours au premier plan ; les cycles précédents sont repliés.
-  const hasCurrent = allActivities.some((a) => a.activity_name === currentActivity);
-  const activities = hasCurrent ? allActivities.filter((a) => a.activity_name === currentActivity) : allActivities;
-  const pastActivities = hasCurrent ? allActivities.filter((a) => a.activity_name !== currentActivity) : [];
+  const { names: programmedNames, current } = useMyProgramActivities();
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+
+  // Sélecteur d'activité en haut de page : activités programmées + celles déjà évaluées.
+  const activityNames = Array.from(
+    new Set([...programmedNames, ...allActivities.map((a) => a.activity_name)]),
+  );
+  // Par défaut : l'activité du jour au calendrier ; l'élève peut en choisir une autre.
+  const activeActivity =
+    selectedActivity && activityNames.includes(selectedActivity)
+      ? selectedActivity
+      : current && activityNames.includes(current)
+        ? current
+        : null;
+  // Activité du moment au premier plan ; les autres restent accessibles en un clic.
+  const activities = activeActivity
+    ? allActivities.filter((a) => a.activity_name === activeActivity)
+    : allActivities;
+  const otherActivities = activeActivity
+    ? allActivities.filter((a) => a.activity_name !== activeActivity)
+    : [];
   const marks = flattenActivities(allActivities);
   const progress = averageProgress(marks);
 
@@ -166,6 +184,8 @@ function StudentProfile() {
           : "Ton parcours se construira au fil des séances. Chaque étape compte."}
       </p>
 
+      <ActivityPills names={activityNames} active={activeActivity} onSelect={setSelectedActivity} />
+
       {/* État du moment : uniquement si l'enseignant a activé l'option pour cet élève */}
       {myMood.data?.enabled && (
         <Section title="😊 Mon état">
@@ -200,17 +220,21 @@ function StudentProfile() {
       {/* Compétences */}
       <Section title="🎯 Mes compétences">
         {activities.length === 0 ? (
-          <EmptyNote>Aucune compétence renseignée pour le moment.</EmptyNote>
+          <EmptyNote>
+            {activeActivity
+              ? `Aucune compétence renseignée pour ${activeActivity} pour le moment.`
+              : "Aucune compétence renseignée pour le moment."}
+          </EmptyNote>
         ) : (
           <div className="space-y-4">
             {activities.map((activity) => <ActivityCard key={activity.activity_id} activity={activity} />)}
-            {pastActivities.length > 0 && (
+            {otherActivities.length > 0 && (
               <details className="rounded-2xl border border-border/60 bg-surface/40 p-4">
                 <summary className="cursor-pointer text-sm text-muted-foreground">
-                  📂 Compétences des cycles précédents ({pastActivities.length})
+                  📂 Autres activités ({otherActivities.length})
                 </summary>
                 <div className="mt-4 space-y-4">
-                  {pastActivities.map((a) => <ActivityCard key={a.activity_id} activity={a} />)}
+                  {otherActivities.map((a) => <ActivityCard key={a.activity_id} activity={a} />)}
                 </div>
               </details>
             )}

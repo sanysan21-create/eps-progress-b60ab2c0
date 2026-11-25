@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireTeacher, withDb } from "./auth-middleware";
 import type { GradeRow } from "@/lib/grades";
+import { levelForScore } from "@/lib/grades";
 
 /** Notes d'un élève (lecture enseignant, restreinte à ses propres élèves). */
 export const listStudentGrades = createServerFn({ method: "GET" })
@@ -98,6 +99,7 @@ export const saveStudentGrade = createServerFn({ method: "POST" })
         competencyId: string | null;
         points: number;
         maxPoints: number;
+        levelId?: string | null;
       }[];
     }) =>
       z
@@ -113,6 +115,7 @@ export const saveStudentGrade = createServerFn({ method: "POST" })
                 competencyId: z.string().uuid().nullable(),
                 points: z.number().min(0).max(999),
                 maxPoints: z.number().min(0).max(999),
+                levelId: z.string().uuid().nullable().optional(),
               }),
             )
             .min(1)
@@ -128,6 +131,21 @@ export const saveStudentGrade = createServerFn({ method: "POST" })
     }
 
     const evaluatedOn = data.evaluatedOn ?? new Date().toISOString().slice(0, 10);
+    const configured = await context.sql<{ id: string; position: number; competency_id: string }[]>`
+      select l.id, l.position, l.competency_id from competency_levels l
+      join competencies c on c.id = l.competency_id
+      where c.activity_id = ${data.activityId} and c.teacher_id = ${context.userId}
+    `;
+    const selectedLevels = data.items.map((item) => {
+      const levels = configured.filter((level) => level.competency_id === item.competencyId);
+      if (item.levelId !== undefined) {
+        if (item.levelId !== null && !levels.some((level) => level.id === item.levelId)) {
+          throw new Error("Niveau non valide pour cette compétence.");
+        }
+        return item.levelId;
+      }
+      return levelForScore(levels, item.points, item.maxPoints)?.level.id ?? null;
+    });
     let saved = 0;
 
     for (const studentId of data.studentIds) {
@@ -155,6 +173,15 @@ export const saveStudentGrade = createServerFn({ method: "POST" })
           values (${grade.id}, ${context.userId}, ${position}, ${item.label},
                   ${item.competencyId}, ${item.points}, ${item.maxPoints})
         `;
+        const levelId = selectedLevels[position - 1];
+        if (item.competencyId && levelId) {
+          await context.sql`
+            insert into student_competency_levels (student_id, competency_id, level_id, teacher_id)
+            values (${studentId}, ${item.competencyId}, ${levelId}, ${context.userId})
+            on conflict (student_id, competency_id)
+            do update set level_id = excluded.level_id, updated_at = now()
+          `;
+        }
       }
       saved += 1;
     }

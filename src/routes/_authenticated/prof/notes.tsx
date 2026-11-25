@@ -20,7 +20,7 @@ import {
   listStudentGrades,
   saveStudentGrade,
 } from "@/lib/grades.functions";
-import { AFL1_PARTS, DEFAULT_AFL_ITEMS, formatPoints, gradeTotals, type Afl1Part } from "@/lib/grades";
+import { AFL1_PARTS, DEFAULT_AFL_ITEMS, formatPoints, gradeTotals, levelForScore, type Afl1Part } from "@/lib/grades";
 import { LevelHintPanel } from "@/components/eps/LevelHintPanel";
 import { NumberField } from "@/components/eps/NumberField";
 import { NumericButtons } from "@/components/eps/NumericButtons";
@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/prof/notes")({
   component: TeacherGrades,
 });
 
-type Score = { points: string; maxPoints: string; part?: Afl1Part };
+type Score = { points: string; maxPoints: string; part?: Afl1Part; levelId?: string | null };
 /** Par AFL : compétences cochées et points saisis. */
 type AflState = Record<string, Record<string, Score>>;
 
@@ -85,6 +85,12 @@ function TeacherGrades() {
     try {
       if (current === levelId) await unassignLevel({ data: { studentIds: [studentId], competencyId } });
       else await assignLevel({ data: { studentIds: [studentId], competencyId, levelId } });
+      setAfl((state) => {
+        const label = competencies.find((c) => c.id === competencyId)?.afl;
+        const score = label ? state[label]?.[competencyId] : undefined;
+        if (!label || !score) return state;
+        return { ...state, [label]: { ...state[label], [competencyId]: { ...score, levelId: current === levelId ? null : levelId } } };
+      });
       await qcLevels.invalidateQueries({ queryKey: ["student-marks", studentId] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Niveau non enregistré.");
@@ -183,6 +189,7 @@ function TeacherGrades() {
           competencyId,
           points: Number(score.points.replace(",", ".")) || 0,
           maxPoints: Number(score.maxPoints.replace(",", ".")) || 0,
+          ...(score.levelId !== undefined ? { levelId: score.levelId } : {}),
         })),
       ),
     [afl],
@@ -219,8 +226,19 @@ function TeacherGrades() {
     competencies.find((row) => row.id === focusedEntry?.competencyId) ?? null;
 
   const focusedAssignedLevelId =
-    (marks.data ?? []).find((mark) => mark.competency_id === focusedCompetency?.id)?.level_id ??
-    null;
+    focusedCompetency && focusedEntry
+      ? displayedLevel(focusedEntry.afl, focusedCompetency.id)
+      : null;
+
+  function displayedLevel(label: string, competencyId: string): string | null {
+    const score = afl[label]?.[competencyId];
+    const competency = competencies.find((c) => c.id === competencyId);
+    if (score && competency) {
+      if (score.levelId !== undefined) return score.levelId;
+      return levelForScore(competency.levels, Number(score.points.replace(",", ".")), Number(score.maxPoints.replace(",", ".")))?.level.id ?? null;
+    }
+    return (marks.data ?? []).find((mark) => mark.competency_id === competencyId)?.level_id ?? null;
+  }
 
   function toggleCompetency(aflLabel: string, competencyId: string) {
     setAfl((current) => {
@@ -246,7 +264,9 @@ function TeacherGrades() {
         maxPoints: defaultMax(aflLabel),
         ...(aflLabel === "AFL1" ? { part: "a" as const } : {}),
       };
-      return { ...current, [aflLabel]: { ...group, [competencyId]: { ...score, ...patch } } };
+      const next = { ...score, ...patch };
+      if (patch.points !== undefined || patch.maxPoints !== undefined) delete next.levelId;
+      return { ...current, [aflLabel]: { ...group, [competencyId]: next } };
     });
   }
 
@@ -286,7 +306,11 @@ function TeacherGrades() {
         },
       });
       toast.success("Résultat enregistré");
-      await queryClient.invalidateQueries({ queryKey: ["student-grades", studentId] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["student-grades", studentId] }),
+        queryClient.invalidateQueries({ queryKey: ["student-marks", studentId] }),
+        queryClient.invalidateQueries({ queryKey: ["class-grades"] }),
+      ]);
       resetForm();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Enregistrement impossible");
@@ -459,7 +483,7 @@ function TeacherGrades() {
           )}
         </section>
       ) : (
-      <div className="grid gap-6 lg:grid-cols-[300px_1fr] xl:grid-cols-[300px_1fr_320px]">
+      <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)_320px]">
         {/* Élèves */}
         <section className="space-y-3 rounded-2xl border border-border bg-surface p-5">
           <h2 className="mono-label text-muted-foreground">1 · Classe puis élève</h2>
@@ -691,7 +715,7 @@ function TeacherGrades() {
                               )}
                               {competency.levels.length > 0 && (() => {
                                 const levels = [...competency.levels].sort((a, b) => a.position - b.position);
-                                const current = (marks.data ?? []).find((m) => m.competency_id === competency.id)?.level_id ?? null;
+                                const current = displayedLevel(activeAfl, competency.id);
                                 return (
                                   <div className="mt-3 space-y-1 pl-7">
                                     <span className="text-xs text-muted-foreground">Niveau dans l'attendu</span>

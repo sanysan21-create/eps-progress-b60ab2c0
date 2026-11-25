@@ -3,14 +3,7 @@ import { formatPoints } from "@/lib/grades";
 
 const LEVEL_EMOJI = ["🔴", "🟠", "🟡", "🟢", "🌿", "⭐"];
 
-/** Niveau correspondant à une note, à partir des niveaux déjà configurés pour la compétence. */
-export function levelForScore(levels: Competency["levels"], points: number, maxPoints: number) {
-  const sorted = [...levels].sort((a, b) => a.position - b.position);
-  if (sorted.length === 0 || maxPoints <= 0) return null;
-  const ratio = Math.min(Math.max(points / maxPoints, 0), 1);
-  const index = ratio <= 0 ? 0 : Math.min(sorted.length - 1, Math.ceil(ratio * sorted.length) - 1);
-  return { level: sorted[index]!, rank: index + 1, total: sorted.length };
-}
+export { levelForScore } from "@/lib/grades";
 
 /** Niveau réellement attribué dans « Évaluer compétences » (source de vérité). */
 export function assignedLevel(levels: Competency["levels"], levelId: string | null | undefined) {
@@ -18,7 +11,8 @@ export function assignedLevel(levels: Competency["levels"], levelId: string | nu
   const sorted = [...levels].sort((a, b) => a.position - b.position);
   const index = sorted.findIndex((level) => level.id === levelId);
   if (index === -1) return null;
-  return { level: sorted[index]!, rank: index + 1, total: sorted.length };
+  const level = sorted[index];
+  return level ? { level, rank: index + 1, total: sorted.length } : null;
 }
 
 export function LevelHintPanel({

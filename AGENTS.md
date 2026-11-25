@@ -14,3 +14,4 @@
 - Programme quizzes are selected by the persisted session ID, not activity or session number, to avoid mixing sessions.
 - Acrosport music proposals use the existing QR student scope and class programming; links are validated as HTTP(S), and only authors may remove their proposals.
 - Apply application SQL migrations to the existing DATABASE_URL database, not the separate managed Cloud database, because application tables live in the former.
+- Grade-to-level conversion lives in `grades.ts` and is shared by the teacher preview and grade saving; use configured levels in position order so variable scales stay consistent.

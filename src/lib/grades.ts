@@ -44,3 +44,13 @@ export function formatPoints(value: number): string {
   const rounded = Math.round((Number(value) || 0) * 100) / 100;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0$/, "");
 }
+
+/** Même conversion pour l'aperçu et l'enregistrement, quel que soit le nombre de niveaux. */
+export function levelForScore<T extends { id: string; position: number }>(levels: T[], points: number, maxPoints: number) {
+  const sorted = [...levels].sort((a, b) => a.position - b.position);
+  if (!sorted.length || !Number.isFinite(points) || !Number.isFinite(maxPoints) || maxPoints <= 0) return null;
+  const ratio = Math.min(Math.max(points / maxPoints, 0), 1);
+  const index = Math.max(0, Math.ceil(ratio * sorted.length) - 1);
+  const level = sorted[index];
+  return level ? { level, rank: index + 1, total: sorted.length } : null;
+}

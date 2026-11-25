@@ -79,12 +79,12 @@ export function NumericButtons({
   };
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-wrap items-center gap-4">
       <div
         role="radiogroup"
         aria-label={rest["aria-label"] ?? label ?? "Points obtenus"}
         onKeyDown={handleKeyDown}
-        className="grid w-fit grid-cols-5 gap-1.5"
+        className="grid w-fit shrink-0 grid-cols-[repeat(5,2.5rem)] gap-1.5"
       >
         {values.map((v, i) => {
           const selected = i === index;
@@ -110,7 +110,7 @@ export function NumericButtons({
         })}
       </div>
 
-      <div className="leading-none">
+      <div className="shrink-0 leading-none">
         <p className="display-title text-4xl text-primary">
           {values[index] ?? 0}
         </p>

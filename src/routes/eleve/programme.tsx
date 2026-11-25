@@ -63,10 +63,9 @@ function StudentProgram() {
       ].filter((name): name is string => Boolean(name)),
     ),
   );
+  // Aucune activité présélectionnée : l'élève doit cliquer pour afficher les séances.
   const activeActivity =
-    selectedActivity && activityNames.includes(selectedActivity)
-      ? selectedActivity
-      : (activityNames[0] ?? null);
+    selectedActivity && activityNames.includes(selectedActivity) ? selectedActivity : null;
   const visibleSequences = sequences.filter(
     (sequence) => sequence.activity_name === activeActivity,
   );

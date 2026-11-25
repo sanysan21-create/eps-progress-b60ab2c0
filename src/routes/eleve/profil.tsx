@@ -32,7 +32,7 @@ import { MedalTierBadge } from "@/components/eps/MedalTierBadge";
 import { AsBadge } from "@/components/eps/AsBadge";
 import { useMyRewards } from "@/hooks/use-rewards";
 import { profileTitleLabel } from "@/lib/rewards";
-import { ultimateTeamLabel } from "@/lib/ultimate";
+import { isUltimateActivity, ultimateTeamLabel } from "@/lib/ultimate";
 import { useMyProgramActivities } from "@/hooks/use-current-activity";
 import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches";
 import { ActivityPills } from "@/components/eps/ActivityPills";
@@ -229,8 +229,8 @@ function StudentProfile() {
         )}
       </Section>
 
-      {/* Rencontres ultimate : résultats de son équipe et classement cumulé */}
-      {activities.some((activity) => activity.ultimate_team) && <UltimateStudentMatches />}
+      {/* Rencontres ultimate : uniquement quand l'activité Ultimate est sélectionnée */}
+      {isUltimateActivity(activeActivity) && <UltimateStudentMatches />}
 
       {/* Implication */}
       <Section title="💪 Mon implication en EPS">

@@ -107,10 +107,7 @@ function StudentProfile() {
   const activities = activeActivity
     ? allActivities.filter((a) => a.activity_name === activeActivity)
     : allActivities;
-  const otherActivities = activeActivity
-    ? allActivities.filter((a) => a.activity_name !== activeActivity)
-    : [];
-  const marks = flattenActivities(allActivities);
+  const marks = flattenActivities(activities);
   const progress = averageProgress(marks);
 
   const strengths = myStrengths.data ?? [];
@@ -228,22 +225,12 @@ function StudentProfile() {
         ) : (
           <div className="space-y-4">
             {activities.map((activity) => <ActivityCard key={activity.activity_id} activity={activity} />)}
-            {otherActivities.length > 0 && (
-              <details className="rounded-2xl border border-border/60 bg-surface/40 p-4">
-                <summary className="cursor-pointer text-sm text-muted-foreground">
-                  📂 Autres activités ({otherActivities.length})
-                </summary>
-                <div className="mt-4 space-y-4">
-                  {otherActivities.map((a) => <ActivityCard key={a.activity_id} activity={a} />)}
-                </div>
-              </details>
-            )}
           </div>
         )}
       </Section>
 
       {/* Rencontres ultimate : résultats de son équipe et classement cumulé */}
-      {allActivities.some((activity) => activity.ultimate_team) && <UltimateStudentMatches />}
+      {activities.some((activity) => activity.ultimate_team) && <UltimateStudentMatches />}
 
       {/* Implication */}
       <Section title="💪 Mon implication en EPS">

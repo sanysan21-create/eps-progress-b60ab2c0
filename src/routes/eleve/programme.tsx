@@ -51,7 +51,6 @@ function StudentProgram() {
   });
   const sessions = program.data ?? [];
   const sequences = sequencesQuery.data ?? [];
-  const next = nextSession(sessions);
   const [zoom, setZoom] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
@@ -76,11 +75,14 @@ function StudentProgram() {
     (session) => !session.sequence_id && session.activity_name === activeActivity,
   );
 
+  // Tout le reste de la page est limité à l'activité sélectionnée.
+  const activitySessions = sessions.filter((session) => session.activity_name === activeActivity);
+  const next = nextSession(activitySessions);
   // Barèmes photo attachés aux séquences, affichés en bas de page.
-  const sequenceScales = sequences.filter((sequence) => sequence.scale_image_url);
+  const sequenceScales = visibleSequences.filter((sequence) => sequence.scale_image_url);
 
   // Barèmes disponibles : une entrée par activité, dédoublonnée.
-  const scales = sessions
+  const scales = activitySessions
     .filter((session) => session.scale_image_url)
     .filter(
       (session, index, all) =>

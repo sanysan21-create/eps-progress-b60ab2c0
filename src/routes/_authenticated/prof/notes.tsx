@@ -241,8 +241,11 @@ function TeacherGrades() {
     setFocused({ afl: aflLabel, competencyId });
     setAfl((current) => {
       const group = current[aflLabel] ?? {};
-      const score = group[competencyId];
-      if (!score) return current;
+      const score = group[competencyId] ?? {
+        points: "0",
+        maxPoints: defaultMax(aflLabel),
+        ...(aflLabel === "AFL1" ? { part: "a" as const } : {}),
+      };
       return { ...current, [aflLabel]: { ...group, [competencyId]: { ...score, ...patch } } };
     });
   }
@@ -599,8 +602,12 @@ function TeacherGrades() {
                       </p>
                       <ul className="space-y-2">
                         {aflCompetencies.map((competency) => {
-                          const score = activeGroup[competency.id];
-                          const checked = Boolean(score);
+                          const checked = Boolean(activeGroup[competency.id]);
+                          const score = activeGroup[competency.id] ?? {
+                            points: "0",
+                            maxPoints: defaultMax(activeAfl),
+                            ...(activeAfl === "AFL1" ? { part: "a" as const } : {}),
+                          };
                           return (
                             <li
                               key={competency.id}
@@ -620,7 +627,7 @@ function TeacherGrades() {
                                 </span>
                               </label>
 
-                              {score && (
+                              {(
                                 <div className="mt-3 flex flex-wrap items-end gap-5 pl-7">
                                   {activeAfl === "AFL1" && (
                                     <div className="space-y-1">
@@ -682,7 +689,7 @@ function TeacherGrades() {
                                   </label>
                                 </div>
                               )}
-                              {score && competency.levels.length > 0 && (() => {
+                              {competency.levels.length > 0 && (() => {
                                 const levels = [...competency.levels].sort((a, b) => a.position - b.position);
                                 const current = (marks.data ?? []).find((m) => m.competency_id === competency.id)?.level_id ?? null;
                                 return (

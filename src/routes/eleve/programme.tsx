@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { getMyProgram } from "@/lib/program.functions";
-import { nextSession, sessionWhen, upcomingSessions } from "@/lib/program";
+import { nextSession, sessionWhen } from "@/lib/program";
 import { getMyProgramSequences } from "@/lib/program-sequences.functions";
 import { sequenceRange } from "@/lib/program-sequences";
 import { activityEmoji } from "@/lib/activity-emoji";
@@ -16,6 +16,8 @@ import { AcrosportMusic } from "@/components/eps/AcrosportMusic";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isAcrosportActivity } from "@/lib/acrosport";
+import { isUltimateActivity } from "@/lib/ultimate";
+import { currentActivityName, currentSessionId, isPastSession } from "@/lib/current-activity";
 
 export const Route = createFileRoute("/eleve/programme")({
   head: () => ({
@@ -49,7 +51,6 @@ function StudentProgram() {
   const sessions = program.data ?? [];
   const sequences = sequencesQuery.data ?? [];
   const next = nextSession(sessions);
-  const upcoming = upcomingSessions(sessions);
   const [zoom, setZoom] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
@@ -64,8 +65,16 @@ function StudentProgram() {
     ),
   );
   // Aucune activité présélectionnée : l'élève doit cliquer pour afficher les séances.
+  // L'activité en cours est mise au premier plan par défaut ; les autres restent accessibles.
+  const currentActivity = currentActivityName(sessions);
+  const currentId = currentSessionId(sessions);
   const activeActivity =
-    selectedActivity && activityNames.includes(selectedActivity) ? selectedActivity : null;
+    selectedActivity && activityNames.includes(selectedActivity)
+      ? selectedActivity
+      : currentActivity && activityNames.includes(currentActivity)
+        ? currentActivity
+        : null;
+  const openSessionId = selectedSessionId ?? currentId;
   const visibleSequences = sequences.filter(
     (sequence) => sequence.activity_name === activeActivity,
   );
@@ -97,8 +106,8 @@ function StudentProgram() {
         </p>
       </header>
 
-      <CaptainPowers />
-      {sequences.some((sequence) => isAcrosportActivity(sequence.activity_name)) && (
+      {isUltimateActivity(activeActivity) && <CaptainPowers />}
+      {isAcrosportActivity(activeActivity) && (
         <Tabs defaultValue="group">
           <TabsList>
             <TabsTrigger value="group">Groupe d’acrosport</TabsTrigger>
@@ -153,17 +162,34 @@ function StudentProgram() {
                   {[sequenceRange(sequence), sequence.activity_name].filter(Boolean).join(" · ") ||
                     "Séquence à venir"}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {sessions.filter((session) => session.sequence_id === sequence.id).map((session, index) => (
-                    <Button key={session.id} variant={selectedSessionId === session.id ? "default" : "outline"} size="sm"
-                      aria-pressed={selectedSessionId === session.id}
+                {(() => {
+                  const seqSessions = sessions.filter((session) => session.sequence_id === sequence.id);
+                  const pastSessions = seqSessions.filter((session) => isPastSession(session, currentId));
+                  const renderBtn = (session: (typeof seqSessions)[number], index: number) => (
+                    <Button key={session.id} variant={openSessionId === session.id ? "default" : "outline"} size="sm"
+                      aria-pressed={openSessionId === session.id}
                       aria-label={`${sequence.name} — Séance ${session.session_number ?? index + 1}`}
-                      onClick={() => setSelectedSessionId((id) => id === session.id ? null : session.id)}>
+                      onClick={() => setSelectedSessionId(session.id)}>
                       S{session.session_number ?? index + 1} · {sessionWhen(session)}
                     </Button>
-                  ))}
-                </div>
-                {sessions.filter((session) => session.sequence_id === sequence.id && session.id === selectedSessionId).map((session) => (
+                  );
+                  return (
+                    <>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {seqSessions.filter((session) => !pastSessions.includes(session)).map((session) => renderBtn(session, seqSessions.indexOf(session)))}
+                      </div>
+                      {pastSessions.length > 0 && (
+                        <details className="mt-3 rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+                          <summary className="cursor-pointer text-xs text-muted-foreground">📂 Séances précédentes ({pastSessions.length})</summary>
+                          <div className="mt-2 flex flex-wrap gap-2 opacity-80">
+                            {pastSessions.map((session) => renderBtn(session, seqSessions.indexOf(session)))}
+                          </div>
+                        </details>
+                      )}
+                    </>
+                  );
+                })()}
+                {sessions.filter((session) => session.sequence_id === sequence.id && session.id === openSessionId).map((session) => (
                   <div key={session.id} className="mt-4 space-y-3">
                     {session.objective && <p className="text-sm">{session.objective}</p>}
                     {session.description && <p className="text-sm text-muted-foreground">{session.description}</p>}
@@ -189,7 +215,7 @@ function StudentProgram() {
               </Button>
             ))}
           </div>
-          {visibleFreeSessions.filter((session) => session.id === selectedSessionId).map((session) => (
+          {visibleFreeSessions.filter((session) => session.id === openSessionId).map((session) => (
             <div key={session.id} className="space-y-3">
               {session.objective && <p className="text-sm">{session.objective}</p>}
               {session.description && (
@@ -251,42 +277,6 @@ function StudentProgram() {
                   </button>
                 )}
               </article>
-            </section>
-          )}
-
-          {upcoming.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-                À venir
-              </h2>
-              <ul className="space-y-3">
-                {upcoming.map((session) => (
-                  <li
-                    key={session.id}
-                    className="rounded-2xl border border-border bg-surface px-5 py-4"
-                  >
-                    <p className="flex items-center gap-2 text-base font-semibold">
-                      <span aria-hidden className="text-xl leading-none">{activityEmoji(session.activity_name)}</span>
-                      {session.activity_name}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">{sessionWhen(session)}</p>
-                    {session.objective && (
-                      <p className="mt-2 text-sm leading-relaxed text-foreground/80">
-                        {session.objective}
-                      </p>
-                    )}
-                    {session.scale_image_url && (
-                      <button
-                        type="button"
-                        onClick={() => setZoom(session.scale_image_url)}
-                        className="mt-3 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
-                      >
-                        📊 Voir le barème
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
             </section>
           )}
 

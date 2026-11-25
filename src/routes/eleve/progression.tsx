@@ -10,6 +10,7 @@ import { computeProgression } from "@/lib/progression";
 import { goal as goalByCode } from "@/lib/engagement";
 import { AFL_HINTS, AFL_LABELS, groupByAfl } from "@/lib/afl";
 
+import { useCurrentActivityName } from "@/hooks/use-current-activity";
 import { ultimateTeamLabel } from "@/lib/ultimate";
 import {
   averageProgress,
@@ -65,7 +66,12 @@ function StudentProgress() {
   const [activityId, setActivityId] = useState<string | null>(null);
   const [subTab, setSubTab] = useState<SubTab>("competences");
 
-  const selected = data.find((a) => a.activity_id === activityId) ?? data[0] ?? null;
+  const currentActivity = useCurrentActivityName();
+  const selected =
+    data.find((a) => a.activity_id === activityId) ??
+    data.find((a) => a.activity_name === currentActivity) ??
+    data[0] ??
+    null;
   const selectedMarks = selected ? flattenActivities([selected]) : [];
   const selectedProgress = selected ? (averageProgress(selectedMarks) ?? 0) : 0;
   const myGoal = goal.data ? goalByCode(goal.data) : undefined;

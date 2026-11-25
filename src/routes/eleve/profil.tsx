@@ -32,6 +32,7 @@ import { AsBadge } from "@/components/eps/AsBadge";
 import { useMyRewards } from "@/hooks/use-rewards";
 import { profileTitleLabel } from "@/lib/rewards";
 import { ultimateTeamLabel } from "@/lib/ultimate";
+import { useCurrentActivityName } from "@/hooks/use-current-activity";
 import { UltimateStudentMatches } from "@/components/eps/UltimateStudentMatches";
 
 export const Route = createFileRoute("/eleve/profil")({
@@ -85,8 +86,13 @@ function StudentProfile() {
   const titleLabel = profileTitleLabel(rewards.data?.title);
 
   const info = session.data;
-  const activities = profile.data ?? [];
-  const marks = flattenActivities(activities);
+  const allActivities = profile.data ?? [];
+  const currentActivity = useCurrentActivityName();
+  // Activité en cours au premier plan ; les cycles précédents sont repliés.
+  const hasCurrent = allActivities.some((a) => a.activity_name === currentActivity);
+  const activities = hasCurrent ? allActivities.filter((a) => a.activity_name === currentActivity) : allActivities;
+  const pastActivities = hasCurrent ? allActivities.filter((a) => a.activity_name !== currentActivity) : [];
+  const marks = flattenActivities(allActivities);
   const progress = averageProgress(marks);
 
   const strengths = myStrengths.data ?? [];
@@ -197,9 +203,73 @@ function StudentProfile() {
           <EmptyNote>Aucune compétence renseignée pour le moment.</EmptyNote>
         ) : (
           <div className="space-y-4">
-            {activities.map((activity) => (
-              <article
-                key={activity.activity_id}
+            {activities.map((activity) => <ActivityCard key={activity.activity_id} activity={activity} />)}
+            {pastActivities.length > 0 && (
+              <details className="rounded-2xl border border-border/60 bg-surface/40 p-4">
+                <summary className="cursor-pointer text-sm text-muted-foreground">
+                  📂 Compétences des cycles précédents ({pastActivities.length})
+                </summary>
+                <div className="mt-4 space-y-4">
+                  {pastActivities.map((a) => <ActivityCard key={a.activity_id} activity={a} />)}
+                </div>
+              </details>
+            )}
+          </div>
+        )}
+      </Section>
+
+      {/* Rencontres ultimate : résultats de son équipe et classement cumulé */}
+      {allActivities.some((activity) => activity.ultimate_team) && <UltimateStudentMatches />}
+
+      {/* Implication */}
+      <Section title="💪 Mon implication en EPS">
+        {engagementMarks.length === 0 ? (
+          <EmptyNote>Ton implication sera renseignée au fil des séances.</EmptyNote>
+        ) : (
+          <div className="rounded-2xl border border-border bg-surface p-5">
+            <ul className="space-y-4">
+              {engagementMarks.map((mark) => (
+                <li key={mark.indicator_code} className="space-y-1.5">
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    <span aria-hidden>{mark.indicator.emoji}</span>
+                    {mark.indicator.label}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <LevelDots
+                      level={mark.level}
+                      max={ENGAGEMENT_LEVEL_MAX}
+                      label={`${mark.indicator.label} : ${engagementLevelLabel(mark.level)}`}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {engagementLevelLabel(mark.level)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Section>
+
+      {/* Points forts : choisis par l'élève lui-même */}
+      <Section title="⭐ Mes points forts">
+        <StrengthPicker current={strengths} />
+      </Section>
+
+      {/* Objectif : point à travailler choisi par l'élève lui-même */}
+      <Section title="🚀 Mon objectif">
+        <GoalPicker current={goal} />
+      </Section>
+    </div>
+  );
+}
+
+type ProfileActivity = NonNullable<ReturnType<typeof useStudentActivities>["data"]>[number];
+
+function ActivityCard({ activity }: { activity: ProfileActivity }) {
+  return (
+<article
+               
                 className="rounded-2xl border border-border bg-surface p-5"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -278,53 +348,5 @@ function StudentProfile() {
                   ))}
                 </ul>
               </article>
-            ))}
-          </div>
-        )}
-      </Section>
-
-      {/* Rencontres ultimate : résultats de son équipe et classement cumulé */}
-      {activities.some((activity) => activity.ultimate_team) && <UltimateStudentMatches />}
-
-      {/* Implication */}
-      <Section title="💪 Mon implication en EPS">
-        {engagementMarks.length === 0 ? (
-          <EmptyNote>Ton implication sera renseignée au fil des séances.</EmptyNote>
-        ) : (
-          <div className="rounded-2xl border border-border bg-surface p-5">
-            <ul className="space-y-4">
-              {engagementMarks.map((mark) => (
-                <li key={mark.indicator_code} className="space-y-1.5">
-                  <p className="flex items-center gap-2 text-sm font-medium">
-                    <span aria-hidden>{mark.indicator.emoji}</span>
-                    {mark.indicator.label}
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <LevelDots
-                      level={mark.level}
-                      max={ENGAGEMENT_LEVEL_MAX}
-                      label={`${mark.indicator.label} : ${engagementLevelLabel(mark.level)}`}
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {engagementLevelLabel(mark.level)}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </Section>
-
-      {/* Points forts : choisis par l'élève lui-même */}
-      <Section title="⭐ Mes points forts">
-        <StrengthPicker current={strengths} />
-      </Section>
-
-      {/* Objectif : point à travailler choisi par l'élève lui-même */}
-      <Section title="🚀 Mon objectif">
-        <GoalPicker current={goal} />
-      </Section>
-    </div>
   );
 }
